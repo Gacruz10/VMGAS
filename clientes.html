@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+<title>Gestión de Clientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --glass: rgba(0, 0, 0, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --input-bg: rgba(0, 0, 0, 0.4);
+    --text-primary: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --accent: #FFD700; 
+    --success: #4CAF50;
+    --error: #ff5e5e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+    background-color: #0d031a;
+    background-attachment: fixed;
+    min-height: 100vh;
+    opacity: 0; transition: opacity 0.5s ease;
+    padding-bottom: 80px; 
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 15px; }
+
+  h1 { text-align: center; color: var(--accent); margin: 10px 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 25px;
+    background: var(--glass); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border);
+  }
+  @media(min-width: 700px){ .toolbar { flex-direction: row; justify-content: space-between; } }
+
+  .search-box { position: relative; width: 100%; max-width: 400px; }
+  .search-input {
+    width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+    padding: 12px 15px 12px 40px; border-radius: 12px; color: white; outline: none; transition: 0.3s;
+  }
+  .search-input:focus { border-color: var(--accent); background: rgba(0,0,0,0.5); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.6; }
+
+  .btn {
+    border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; cursor: pointer;
+    transition: 0.2s; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--glass-border);
+  }
+  .btn:hover { background: var(--accent); color: #000; transform: translateY(-2px); }
+  
+  .btn-new { background: var(--success); color: white; border: none; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4); }
+  .btn-new:hover { background: #43A047; color: white; }
+
+  /* GRID */
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;
+  }
+
+  .card {
+    background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px;
+    padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.3); }
+
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row label { flex: 0 0 70px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+  
+  input, select {
+    flex: 1; background: var(--input-bg); border: 1px solid var(--glass-border);
+    border-radius: 6px; padding: 8px; color: white; outline: none; width: 100%;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  
+  /* Selects con estilo oscuro */
+  select option { background: #1a0b2e; color: white; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+    display: none; justify-content: center; align-items: center; z-index: 1000;
+  }
+  .modal-content {
+    background: #1a0b2e; border: 1px solid var(--accent); border-radius: 20px;
+    padding: 25px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+  
+  .modal-header { text-align: center; margin-bottom: 20px; color: var(--accent); font-size: 20px; font-weight: 800; }
+  .modal-form { display: flex; flex-direction: column; gap: 12px; }
+  
+  .btn-add { width: 100%; background: var(--accent); color: #000; padding: 12px; margin-top: 10px; }
+  .btn-add:disabled { background: #555; color: #888; cursor: not-allowed; }
+  .btn-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #aaa; font-size: 20px; cursor: pointer; }
+
+  /* FOOTER */
+  footer {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 50px;
+    border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+    display: flex; gap: 10px; z-index: 900;
+  }
+
+  .status-msg { text-align: center; margin-top: 10px; height: 20px; color: var(--accent); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>CLIENTES</h1>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="txtBuscar" class="search-input" placeholder="Buscar por nombre, zona, dirección...">
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button class="btn btn-new" onclick="abrirModal()">➕ NUEVO CLIENTE</button>
+        <button class="btn" onclick="iniciarCargaDatos()">🔄 Recargar</button>
+        <button class="btn" id="btnInicio">🏠 Volver</button>
+    </div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div id="msg" class="status-msg"></div>
+</div>
+
+<footer>
+  <button class="btn" id="btnGuardar" style="min-width: 200px; font-weight:800;">💾 GUARDAR CAMBIOS</button>
+</footer>
+
+<div id="modalNuevo" class="modal-overlay">
+  <div class="modal-content" style="position:relative;">
+    <button class="btn-close" onclick="cerrarModal()">✕</button>
+    <div class="modal-header">ALTA NUEVO CLIENTE</div>
+    <div class="modal-form">
+        
+        <div>
+            <label style="font-size:12px; color:#aaa;">NOMBRE COMERCIO / CLIENTE</label>
+            <input type="text" id="newNombre" placeholder="Ej: Kiosco Pepe">
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1">
+                <label style="font-size:12px; color:#aaa;">ZONA</label>
+                <select id="newZona"><option value="">Cargando...</option></select>
+            </div>
+            <div style="flex:1">
+                <label style="font-size:12px; color:#aaa;">CATEGORÍA</label>
+                <select id="newCategoria"><option value="">Cargando...</option></select>
+            </div>
+        </div>
+
+        <div>
+            <label style="font-size:12px; color:#aaa;">DIRECCIÓN</label>
+            <input type="text" id="newDireccion" placeholder="Calle y Altura">
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+             <div style="flex:1">
+                <label style="font-size:12px; color:#aaa;">TELÉFONO</label>
+                <input type="text" id="newTelefono" placeholder="Solo números">
+             </div>
+             <div style="flex:1">
+                <label style="font-size:12px; color:#aaa;">MAIL (Opcional)</label>
+                <input type="text" id="newMail" placeholder="@">
+             </div>
+        </div>
+
+        <button class="btn btn-add" id="btnAddClient" disabled>AGREGAR CLIENTE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+const TIMEOUT_SESION = 300000;
+
+// VARIABLES GLOBALES PARA OPCIONES
+let GLOBAL_ZONAS = [];
+let GLOBAL_CATEGORIAS = [];
+
+// 1. SEGURIDAD
+const params = new URLSearchParams(window.location.search);
+const k = params.get('k') || params.get('token');
+
+function expulsar() { sessionStorage.clear(); window.location.replace('index3.html'); }
+if (!k) expulsar();
+else {
+    if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
+    validarSesion();
+}
+
+window.addEventListener('pageshow', (e) => { if (e.persisted) window.location.reload(); });
+
+async function validarSesion() {
+  try {
+    const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
+    const r = await fetch(API, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.status !== 'success') throw new Error();
+    document.body.style.opacity = 1;
+    
+    // Al validar sesión, iniciamos la carga de datos
+    iniciarCargaDatos();
+
+  } catch (e) { expulsar(); }
+}
+
+let tIdle;
+function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(expulsar, TIMEOUT_SESION); }
+['click','mousemove','keydown'].forEach(ev => document.addEventListener(ev, resetTimer));
+resetTimer();
+
+document.getElementById('btnInicio').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+// ---------------- LÓGICA DE DATOS ----------------
+
+let rows = [];
+const grid = document.getElementById('grid');
+const msg = document.getElementById('msg');
+const txtBuscar = document.getElementById('txtBuscar');
+
+// NUEVA FUNCIÓN: Obtener opciones desde la hoja DATOS (Backend)
+async function obtenerOpcionesBackend() {
+    try {
+        // Asumimos que el backend tiene action='getoptions' y devuelve {zonas:[], categorias:[]}
+        const r = await fetch(`${API}?action=getoptions`);
+        const d = await r.json();
+        
+        GLOBAL_ZONAS = d.zonas || ["ZONA1", "ZONA2", "ZONA3", "ZONA4"]; // Fallback por si falla
+        GLOBAL_CATEGORIAS = d.categorias || ["USUARIO (PUBLICO)", "COMERCIO"]; 
+        
+    } catch (e) {
+        console.error("Error cargando opciones", e);
+        // Fallback básico para que no rompa
+        GLOBAL_ZONAS = ["ZONA1", "ZONA2", "ZONA3", "ZONA4"];
+        GLOBAL_CATEGORIAS = ["USUARIO (PUBLICO)", "COMERCIO", "SUBDISTRIBUIDOR", "ROT. Y PAN."];
+    }
+}
+
+async function iniciarCargaDatos() {
+    grid.innerHTML = '<div style="text-align:center; color:#aaa; padding:20px;">Cargando configuración y clientes...</div>';
+    
+    // 1. Primero traemos las opciones
+    await obtenerOpcionesBackend();
+    
+    // 2. Luego traemos los clientes
+    await loadClientes();
+    
+    // 3. Inicializamos lógica del modal con las opciones ya cargadas
+    initFormLogic();
+}
+
+// Función auxiliar para llenar selects
+function llenarSelect(selectEl, arrayOpciones, valorSeleccionado = "") {
+    selectEl.innerHTML = '<option value="">-- Seleccionar --</option>';
+    arrayOpciones.forEach(op => {
+        // Filtramos opciones vacías
+        if(op && String(op).trim() !== ""){
+            const opt = document.createElement('option');
+            opt.value = op;
+            opt.textContent = op;
+            if(op === valorSeleccionado) opt.selected = true;
+            selectEl.appendChild(opt);
+        }
+    });
+}
+
+function makeCard(r, index) {
+  const el = document.createElement('div'); el.className = 'card';
+  
+  // Renderizado con SELECTS en lugar de inputs
+  el.innerHTML = `
+    <div class="row"><label>Nombre</label><input type="text" value="${r.nombre||''}" data-k="nombre"></div>
+    <div class="row"><label>Zona</label><select data-k="zona"></select></div>
+    <div class="row"><label>Categoría</label><select data-k="categoria"></select></div>
+    <div class="row"><label>Dirección</label><input type="text" value="${r.direccion||''}" data-k="direccion"></div>
+    <div class="row"><label>Teléfono</label><input type="text" value="${r.telefono||''}" data-k="telefono"></div>
+    <div class="row"><label>Mail</label><input type="text" value="${r.mail||''}" data-k="mail"></div>
+  `;
+
+  // Llenar Selects con las Globales
+  const selZona = el.querySelector('[data-k="zona"]');
+  llenarSelect(selZona, GLOBAL_ZONAS, r.zona);
+
+  const selCat = el.querySelector('[data-k="categoria"]');
+  llenarSelect(selCat, GLOBAL_CATEGORIAS, r.categoria);
+
+  // Listeners para sincronizar cambios al array 'rows'
+  el.querySelectorAll('input, select').forEach(inp => {
+    inp.addEventListener('input', () => sync(index, el));
+  });
+
+  return el;
+}
+
+function sync(i, el){
+  const get = k => (el.querySelector(`[data-k="${k}"]`)?.value || '').trim();
+  rows[i] = {
+    nombre: get('nombre'), 
+    zona: get('zona'), 
+    categoria: get('categoria'),
+    telefono: get('telefono'), 
+    direccion: get('direccion'), 
+    mail: get('mail')
+  };
+}
+
+async function loadClientes(){
+  try {
+    const r = await fetch(`${API}?action=listclientes`);
+    const j = await r.json();
+    rows = j.clientes || [];
+    render();
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center; color:var(--error);">Error de conexión</div>';
+  }
+}
+
+function render() {
+    grid.innerHTML = '';
+    rows.forEach((r,i) => grid.appendChild(makeCard(r,i)));
+    filter();
+}
+
+txtBuscar.addEventListener('input', filter);
+function filter(){
+  const term = txtBuscar.value.toLowerCase().trim();
+  const cards = grid.querySelectorAll('.card');
+  cards.forEach(card => {
+    // Buscamos en inputs y en selects
+    const allText = Array.from(card.querySelectorAll('input, select')).map(i => i.value).join(' ').toLowerCase();
+    card.style.display = allText.includes(term) ? '' : 'none';
+  });
+}
+
+// ---------------- MODAL LOGIC ----------------
+
+function initFormLogic() {
+    // Llenar los selects del Modal con las mismas opciones globales
+    llenarSelect(document.getElementById('newZona'), GLOBAL_ZONAS);
+    llenarSelect(document.getElementById('newCategoria'), GLOBAL_CATEGORIAS);
+    
+    // Validación continua
+    const modal = document.getElementById('modalNuevo');
+    const inputs = modal.querySelectorAll('input, select');
+    inputs.forEach(i => i.addEventListener('input', validateModal));
+}
+
+function validateModal() {
+    const nombre = document.getElementById('newNombre').value.trim();
+    const zona = document.getElementById('newZona').value; // Valor del select
+    const cat = document.getElementById('newCategoria').value; // Valor del select
+    const dir = document.getElementById('newDireccion').value.trim();
+    const tel = document.getElementById('newTelefono').value.trim();
+    
+    const isValid = nombre && zona && cat && dir && tel;
+    document.getElementById('btnAddClient').disabled = !isValid;
+}
+
+function abrirModal() {
+    document.getElementById('modalNuevo').style.display = 'flex';
+    // Limpiar campos
+    document.querySelectorAll('#modalNuevo input').forEach(i => i.value = '');
+    document.getElementById('newZona').value = "";
+    document.getElementById('newCategoria').value = "";
+    document.getElementById('btnAddClient').disabled = true;
+    document.getElementById('newNombre').focus();
+}
+
+function cerrarModal() {
+    document.getElementById('modalNuevo').style.display = 'none';
+}
+
+document.getElementById('btnAddClient').onclick = () => {
+    const newClient = {
+        nombre: document.getElementById('newNombre').value.trim().toUpperCase(),
+        zona: document.getElementById('newZona').value,
+        categoria: document.getElementById('newCategoria').value,
+        direccion: document.getElementById('newDireccion').value.trim().toUpperCase(),
+        telefono: document.getElementById('newTelefono').value.trim(),
+        mail: document.getElementById('newMail').value.trim().toLowerCase()
+    };
+    
+    // Agregamos al principio
+    rows.unshift(newClient);
+    render();
+    cerrarModal();
+    msg.textContent = '⚠️ Cliente agregado. Recuerda GUARDAR CAMBIOS.';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+async function save(){
+  msg.textContent = 'Guardando en la nube...';
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  
+  const body = new FormData();
+  body.append('action', 'saveclientes');
+  body.append('k', k);
+  body.append('rows', JSON.stringify(rows));
+  
+  try {
+    await fetch(API, {method: 'POST', body});
+    alert('✅ Base de datos actualizada correctamente');
+    // REDIRECCIÓN SOLICITADA
+    window.location.replace(`inicio.html?k=${k}`);
+    
+  } catch(e){
+    msg.textContent = '❌ Error al guardar';
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('btnGuardar').onclick = save;
+
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+<title>Gestión de Precios</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --glass: rgba(0, 0, 0, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent: #FFD700; 
+    --text-primary: #ffffff;
+    --success: #2dd4bf;
+    --bg-color: #0d031a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%), #020617;
+    background-attachment: fixed; min-height: 100vh; padding: 20px;
+    
+    /* BLINDAJE VISUAL: INICIA INVISIBLE */
+    opacity: 0; 
+    transition: opacity 0.5s ease;
+  }
+  
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  h1 { font-size: 1.5rem; color: var(--accent); margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  
+  .btn {
+    border: 1px solid var(--glass-border); padding: 10px 16px; border-radius: 12px;
+    background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-weight: 600;
+    transition: 0.3s;
+  }
+  .btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-add { background: var(--accent); color: #000; border: none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+
+  /* CARDS DE PRECIOS */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+  
+  .card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 15px; position: relative;
+    backdrop-filter: blur(10px); transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .card:active { transform: scale(0.98); }
+  .card-cat { font-size: 10px; text-transform: uppercase; color: #aaa; letter-spacing: 0.5px; }
+  .card-type { font-size: 1.1rem; font-weight: 800; margin: 5px 0; }
+  .card-price { font-size: 1.3rem; color: var(--accent); font-weight: 700; text-align: right; }
+  
+  /* Diferenciar Envases */
+  .is-envase { border-color: rgba(45, 212, 191, 0.4); background: linear-gradient(180deg, rgba(45,212,191,0.05), transparent); }
+
+  /* MODAL FORMULARIO */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+    z-index: 100; display: none; justify-content: center; align-items: center;
+  }
+  .modal-box {
+    background: #1a0b2e; border: 1px solid var(--glass-border);
+    width: 90%; max-width: 400px; padding: 25px; border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: white; text-align: center; }
+  
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+  select, input {
+    width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+    border-radius: 12px; color: white; font-size: 16px; outline: none;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  
+  .btn-full { width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
+  .btn-close { background: transparent; color: #ff5e5e; border: 1px solid #ff5e5e; margin-top: 10px; }
+
+  /* LOADING */
+  #loader { text-align: center; padding: 40px; color: #888; }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Cambios de Precios</h1>
+    <div style="display:flex; gap:10px;">
+        <button class="btn" id="btnVolver">Volver</button>
+        <button class="btn btn-add" id="btnNuevo">+ Nuevo</button>
+    </div>
+  </div>
+
+  <div id="loader">Validando sesión...</div>
+  <div id="grid" class="grid"></div>
+
+  <div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle">Editar Precio</div>
+        
+        <div class="form-group">
+            <label>Categoría de Cliente</label>
+            <select id="selCategoria">
+                <option value="">Cargando...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Producto / Envase</label>
+            <select id="selProducto">
+                <option value="">Cargando...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Precio ($)</label>
+            <input type="number" id="inpPrecio" placeholder="0" inputmode="numeric">
+        </div>
+
+        <button class="btn btn-add btn-full" id="btnGuardar">GUARDAR PRECIO</button>
+        <button class="btn btn-full btn-close" id="btnCancelar">CANCELAR</button>
+    </div>
+  </div>
+
+<script>
+// --- CONFIGURACIÓN DE SEGURIDAD ---
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+const TIMEOUT_SESION = 180000; // 3 minutos (ms)
+
+// 1. GESTIÓN DE URL Y TOKEN (OCULTO)
+const params = new URLSearchParams(window.location.search);
+let k = params.get('k') || params.get('token');
+
+// Si hay token en URL, lo guardamos en memoria y limpiamos la URL
+if (k) {
+    if (window.history.replaceState) {
+       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+} 
+
+// Si no hay token en ningún lado, expulsar
+if (!k) {
+    window.location.replace('index3.html');
+} else {
+    // Iniciar validación ciega
+    init();
+}
+
+// 2. TIMEOUT SILENCIOSO
+let tIdle;
+function resetTimer() {
+    clearTimeout(tIdle);
+    tIdle = setTimeout(() => {
+        // Expulsión silenciosa
+        window.location.replace('index3.html');
+    }, TIMEOUT_SESION);
+}
+// Eventos para mantener viva la sesión
+['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => 
+    document.addEventListener(evt, resetTimer)
+);
+resetTimer(); // Arranca el timer
+
+// 3. VARIABLES GLOBALES
+let preciosData = [];
+let categoriasList = [];
+let productosList = [];
+
+// 4. INICIO BLINDADO
+async function init() {
+    try {
+        // Validar Sesión contra el servidor
+        const fd = new FormData(); 
+        fd.append('action', 'verificarsesion'); 
+        fd.append('k', k);
+        
+        const r = await fetch(API, { method:'POST', body:fd });
+        const d = await r.json();
+        
+        if(d.status !== 'success') {
+            throw new Error("Sesión inválida");
+        }
+
+        // SI PASA: MOSTRAR PANTALLA
+        document.body.style.opacity = 1;
+        document.getElementById('loader').textContent = "Cargando precios...";
+
+        // Cargar datos
+        await cargarOpciones();
+        await cargarPrecios();
+
+    } catch(e) { 
+        // Si falla algo crítico, volver al login
+        window.location.replace('index3.html'); 
+    }
+}
+
+async function cargarOpciones() {
+    try {
+        const r = await fetch(`${API}?action=getoptions`);
+        const d = await r.json();
+        categoriasList = d.categorias || [];
+        productosList = d.productos || [];
+        
+        // Llenar selects del modal
+        const selCat = document.getElementById('selCategoria');
+        const selProd = document.getElementById('selProducto');
+        
+        selCat.innerHTML = '<option value="">-- Seleccione Categoría --</option>';
+        categoriasList.forEach(c => {
+            selCat.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+
+        selProd.innerHTML = '<option value="">-- Seleccione Producto --</option>';
+        productosList.forEach(p => {
+            selProd.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+    } catch(e) { console.error("Error cargando opciones"); }
+}
+
+async function cargarPrecios() {
+    try {
+        const r = await fetch(`${API}?action=listprecios`);
+        const d = await r.json();
+        preciosData = d.precios || [];
+
+        document.getElementById('loader').style.display = 'none';
+        renderGrid();
+    } catch(e) {
+        document.getElementById('loader').textContent = "Error de conexión";
+    }
+}
+
+function renderGrid() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    preciosData.forEach(p => {
+        const div = document.createElement('div');
+        const isEnv = (p.tipo.includes('ENV') || p.tipo.includes('VACIO'));
+        div.className = `card ${isEnv ? 'is-envase' : ''}`;
+        div.innerHTML = `
+            <div class="card-cat">${p.categoria}</div>
+            <div class="card-type">${p.tipo}</div>
+            <div class="card-price">$ ${p.precio.toLocaleString('es-AR')}</div>
+        `;
+        div.onclick = () => abrirModal(p.categoria, p.tipo, p.precio);
+        grid.appendChild(div);
+    });
+}
+
+// --- LÓGICA MODAL ---
+const modal = document.getElementById('modal');
+const selCat = document.getElementById('selCategoria');
+const selProd = document.getElementById('selProducto');
+const inpPrecio = document.getElementById('inpPrecio');
+
+function abrirModal(cat, tipo, precio) {
+    if(cat && tipo) {
+        // Modo Edición
+        document.getElementById('modalTitle').textContent = "Editar Precio";
+        selCat.value = cat;
+        selProd.value = tipo;
+        inpPrecio.value = precio;
+    } else {
+        // Modo Nuevo
+        document.getElementById('modalTitle').textContent = "Nuevo Precio";
+        selCat.value = "";
+        selProd.value = "";
+        inpPrecio.value = "";
+    }
+    modal.style.display = 'flex';
+}
+
+document.getElementById('btnNuevo').onclick = () => abrirModal();
+document.getElementById('btnCancelar').onclick = () => modal.style.display = 'none';
+
+document.getElementById('btnGuardar').onclick = async () => {
+    const btn = document.getElementById('btnGuardar');
+    const cat = selCat.value;
+    const tip = selProd.value;
+    const pre = inpPrecio.value;
+
+    if(!cat || !tip || pre === '') return alert("Complete todos los campos");
+
+    btn.disabled = true; btn.textContent = "GUARDANDO...";
+
+    const fd = new FormData();
+    fd.append('action', 'saveprice_single');
+    fd.append('k', k);
+    fd.append('categoria', cat);
+    fd.append('tipo', tip);
+    fd.append('precio', pre);
+
+    try {
+        const r = await fetch(API, { method:'POST', body:fd });
+        const d = await r.json();
+        
+        if(d.status === 'success') {
+            alert("✅ Precio guardado correctamente.");
+            window.location.replace(`inicio.html?k=${k}`);
+        } else {
+            alert("Error: " + d.message);
+            btn.disabled = false; btn.textContent = "GUARDAR PRECIO";
+        }
+    } catch(e) {
+        alert("Error de conexión");
+        btn.disabled = false; btn.textContent = "GUARDAR PRECIO";
+    }
+};
+
+document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+</script>
+</body>
+</html>

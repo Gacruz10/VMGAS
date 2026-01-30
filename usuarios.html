@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <title>Gestión de Usuarios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --glass: rgba(0, 0, 0, 0.5);
+      --glass-filled: rgba(255, 215, 0, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-border-filled: rgba(255, 215, 0, 0.3);
+      --input-bg: rgba(0, 0, 0, 0.4);
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --accent: #FFD700; 
+      --btn-bg: rgba(255, 255, 255, 0.1);
+      --switch-on: #2dd4bf;  
+      --switch-off: #4b5563; 
+      --error: #ff5e5e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a;
+      background-attachment: fixed;
+      min-height: 100vh;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px 100px;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 800;
+      font-size: clamp(24px, 4vw, 36px);
+      letter-spacing: -1px;
+      margin: 0 0 10px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      color: var(--accent);
+    }
+
+    .sub { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
+
+    .toolbar {
+      display: flex; flex-direction: column; gap: 15px; align-items: center; margin-bottom: 30px;
+    }
+    @media(min-width: 768px){ .toolbar { flex-direction: row; justify-content: space-between; } }
+
+    .search-box { width: 100%; max-width: 400px; position: relative; }
+    .search-input {
+      width: 100%; background: var(--glass); border: 1px solid var(--glass-border);
+      padding: 12px 15px 12px 40px; border-radius: 99px; color: white;
+      font-family: 'Inter', sans-serif; outline: none; transition: all 0.3s; backdrop-filter: blur(5px);
+    }
+    .search-input:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; }
+
+    .actions { display: flex; gap: 10px; }
+    .btn {
+      border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 20px;
+      font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
+      background: var(--btn-bg); color: white; backdrop-filter: blur(5px); transition: all 0.3s ease;
+    }
+    .btn:hover { background: var(--accent); color: #000; border-color: var(--accent); transform: translateY(-2px); }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 25px; }
+    @media(min-width: 700px){ .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(min-width: 1100px){ .grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .user-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px; overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      opacity: 0.85;
+    }
+
+    .user-card.filled {
+      background: linear-gradient(135deg, var(--glass-filled), rgba(0,0,0,0.6));
+      border-color: var(--glass-border-filled);
+      opacity: 1;
+    }
+    
+    .user-card:hover { transform: translateY(-5px); }
+
+    .card-header { background: rgba(255,255,255,0.03); padding: 20px; border-bottom: 1px solid var(--glass-border); }
+    .card-title { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+    
+    .login-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .section-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 5px; text-transform: uppercase; }
+
+    .card-footer { background: rgba(0,0,0,0.2); padding: 15px 20px; border-top: 1px solid var(--glass-border); }
+    .perms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 15px; }
+
+    .input-glass {
+      width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border); color: white;
+      padding: 8px 12px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+    }
+    .input-glass:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+
+    .switch-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.8); cursor: pointer; }
+    .switch-input { display: none; }
+    .switch-track { width: 34px; height: 18px; background: var(--switch-off); border-radius: 99px; position: relative; transition: background 0.3s; }
+    .switch-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: transform 0.3s; }
+    .switch-input:checked + .switch-track { background: var(--switch-on); }
+    .switch-input:checked + .switch-track::after { transform: translateX(16px); }
+
+    .limit-msg { text-align: center; color: var(--text-muted); margin-top: 40px; font-size: 13px; font-style: italic; opacity: 0.7; }
+
+    footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(180deg, rgba(13,3,26,0), rgba(13,3,26,0.95) 40%);
+      padding: 20px; display: flex; justify-content: center; z-index: 100; backdrop-filter: blur(2px);
+    }
+    .loading-overlay { position: absolute; top: 100px; left:0; right:0; text-align: center; font-size: 18px; color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Control de Usuarios</h1>
+  <div class="sub">Gestión de Accesos y Permisos</div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="txtBuscar" class="search-input" placeholder="Buscar usuario...">
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnRecargar">Refrescar</button>
+      <button class="btn" id="btnInicio">Volver</button>
+    </div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+  <div class="limit-msg">Máximo de 50 usuarios permitidos</div>
+  
+  <div id="loader" class="loading-overlay">Cargando usuarios...</div>
+</div>
+
+<footer>
+  <button class="btn" id="btnGuardar" style="min-width: 200px; background: var(--accent); color: #000; border:none;">Guardar Cambios</button>
+</footer>
+
+<script>
+// --- PROTOCOLO SEGURIDAD (VETERINARIO) ---
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+const TIMEOUT_SESION = 300000; // 5 minutos
+
+// 1. Detector de Atrás
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted || (window.performance && window.performance.navigation.type === 2)) window.location.reload();
+});
+
+// 2. Protocolo K
+const params = new URLSearchParams(window.location.search);
+const k = params.get('k') || params.get('token');
+
+function expulsar() {
+  sessionStorage.clear();
+  window.location.replace('index3.html');
+}
+
+if (!k) {
+  expulsar();
+} else {
+    // Limpieza URL
+    if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    validarSesion();
+}
+
+async function validarSesion() {
+  try {
+    const fd = new FormData();
+    fd.append('action', 'verificarsesion');
+    fd.append('k', k); // Enviamos K
+    const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.status !== 'success') throw new Error();
+    document.body.style.opacity = 1;
+    cargar(); // Iniciar carga si validado
+  } catch (e) { expulsar(); }
+}
+
+// 3. Inactividad
+let tIdle;
+function resetTimer() {
+  clearTimeout(tIdle);
+  tIdle = setTimeout(expulsar, TIMEOUT_SESION);
+}
+['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, resetTimer));
+resetTimer();
+
+// 4. Volver Seguro
+document.getElementById('btnInicio').onclick = () => {
+  window.location.replace(`inicio.html?k=${k}`);
+};
+// ----------------------------
+
+const MAX_USERS = 50;
+let loadedUsers = [];
+
+function crearTarjeta(data) {
+  const el = document.createElement('div');
+  const userVal = data['usuario'] || '';
+  el.className = userVal ? 'user-card filled' : 'user-card';
+  
+  const val = (k) => data[k] || '';
+  const isChecked = (k) => {
+    const v = String(data[k]||'').toUpperCase();
+    return v === 'TRUE' || v === 'SI' || v === '1';
+  };
+
+  el.innerHTML = `
+    <div class="card-header">
+      <div class="card-title">Credenciales de Acceso</div>
+      <div class="login-grid">
+        <input type="text" class="input-glass user-field" data-key="usuario" value="${val('usuario')}" placeholder="Usuario">
+        <input type="text" class="input-glass" data-key="password" value="${val('password')}" placeholder="Clave">
+      </div>
+      <div style="margin-top:10px">
+        <input type="text" class="input-glass" data-key="nombreMostrar" value="${val('nombreMostrar')}" placeholder="Nombre para mostrar">
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="section-label">Datos Personales</div>
+      <input type="text" class="input-glass" data-key="nombreCompleto" value="${val('nombreCompleto')}" placeholder="Nombre Completo">
+      <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
+        <input type="text" class="input-glass" data-key="dni" value="${val('dni')}" placeholder="DNI">
+        <input type="text" class="input-glass" data-key="domicilio" value="${val('domicilio')}" placeholder="Domicilio">
+      </div>
+      <input type="text" class="input-glass" data-key="datosExtra" value="${val('datosExtra')}" placeholder="Notas">
+    </div>
+    <div class="card-footer">
+      <div class="section-label" style="margin-bottom:10px; color:var(--accent);">Permisos</div>
+      <div class="perms-grid">
+        ${makeSwitch('alarmas', 'Alarmas', isChecked('alarmas'))}
+        ${makeSwitch('tablero', 'Tablero', isChecked('tablero'))}
+        ${makeSwitch('usuarios', 'Usuarios', isChecked('usuarios'))}
+        ${makeSwitch('formulario', 'Formulario', isChecked('formulario'))}
+        ${makeSwitch('clientes', 'Clientes', isChecked('clientes'))}
+        ${makeSwitch('precios', 'Precios', isChecked('precios'))}
+        ${makeSwitch('stock', 'Control Stock', isChecked('stock'))}
+        ${makeSwitch('gastos', 'Gastos', isChecked('gastos'))}
+        
+        ${makeSwitch('carga', 'Control Carga', isChecked('carga'))}
+        ${makeSwitch('finanzas', 'Carga Finanzas', isChecked('finanzas'))}
+        ${makeSwitch('confinanzas', 'Control Finanzas', isChecked('confinanzas'))}
+      </div>
+    </div>
+  `;
+
+  el.querySelector('.user-field').addEventListener('input', (e) => {
+    e.target.closest('.user-card').classList.toggle('filled', e.target.value.trim() !== '');
+  });
+  return el;
+}
+
+function makeSwitch(key, label, checked) {
+  return `
+    <label class="switch-label">
+      <span>${label}</span>
+      <input type="checkbox" class="switch-input" data-key="${key}" ${checked ? 'checked' : ''}>
+      <span class="switch-track"></span>
+    </label>
+  `;
+}
+
+async function cargar() {
+  const grid = document.getElementById('grid');
+  const loader = document.getElementById('loader');
+  grid.innerHTML = '';
+  loader.style.display = 'block';
+
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=listUsuarios&ts=${Date.now()}`);
+    const json = await res.json();
+    loader.style.display = 'none';
+    loadedUsers = json.usuarios || [];
+    while(loadedUsers.length < MAX_USERS) loadedUsers.push({});
+    loadedUsers.slice(0, MAX_USERS).forEach(u => grid.appendChild(crearTarjeta(u)));
+    filtrar();
+  } catch (e) {
+    loader.textContent = 'Error al cargar datos.';
+  }
+}
+
+async function guardar() {
+  const btn = document.getElementById('btnGuardar');
+  const originalText = btn.textContent;
+  const cards = document.querySelectorAll('.user-card');
+  const rows = [];
+
+  const toBit = (k, card) => card.querySelector(`[data-key="${k}"]`).checked ? "1" : "0";
+
+  cards.forEach(card => {
+    const getVal = (k) => card.querySelector(`[data-key="${k}"]`).value.trim();
+    
+    if (getVal('usuario')) {
+      rows.push({
+        usuario: getVal('usuario'), 
+        password: getVal('password'),
+        nombreMostrar: getVal('nombreMostrar'), 
+        nombreCompleto: getVal('nombreCompleto'),
+        dni: getVal('dni'), 
+        domicilio: getVal('domicilio'), 
+        datosExtra: getVal('datosExtra'),
+        
+        // PERMISOS (TODOS)
+        alarmas: toBit('alarmas', card),
+        tablero: toBit('tablero', card),
+        usuarios: toBit('usuarios', card),
+        formulario: toBit('formulario', card),
+        clientes: toBit('clientes', card),
+        precios: toBit('precios', card),
+        stock: toBit('stock', card),
+        gastos: toBit('gastos', card),
+        carga: toBit('carga', card),
+        finanzas: toBit('finanzas', card),
+        confinanzas: toBit('confinanzas', card)
+      });
+    }
+  });
+
+  try {
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+    const body = new FormData();
+    body.append('action', 'saveUsuarios');
+    body.append('k', k); // Protocolo K
+    body.append('rows', JSON.stringify(rows));
+
+    const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+    const json = await res.json();
+    if (json.status === 'success') {
+      btn.textContent = '¡Guardado!';
+      btn.style.background = '#2dd4bf'; 
+      setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = 'var(--accent)';
+          btn.disabled = false;
+          cargar();
+      }, 1500);
+    } else { throw new Error(); }
+  } catch (e) {
+    alert('Error al guardar');
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+function filtrar() {
+  const term = document.getElementById('txtBuscar').value.toLowerCase().trim();
+  document.querySelectorAll('.user-card').forEach(card => {
+    const txt = Array.from(card.querySelectorAll('input[type="text"]')).map(i => i.value).join(' ').toLowerCase();
+    card.style.display = txt.includes(term) ? '' : 'none';
+  });
+}
+
+document.getElementById('txtBuscar').addEventListener('input', filtrar);
+document.getElementById('btnRecargar').addEventListener('click', cargar);
+document.getElementById('btnGuardar').addEventListener('click', guardar);
+
+// Carga se invoca en validarSesion
+</script>
+</body>
+</html>

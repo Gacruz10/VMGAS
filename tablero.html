@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero Ultra Modern - High Contrast</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { 
+    /* Cristal oscuro para máximo contraste */
+    --glass: rgba(0, 0, 0, 0.5); 
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --text-primary: #ffffff;
+    --accent: #FFD700;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    /* Mesh Gradient más profundo */
+    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  h2 { color: var(--accent); margin: 30px 0 20px; letter-spacing: -1px; font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+  .filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 30px;
+    background: var(--glass);
+    padding: 15px;
+    border-radius: 20px;
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+  }
+
+  input[type="date"] {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.4);
+    color: white;
+    outline: none;
+  }
+
+  button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--glass-border);
+  }
+
+  button:hover { background: var(--accent); color: #000; transform: translateY(-2px); }
+
+  .contenedor {
+    display: grid;
+    gap: 25px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px;
+    box-sizing: border-box;
+    justify-items: center;
+  }
+
+  .tarjeta {
+    background: var(--glass);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    border-radius: 30px;
+    width: 340px;
+    box-sizing: border-box;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.4s ease;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+
+  .titulo-rojo {
+    color: #ff5e5e; /* Rojo más brillante para contraste */
+    font-weight: 800;
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .subtitulo { color: #ff5e5e; font-weight: 700; text-align: center; font-size: 15px; margin: 25px 0 10px; }
+
+  .tabla { width: 100%; border-collapse: collapse; text-align: center; }
+  .tabla th { font-weight: 400; color: rgba(255,255,255,0.5); font-size: 11px; padding-bottom: 8px; }
+  .tabla td { padding: 10px 4px; font-weight: 700; font-size: 16px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  
+  .grafico-wrap { position: relative; height: 220px; width: 100%; margin-top: 15px; }
+
+  .badge {
+    align-self: center;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+  }
+  .ganancia { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+  .perdida { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; }
+
+  @media (min-width:768px){.contenedor{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}}
+</style>
+</head>
+<body>
+
+<h2>Insights del Negocio</h2>
+
+<div class="filtros">
+  <input type="date" id="fechaInicio">
+  <input type="date" id="fechaFin">
+  <button onclick="setAyer()">Ayer</button>
+  <button onclick="setSemana()">Semana</button>
+  <button onclick="setMes()">Mes</button>
+  <button onclick="setAnio()">Año</button>
+</div>
+
+<div class="contenedor">
+
+  <div class="tarjeta">
+    <div class="badge ganancia">Ganancia Operativa</div>
+    <div class="titulo-rojo">Rendimiento Financiero</div>
+    <table class="tabla">
+      <tr><th>VENTAS</th><th>COMPRA</th><th>GASTOS</th></tr>
+      <tr><td style="color: #2ecc71">$3.9M</td><td>$2.9M</td><td>$1.9M</td></tr>
+    </table>
+    <div class="grafico-wrap">
+      <canvas id="graficoCategorias"></canvas>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="titulo-rojo">Stock de Envases</div>
+    <table class="tabla">
+      <tr style="color:var(--accent)"><th>10KG</th><th>15KG</th><th>45KG</th></tr>
+      <tr><td>9,999</td><td>9,999</td><td>9,999</td></tr>
+    </table>
+
+    <div class="subtitulo">Desglose Operativo</div>
+    <table class="tabla" style="font-size: 12px;">
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.1)">
+        <th>KG</th><th>TOTAL</th><th>SUB</th><th>COM</th>
+      </tr>
+      <tr><td>10</td><td>999</td><td>200</td><td>300</td></tr>
+      <tr><td>15</td><td>999</td><td>200</td><td>300</td></tr>
+      <tr><td>45</td><td>999</td><td>200</td><td>300</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // Fechas
+  const fechaInicio=document.getElementById("fechaInicio");
+  const fechaFin=document.getElementById("fechaFin");
+  const hoy=new Date(); fechaFin.valueAsDate=hoy; fechaInicio.valueAsDate=hoy;
+  const fmt=f=>f.toISOString().split('T')[0];
+  function setAyer(){const ayer=new Date();ayer.setDate(ayer.getDate()-1);fechaInicio.value=fmt(ayer);fechaFin.value=fmt(ayer)}
+  function setSemana(){const fin=new Date();const ini=new Date();ini.setDate(fin.getDate()-6);fechaInicio.value=fmt(ini);fechaFin.value=fmt(fin)}
+  function setMes(){const fin=new Date();const ini=new Date(fin.getFullYear(),fin.getMonth(),1);fechaInicio.value=fmt(ini);fechaFin.value=fmt(fin)}
+  function setAnio(){const fin=new Date();const ini=new Date(fin.getFullYear(),0,1);fechaInicio.value=fmt(ini);fechaFin.value=fmt(fin)}
+
+  // Gráfico
+  const ctx = document.getElementById('graficoCategorias').getContext('2d');
+  new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Ventas','Compras','Gastos'],
+      datasets:[{
+        data:[4000000, 3000000, 2000000],
+        backgroundColor:['#FFD700','#357ABD','#ff5e5e'],
+        borderWidth:0,
+        hoverOffset: 15
+      }]},
+    options:{
+      responsive: true,
+      maintainAspectRatio:false,
+      cutout: '75%',
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{ color:'#fff', padding: 20, font:{ size: 11, family: 'Inter', weight: 'bold' }, usePointStyle: true }
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1949 @@
+// =======================================================	
+// 1. CONFIGURACIÓN GLOBAL Y DO-GET / DO-POST
+// =======================================================
+const TIEMPO_SESION = 300; // 5 minutos (300 segundos)
+
+function doGet(e) {
+  const action = (e?.parameter?.action || '').toLowerCase();
+  const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+
+  try {
+    switch (action) {
+      case 'getdatos': return output({ status: 'success', clientes: obtenerClientes(), precios: obtenerPrecios() });
+      case 'getdata': { const d = obtenerDatosFormulario(); return output({ status: 'success', zonas: d.zonas, garrafas: d.garrafas }); }
+      case 'listusuarios': return output(listUsuarios());
+      
+      // ➤ OBTIENE LISTA DE CHOFERES CON DEUDA O EN RUTA
+      case 'getdrivers': { 
+        const drivers = obtenerEstadoChoferes(); 
+        return output({ status: 'success', drivers: drivers });
+      }
+
+      // 🔥 LÓGICA DE VIAJES (Usa la función blindada del final)
+      case 'getpendingtrips': {
+        const trips = getPendingTrips_Carga(); 
+        return output({ status: 'success', trips: trips });
+      }
+
+      case 'listclientes': return output(listClientes());
+
+      // ✅ NUEVO (Para gestión): OBTENER OPCIONES DE HOJA DATOS
+      case 'getoptions': return output(getOptionsData());
+
+      // ✅ NUEVO (Para Index4): OBTENER ZONAS ACTIVAS DE HOJA CLIENTES
+      case 'getactivezones': return output(obtenerZonasDeClientes());
+
+      case 'listprecios': return output(listPrecios());
+      case 'usuarioinfo': {
+        const info = getUserInfo((e?.parameter?.usuario || '').toString().trim());
+        return info ? output({ status: 'success', ...info }) : output({ status: 'error', message: 'User not found' });
+      }
+      case 'alarmascount': return output({ status: 'success', pendientes: alarmasCount() });
+      case 'listalarmas': return output({ status: 'success', alarmas: listAlarmas(e?.parameter?.onlyPending === 'true', Number(e?.parameter?.limit || 0)) });
+      
+      // ➤ OBTIENE DETALLE FINANCIERO + GASTOS
+      case 'getfinanzas': {
+         if (!obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
+         return output({ status: 'success', ...obtenerResumenFinanciero(e.parameter.chofer) });
+      }
+
+      // ✅ CONTROL STOCK INTELIGENTE
+      case 'getstockstatus': return output(obtenerEstadoStock());
+      
+      default: return HtmlService.createHtmlOutput('OK');
+    }
+  } catch (err) { return output({ status: 'error', message: err.message }); }
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (e) { return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Busy' })).setMimeType(ContentService.MimeType.JSON); }
+  
+  try {
+    const action = (e?.parameter?.action || '').toLowerCase();
+    const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+
+    if (action === 'login') return output(loginYGenerarToken(e.parameter.usuario, e.parameter.clave));
+    
+    const k = e.parameter.k || e.parameter.token;
+    const sesion = obtenerDatosPorToken(k);
+    if (!sesion.valido && action !== 'verificarsesion') return output({ status: 'error', message: 'Sesión expirada' });
+
+    switch (action) {
+      case 'saveprice_single': return output(guardarPrecioIndividual(e.parameter));
+      case 'verificarsesion': return output({ status: sesion.valido ? 'success' : 'error', ...sesion });
+      case 'guardarregistro': { e.parameter.USUARIO = sesion.usuario; return output(procesarRegistro(e.parameter)); }
+      case 'registrar': return output({status:'success'}); 
+      case 'saveusuarios': return output(saveUsuarios(e.parameter.rows));
+      case 'saveclientes': return output(saveClientes(e.parameter.rows));
+      case 'saveprecios': return output(savePrecios(e.parameter.rows));
+      case 'checkalarma': return output({ status: marcarAlarma(Number(e?.parameter?.row)) ? 'success' : 'error' });
+      case 'clearallalarmas': marcarTodasAlarmas(); return output({ status: 'success' });
+      case 'savealarmas': return output({ status: saveAlarmasBatch(JSON.parse(e.parameter.rows || '[]')) ? 'success' : 'error' });
+      
+      // ✅ NUEVA LÓGICA DE STOCK (Unificada)
+      case 'savestock': {
+         e.parameter.usuario = sesion.usuario; 
+         return output(nuevaSaveStock(e));  
+      }  
+      
+      case 'savetransporte': return output(procesarTransporte(e.parameter, sesion.usuario));
+      
+      // ➤ GUARDAR ARQUEO
+      case 'savearqueo': return output(guardarArqueo(e.parameter, sesion.usuario));
+      
+      default: return output({ status: 'error', message: 'Acción desconocida' });
+    }
+  } catch (e) { return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: e.message })).setMimeType(ContentService.MimeType.JSON); } 
+  finally { lock.releaseLock(); }
+}
+
+// =======================================================
+// 2. HELPERS Y FUNCIONES GENERALES
+// =======================================================
+
+function findColIndex(headers, possibleNames) {
+  if (!headers) return -1;
+  const upperHeaders = headers.map(h => String(h).toUpperCase().trim());
+  for (let name of possibleNames) {
+    const idx = upperHeaders.indexOf(name);
+    if (idx > -1) return idx;
+  }
+  return -1;
+}
+
+function obtenerEstadoChoferes() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const shBD1 = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  const shCarga = ss.getSheetByName('CCARGA') || ss.getSheetByName('CONTROL_CARGA') || ss.getSheetByName('CSTOCK');
+  
+  const map = {}; 
+
+  // --- 1. DEUDA (BD1) ---
+  if (shBD1) {
+    const data = shBD1.getDataRange().getValues();
+    if (data.length >= 2) {
+      const headers = data[1]; 
+      
+      const idxUser = findColIndex(headers, ['USUARIO', 'CHOFER', 'REPARTIDOR']);
+      const idxArqueo = findColIndex(headers, ['ARQUEO_ID', 'ID_ARQUEO', 'ARQUEO']);
+      const idxE = findColIndex(headers, ['E$', 'EFECTIVO', 'PAGO EFECTIVO']);
+      const idxT = findColIndex(headers, ['T$', 'TRANSFERENCIA', 'PAGO TRANSFERENCIA']);
+      const idxTotal = findColIndex(headers, ['TOTAL', 'MONTO', 'PRECIO']);
+      const idxTipo = findColIndex(headers, ['TIPO', 'MOVIMIENTO']);
+
+      if (idxUser > -1) {
+        for (let i = 2; i < data.length; i++) {
+          const row = data[i];
+          const chofer = String(row[idxUser]).toUpperCase().trim();
+          if (!chofer) continue;
+
+          const yaArqueada = (idxArqueo > -1) ? String(row[idxArqueo] || '').trim() : '';
+          
+          if (yaArqueada === '') {
+            if (!map[chofer]) map[chofer] = { nombre: chofer, saldo: 0, enRuta: false };
+            
+            const tipo = idxTipo > -1 ? String(row[idxTipo]).toUpperCase() : 'VENTA';
+            
+            if (tipo.includes('GAST')) {
+               map[chofer].saldo -= (Number(row[idxTotal]) || 0);
+            } else {
+               let suma = 0;
+               if(idxE > -1) suma += (Number(row[idxE])||0);
+               if(idxT > -1) suma += (Number(row[idxT])||0);
+               if(suma === 0 && idxTotal > -1) suma += (Number(row[idxTotal])||0);
+               
+               map[chofer].saldo += suma;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // --- 2. RUTA (CCARGA) ---
+  if (shCarga) {
+    const data = shCarga.getDataRange().getValues();
+    if (data.length > 1) {
+       let headers = data[0];
+       let idxEstado = findColIndex(headers, ['ESTADO', 'STATUS']);
+       let idxChofer = findColIndex(headers, ['CHOFER', 'REPARTIDOR']);
+       let startRow = 1;
+
+       if (idxEstado === -1) {
+           headers = data[1];
+           idxEstado = findColIndex(headers, ['ESTADO', 'STATUS']);
+           idxChofer = findColIndex(headers, ['CHOFER', 'REPARTIDOR']);
+           startRow = 2;
+       }
+
+       const safeIdxEstado = idxEstado > -1 ? idxEstado : 1; 
+       const safeIdxChofer = idxChofer > -1 ? idxChofer : 2;
+
+       for (let i = startRow; i < data.length; i++) {
+           const estado = String(data[i][safeIdxEstado] || '').toUpperCase().trim();
+           if (estado === 'EN_RUTA') {
+               const chofer = String(data[i][safeIdxChofer] || '').toUpperCase().trim();
+               if (chofer) {
+                   if (!map[chofer]) map[chofer] = { nombre: chofer, saldo: 0, enRuta: false };
+                   map[chofer].enRuta = true;
+               }
+           }
+       }
+    }
+  }
+
+  return Object.values(map).filter(d => Math.abs(d.saldo) > 0 || d.enRuta);
+}
+
+function obtenerResumenFinanciero(chofer) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  if (!sh) return { efectivo: 0, transf: 0, gastos: 0, listaGastos: [] };
+
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return { efectivo: 0, transf: 0, gastos: 0, listaGastos: [] };
+
+  const choferClean = String(chofer).toUpperCase().trim();
+  const headers = data[1];
+  
+  const idxUser = findColIndex(headers, ['USUARIO', 'CHOFER', 'REPARTIDOR']);
+  const idxArqueo = findColIndex(headers, ['ARQUEO_ID', 'ID_ARQUEO', 'ARQUEO']);
+  const idxE = findColIndex(headers, ['E$', 'EFECTIVO']);
+  const idxT = findColIndex(headers, ['T$', 'TRANSFERENCIA']);
+  const idxTotal = findColIndex(headers, ['TOTAL', 'MONTO']);
+  const idxTipo = findColIndex(headers, ['TIPO', 'MOVIMIENTO']);
+  const idxDesc = findColIndex(headers, ['RECEPTOR', 'ZONA', 'DETALLE', 'DESCRIPCION', 'OBSERVACION']);
+
+  if (idxUser === -1) return { efectivo: 0, transf: 0, gastos: 0, listaGastos: [] };
+
+  let efectivo = 0, transf = 0, gastos = 0, count = 0;
+  let listaGastos = [];
+
+  for (let i = 2; i < data.length; i++) {
+    const row = data[i];
+    const userRow = String(row[idxUser]).toUpperCase().trim();
+    const yaArqueada = (idxArqueo > -1) ? String(row[idxArqueo] || '').trim() : '';
+
+    if (userRow === choferClean && yaArqueada === '') {
+      const tipo = idxTipo > -1 ? String(row[idxTipo]).toUpperCase() : 'VENTA';
+      
+      if (tipo.includes('GAST')) {
+        const monto = (Number(row[idxTotal]) || 0);
+        gastos += monto;
+        listaGastos.push({ 
+            motivo: (idxDesc > -1 ? String(row[idxDesc]) : 'Gasto sin detalle'), 
+            monto: monto 
+        });
+      } else {
+        if (idxE > -1) efectivo += (Number(row[idxE]) || 0);
+        if (idxT > -1) transf += (Number(row[idxT]) || 0);
+        if (idxE === -1 && idxT === -1 && idxTotal > -1) efectivo += (Number(row[idxTotal])||0);
+      }
+      count++;
+    }
+  }
+
+  return { efectivo, transf, gastos, movimientos: count, listaGastos: listaGastos };
+}
+
+function guardarArqueo(p, auditor) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let shArqueo = ss.getSheetByName('ARQUEO');
+  
+  if (!shArqueo) {
+    shArqueo = ss.insertSheet('ARQUEO');
+    shArqueo.appendRow(['ID_CIERRE', 'FECHA', 'HORA', 'CHOFER', 'SIS_EFECTIVO', 'SIS_TRANSF', 'SIS_GASTOS', 'REAL_EFECTIVO', 'REAL_TRANSF', 'DIFERENCIA', 'OBSERVACIONES', 'AUDITOR']);
+  }
+
+  const ahora = new Date();
+  const idCierre = Utilities.getUuid().slice(0,8).toUpperCase();
+  const fecha = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const hora = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm:ss');
+  
+  // Totales
+  const totalSis = (Number(p.sisEfectivo)||0) - (Number(p.sisGastos)||0) + (Number(p.sisTransf)||0);
+  const totalReal = (Number(p.realEfectivo)||0) + (Number(p.realTransf)||0);
+  const diferencia = totalReal - totalSis;
+  
+  // Guardar en hoja ARQUEO
+  shArqueo.appendRow([
+      idCierre, 
+      fecha, 
+      hora, 
+      p.chofer, 
+      p.sisEfectivo, 
+      p.sisTransf, 
+      p.sisGastos, 
+      p.realEfectivo, 
+      p.realTransf, 
+      diferencia,      // Columna J: Diferencia Numérica
+      p.observaciones, // Columna K: Observaciones (Texto)
+      auditor          // Columna L: Auditor
+  ]);
+
+  // Si hay diferencia significativa (> $50 o < -$50), generar alarma
+  if (Math.abs(diferencia) > 50) {
+      const tipoAlarma = diferencia < 0 ? 'FALTANTE_CAJA' : 'SOBRANTE_CAJA';
+      const desc = `Chofer: ${p.chofer}. Diferencia: $${diferencia}. Obs: ${p.observaciones}`;
+      registrarAlarma(tipoAlarma, desc, auditor);
+  }
+
+  // Marcar BD1 como arqueado
+  const shBD1 = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  if (shBD1) {
+      const data = shBD1.getDataRange().getValues();
+      if (data.length > 1) {
+          const headers = data[1];
+          const idxUser = findColIndex(headers, ['USUARIO', 'CHOFER']);
+          let idxArqueo = findColIndex(headers, ['ARQUEO_ID', 'ID_ARQUEO']);
+
+          if (idxArqueo === -1) { 
+            idxArqueo = headers.length; 
+            shBD1.getRange(2, idxArqueo + 1).setValue('ARQUEO_ID'); 
+          }
+
+          const choferClean = String(p.chofer).toUpperCase().trim();
+          
+          for (let i = 2; i < data.length; i++) {
+            const row = data[i];
+            const userRow = String(row[idxUser]).toUpperCase().trim();
+            const yaArqueada = (idxArqueo < row.length) ? String(row[idxArqueo] || '').trim() : '';
+
+            if (userRow === choferClean && yaArqueada === '') {
+              shBD1.getRange(i + 1, idxArqueo + 1).setValue(idCierre);
+            }
+          }
+      }
+  }
+  
+  return { status: 'success', message: 'Arqueo guardado. ID: ' + idCierre };
+}
+
+// =======================================================
+// 3. LOGICA DE CLIENTES Y PRECIOS
+// =======================================================
+
+function obtenerClientes() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja  = libro.getSheetByName('CLIENTES');
+  if (!hoja) throw new Error('No se encontró la hoja CLIENTES');
+
+  const datos = hoja.getDataRange().getValues();
+  if (datos.length < 2) return [];
+
+  const headers = datos[0].map(h => String(h||'').trim().toUpperCase());
+  const idx = (nameList)=> {
+    for (const name of nameList) {
+      const j = headers.indexOf(name);
+      if (j !== -1) return j;
+    }
+    return -1;
+  };
+
+  const iNombre   = idx(['NOMBRE','NOMBRE DEL COMERCIO','COMERCIO']);
+  const iZona     = idx(['ZONA']);
+  const iTipo     = idx(['TIPO','CATEGORIA','CATEGORÍA']);
+  const iTel      = idx(['TELEFONO','TELÉFONO']);
+  const iDir      = idx(['DIRECCION','DIRECCIÓN']);
+  const iMail     = idx(['MAIL','EMAIL','CORREO']);
+  const iCodigo   = idx(['CODIGO','CÓDIGO']); 
+
+  const clientes = [];
+  for (let i = 1; i < datos.length; i++) {
+    const f = datos[i];
+    const nombre = iNombre>-1 ? String(f[iNombre]||'').trim() : '';
+    if (!nombre) continue;
+    clientes.push({
+      nombre,
+      zona:       iZona>-1 ? String(f[iZona]||'').trim() : '',
+      categoria: normalizarCategoria(iTipo>-1 ? f[iTipo] : ''),
+      telefono:  iTel>-1 ? String(f[iTel]||'').trim() : '',    
+      direccion: iDir>-1 ? String(f[iDir]||'').trim() : '',    
+      codigo:    iCodigo>-1 ? String(f[iCodigo]||'').trim() : '',
+      mail:      iMail>-1 ? String(f[iMail]||'').trim() : ''
+    });
+  }
+  return clientes;
+}
+
+function obtenerPrecios() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja  = libro.getSheetByName('PRECIOS');
+  if (!hoja) throw new Error('No se encontró la hoja PRECIOS');
+
+  const data = hoja.getDataRange().getValues();
+  if (data.length < 2) return [];
+
+  const headers = data[0].map(v => String(v || '').toUpperCase().trim());
+  const idxCat    = headers.indexOf('CATEGORIA');
+  const idxTipo   = headers.indexOf('TIPO');
+  const idxPrecio = headers.indexOf('PRECIO');
+  if (idxCat === -1 || idxTipo === -1 || idxPrecio === -1) {
+    throw new Error('La hoja PRECIOS debe tener columnas CATEGORIA, TIPO y PRECIO');
+  }
+
+  const out = [];
+  for (let i = 1; i < data.length; i++) {
+    const categoriaRaw = data[i][idxCat];
+    const tipoRaw      = data[i][idxTipo];
+    const precioRaw    = data[i][idxPrecio];
+
+    const categoria = normalizarCategoria(categoriaRaw);
+    let tipo        = String(tipoRaw || '').toUpperCase().trim(); 
+    if (!tipo.startsWith('ENV')) tipo = tipo.replace(/[^\d]/g, '');
+
+    const precio = Number(precioRaw);
+    if (categoria && tipo && !Number.isNaN(precio)) out.push({ categoria, tipo, precio });
+  }
+  return out;
+}
+
+function listPrecios() {
+  try {
+    const lista = obtenerPrecios(); // Reutilizamos tu función existente
+    return { status: 'success', precios: lista };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+// =======================================================
+// 4. LOGICA DE REGISTRO EN BD1
+// =======================================================
+
+function procesarRegistro(params) {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const hoja  = libro.getSheetByName('BD1') || libro.insertSheet('BD1');
+
+  if (hoja.getLastRow() === 0) crearEncabezadosHojaPrincipal(hoja);
+
+  if (params.esClienteNuevo === 'true') {
+    agregarNuevoCliente(params);
+  }
+  
+  const n = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'string') return parseFloat(val) || 0;
+      return Number(val) || 0;
+  };
+  
+  // --- PARTE 1: ALARMAS ---
+  const preciosMaestros = obtenerPrecios();
+  const obtenerPrecioLista = (cat, tipo) => {
+      const p = preciosMaestros.find(x => x.categoria === normalizarCategoria(cat) && x.tipo === tipo);
+      return p ? p.precio : 'N/A';
+  };
+
+  const catCliente = params.clienteCategoria || 'S/Cat';
+  const nomCliente = params.C || params.nombreCliente || params.clienteNombre || 'S/Nombre';
+  const infoCliente = `[${nomCliente}] [${catCliente}]`;
+
+  // Alarmas Garrafas
+  if (params.garrafas) {
+      try {
+          const listaG = JSON.parse(params.garrafas);
+          listaG.forEach(g => {
+              if (String(g.precioAutorizado) === 'true' || g.precioAutorizado === true) {
+                    const precioReg = obtenerPrecioLista(catCliente, g.tipo);
+                    registrarAlarma('PRECIO_MODIFICADO', `${infoCliente} Garrafa ${g.tipo}kg a $${g.precio} / reg $${precioReg} (Manual)`, params.USUARIO);
+              }
+          });
+      } catch(e) {}
+  }
+
+  // Alarma Envases
+  if (String(params.precioEnvaseAutorizado) === 'true' || params.precioEnvaseAutorizado === true) {
+       let tipoEnvVendido = '';
+       let precioUnitarioVendido = 0;
+       if (n(params.CE10) > 0) { tipoEnvVendido = 'ENV10'; precioUnitarioVendido = n(params['CE10$']) / n(params.CE10); } 
+       else if (n(params.CE15) > 0) { tipoEnvVendido = 'ENV15'; precioUnitarioVendido = n(params['CE15$']) / n(params.CE15); }
+       else if (n(params.CE45) > 0) { tipoEnvVendido = 'ENV45'; precioUnitarioVendido = n(params['CE45$']) / n(params.CE45); }
+       const precioRegEnv = obtenerPrecioLista(catCliente, tipoEnvVendido);
+       const nombreEnv = tipoEnvVendido ? tipoEnvVendido.replace('ENV', 'Envase ') + 'kg' : 'Envase';
+       registrarAlarma('PRECIO_MODIFICADO', `${infoCliente} Venta de ${nombreEnv} a $${precioUnitarioVendido} / reg $${precioRegEnv} (Manual)`, params.USUARIO);
+  }
+
+  // Alarma Gasto
+  if (String(params.declaracionGastos).trim().toLowerCase() === 'true') {
+      registrarAlarma('GASTO_DECLARADO', `${infoCliente} Gasto declarado: "${params.G}" por $${params.GASTO_TOTAL}`, params.USUARIO);
+  }
+
+  // --- PARTE 2: GUARDADO EN BD1 ---
+  
+  const ahoraFecha = params.FECHA || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const ahoraHora  = params.HORA || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm:ss');
+  const usuario    = params.USUARIO || 'Sistema';
+
+  // A. MONTOS COMERCIALES
+  const totalVenta = n(params['VS10$']) + n(params['VS15$']) + n(params['VS45$']) +
+                     n(params['VC10$']) + n(params['VC15$']) + n(params['VC45$']) +
+                     n(params['VRP10$']) + n(params['VRP15$']) + n(params['VRP45$']) +
+                     n(params['VU10$']) + n(params['VU15$']) + n(params['VU45$']) +
+                     n(params['CE10$']) + n(params['CE15$']) + n(params['CE45$']); 
+
+  // B. MONTO GASTO
+  const totalGasto = n(params.GASTO_TOTAL);
+
+  // --- FILA 1: VENTA ---
+  if (totalVenta > 0) {
+      const dataVenta = {
+        USUARIO: usuario,
+        TIPO:    'VENTA',
+        FECHA:   ahoraFecha,
+        HORA:    ahoraHora,
+        C:       params.C || '',
+        N:       params.N || '',
+        'E$':    n(params['E$']),
+        'T$':    n(params['T$']),
+        TOTAL:   totalVenta, 
+        G:       '',
+        
+        ALL10: n(params.ALL10), ALL15: n(params.ALL15), ALL45: n(params.ALL45),
+        AV10:  n(params.AV10),  AV15:  n(params.AV15),  AV45:  n(params.AV45),
+        
+        CE10: n(params.CE10), 'CE10$': n(params['CE10$']),
+        CE15: n(params.CE15), 'CE15$': n(params['CE15$']),
+        CE45: n(params.CE45), 'CE45$': n(params['CE45$']),
+        
+        VS10: n(params.VS10), 'VS10$': n(params['VS10$']),
+        VS15: n(params.VS15), 'VS15$': n(params['VS15$']),
+        VS45: n(params.VS45), 'VS45$': n(params['VS45$']),
+
+        VC10: n(params.VC10), 'VC10$': n(params['VC10$']),
+        VC15: n(params.VC15), 'VC15$': n(params['VC15$']),
+        VC45: n(params.VC45), 'VC45$': n(params['VC45$']),
+
+        VRP10: n(params.VRP10), 'VRP10$': n(params['VRP10$']),
+        VRP15: n(params.VRP15), 'VRP15$': n(params['VRP15$']),
+        VRP45: n(params.VRP45), 'VRP45$': n(params['VRP45$']),
+
+        VU10: n(params.VU10), 'VU10$': n(params['VU10$']),
+        VU15: n(params.VU15), 'VU15$': n(params['VU15$']),
+        VU45: n(params.VU45), 'VU45$': n(params['VU45$'])
+      };
+      hoja.appendRow(convertirObjetoAFila(dataVenta));
+  }
+
+  // --- FILA 2: GASTO ---
+  if (String(params.declaracionGastos).trim().toLowerCase() === 'true' && totalGasto > 0) {
+      const dataGasto = {
+        USUARIO: usuario,
+        TIPO:    'GASTO',
+        FECHA:   ahoraFecha,
+        HORA:    ahoraHora,
+        C:       '-', 
+        N:       '',
+        'E$':    0,
+        'T$':    0,
+        TOTAL:   totalGasto, 
+        G:       params.G || 'Gasto vario',
+        
+        ALL10:0, ALL15:0, ALL45:0, AV10:0, AV15:0, AV45:0,
+        CE10:0, 'CE10$':0, CE15:0, 'CE15$':0, CE45:0, 'CE45$':0,
+        VS10:0, 'VS10$':0, VS15:0, 'VS15$':0, VS45:0, 'VS45$':0,
+        VC10:0, 'VC10$':0, VC15:0, 'VC15$':0, VC45:0, 'VC45$':0,
+        VRP10:0, 'VRP10$':0, VRP15:0, 'VRP15$':0, VRP45:0, 'VRP45$':0,
+        VU10:0, 'VU10$':0, VU15:0, 'VU15$':0, VU45:0, 'VU45$':0
+      };
+      hoja.appendRow(convertirObjetoAFila(dataGasto));
+  }
+
+  return { status: 'success', message: 'Registro procesado correctamente' };
+}
+
+function crearEncabezadosHojaPrincipal(hoja) {
+  const encabezados = [
+    'USUARIO','TIPO','FECHA','HORA','C','N','E$','T$','TOTAL','G',
+    'ALL10','ALL15','ALL45','AV10','AV15','AV45',
+    'CE10','CE10$','CE15','CE15$','CE45','CE45$',
+    'VS10','VS10$','VS15','VS15$','VS45','VS45$',
+    'VC10','VC10$','VC15','VC15$','VC45','VC45$',
+    'VRP10','VRP10$','VRP15','VRP15$','VRP45','VRP45$',
+    'VU10','VU10$','VU15','VU15$','VU45','VU45$'
+  ];
+  hoja.appendRow(encabezados);
+}
+
+function convertirObjetoAFila(obj) {
+  const orden = [
+    'USUARIO','TIPO','FECHA','HORA','C','N','E$','T$','TOTAL','G',
+    'ALL10','ALL15','ALL45','AV10','AV15','AV45',
+    'CE10','CE10$','CE15','CE15$','CE45','CE45$',
+    'VS10','VS10$','VS15','VS15$','VS45','VS45$',
+    'VC10','VC10$','VC15','VC15$','VC45','VC45$',
+    'VRP10','VRP10$','VRP15','VRP15$','VRP45','VRP45$',
+    'VU10','VU10$','VU15','VU15$','VU45','VU45$'
+  ];
+  return orden.map(k => obj[k] !== undefined ? obj[k] : 0);
+}
+
+function normalizarCategoria(c) {
+  let s = String(c || '').trim().toUpperCase();
+  s = s.replace('USUARIO (PÚBLICO)', 'USUARIO (PUBLICO)');
+  s = s.replace('ROT. Y PANADERIA', 'ROT. Y PAN.');
+  s = s.replace('ROT. Y PANADERÍA', 'ROT. Y PAN.');
+  s = s.replace('ROT. Y PAN', 'ROT. Y PAN.');
+  s = s.replace('ROT.Y PAN.', 'ROT. Y PAN.');
+  return s;
+}
+
+function obtenerTipoVenta(categoria) {
+  const tipos = {
+    'SUBDISTRIBUIDOR': 'VS',
+    'COMERCIO': 'VC',
+    'ROT. Y PAN.': 'VRP',
+    'USUARIO (PUBLICO)': 'VU'
+  };
+  const key = normalizarCategoria(categoria);
+  return tipos[key] || 'VU';
+}
+
+function determinarTipoOperacion(params) {
+  if (params.declaracionGastos === 'true') return 'GASTOS';
+  if (params.ventaEnvases === 'true')         return 'COMPRA';
+  return 'VENTA';
+}
+
+function agregarNuevoCliente(params) {
+  const ss   = SpreadsheetApp.getActiveSpreadsheet();
+  const sh   = ss.getSheetByName('CLIENTES');
+  if (!sh) return;
+
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(h => String(h || '').trim().toUpperCase());
+
+  const colIndex = (...names) => {
+    for (const n of names) {
+      const i = headers.indexOf(n);
+      if (i !== -1) return i + 1;  
+    }
+    return -1;
+  };
+
+  const nuevo = {
+    nombre:    params.nombreCliente    || params.clienteNombre       || '',
+    zona:      params.nuevaZona        || params.clienteZona         || '',
+    categoria: normalizarCategoria(params.categoria || params.clienteCategoria || ''),
+    telefono:  params.nuevoTelefono    || params.clienteTelefono  || '',
+    direccion: params.nuevaDireccion   || params.clienteDireccion || '',
+    mail:      params.mail             || params.clienteMail        || ''
+  };
+
+  const width  = sh.getLastColumn();
+  const rowNum = sh.getLastRow() + 1;
+  const rowArr = new Array(width).fill('');
+
+  const put = (value, ...headerNames) => {
+    const c = colIndex(...headerNames);
+    if (c > 0) rowArr[c - 1] = value;
+  };
+
+  put(nuevo.nombre,   'NOMBRE', 'NOMBRE DEL COMERCIO', 'COMERCIO');
+  put(nuevo.zona,     'ZONA');
+  put(nuevo.categoria,'TIPO', 'CATEGORIA', 'CATEGORÍA');
+  put(nuevo.telefono, 'TELEFONO', 'TELÉFONO');
+  put(nuevo.direccion,'DIRECCION', 'DIRECCIÓN');
+  put(nuevo.mail,     'MAIL', 'EMAIL', 'CORREO');
+
+  sh.getRange(rowNum, 1, 1, width).setValues([rowArr]);
+}
+
+function _toIdx(h){ const m={}; h.forEach((x,i)=>m[String(x||'').trim().toUpperCase()]=i); return m; }
+function _val(r,i){ return i==null? '' : (r[i]||''); }
+
+function listUsuarios(){
+  const sh = SpreadsheetApp.getActive().getSheetByName('USUARIOS');
+  if (!sh) return { status:'error', message:'No existe hoja USUARIOS' };
+
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return { status:'success', usuarios: [] };
+
+  const H = _toIdx(data[0]);
+  const U = H['USUARIO'],
+        P = H['PASSWORD'],
+        NA= H['NOMBRE A MOSTRAR'],
+        NC= H['NOMBRE COMPLETO'],
+        DNI=H['DNI'],
+        DOM=H['DOMICILIO'],
+        EX =H['DATOS EXTRA'],
+        AL =H['ALARMAS'],
+        TB =H['TABLERO'],
+        US =H['USUARIOS'],
+        FO =H['FORMULARIO'],
+        CL =H['CLIENTES'],
+        PR =H['PRECIOS'],
+        ST =H['STOCK'],
+        GA =H['GASTOS'],
+        CR =H['CARGA'],
+        FI =H['FINANZAS'],
+        CN =H['CONFINANZAS'];
+
+  const out = [];
+  for (let i=1; i<data.length; i++){
+    const r = data[i];
+    const isEmpty = [_val(r,U),_val(r,P),_val(r,NA),_val(r,NC),_val(r,DNI),_val(r,DOM),_val(r,EX)].every(v => String(v).trim()==='');
+    if (isEmpty) continue;
+
+    out.push({
+      usuario:        _val(r,U),
+      password:       _val(r,P),
+      nombreMostrar:  _val(r,NA),
+      nombreCompleto: _val(r,NC),
+      dni:            _val(r,DNI),
+      domicilio:      _val(r,DOM),
+      datosExtra:     _val(r,EX),
+      alarmas:        _val(r,AL),
+      tablero:        _val(r,TB),
+      usuarios:       _val(r,US),
+      formulario:     _val(r,FO),
+      clientes:       _val(r,CL),
+      precios:        _val(r,PR),
+      stock:          _val(r,ST),
+      gastos:         _val(r,GA),
+      carga:          _val(r,CR),
+      finanzas:       _val(r,FI),
+      confinanzas:    _val(r,CN),
+    });
+  }
+  return { status:'success', usuarios: out };
+}
+
+function saveUsuarios(rowsJson){
+  const sh = SpreadsheetApp.getActive().getSheetByName('USUARIOS');
+  if (!sh) return {status:'error', message:'No existe hoja USUARIOS'};
+
+  const rows = Array.isArray(rowsJson) ? rowsJson : JSON.parse(rowsJson || '[]');
+  const MAX = 50;
+  const data = [];
+
+  for (let i=0; i<MAX; i++){
+    const r = rows[i] || {};
+    data.push([
+      r.usuario || '',
+      r.password || '',
+      r.nombreMostrar || '',
+      r.nombreCompleto || '',
+      r.dni || '',
+      r.domicilio || '',
+      r.datosExtra || '',
+      r.alarmas || '0',
+      r.tablero || '0',
+      r.usuarios || '0',
+      r.formulario || '0',
+      r.clientes || '0',
+      r.precios || '0',
+      r.stock || '0',
+      r.gastos || '0',
+      r.carga || '0',         
+      r.finanzas || '0',      
+      r.confinanzas || '0'    
+    ]);
+  }
+  sh.getRange(2, 1, MAX, 18).setValues(data);
+  return {status:'success'};
+}
+
+function listClientes(){
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName('CLIENTES');
+  if (!sh) return {status:'error', message:'No existe hoja CLIENTES'};
+
+  const datos = sh.getDataRange().getValues();
+  if (datos.length < 2) return {status:'success', clientes:[]};
+
+  const headers = datos[0].map(h => String(h||'').trim().toUpperCase());
+  const findCol = (...names)=> {
+    for (const n of names){
+      const j = headers.indexOf(n);
+      if (j !== -1) return j;
+    }
+    return -1;
+  };
+
+  const iNombre = findCol('NOMBRE','NOMBRE DEL COMERCIO','COMERCIO');
+  const iZona   = findCol('ZONA');
+  const iTipo   = findCol('TIPO','CATEGORIA','CATEGORÍA');
+  const iTel    = findCol('TELEFONO','TELÉFONO');
+  const iDir    = findCol('DIRECCION','DIRECCIÓN');
+  const iMail   = findCol('MAIL','EMAIL','CORREO');
+
+  const out = [];
+  for (let i=1;i<datos.length;i++){
+    const r = datos[i];
+    const nombre = iNombre>-1 ? String(r[iNombre]||'').trim() : '';
+    const zona   = iZona  >-1 ? String(r[iZona]  ||'').trim() : '';
+    const tipo   = iTipo  >-1 ? String(r[iTipo]  ||'').trim() : '';
+    const tel    = iTel   >-1 ? String(r[iTel]   ||'').trim() : '';
+    const dir    = iDir   >-1 ? String(r[iDir]   ||'').trim() : '';
+    const mail   = iMail  >-1 ? String(r[iMail]  ||'').trim() : '';
+    const allEmpty = [nombre,zona,tipo,tel,dir,mail].every(v=>v==='');
+    if (allEmpty) continue;
+
+    out.push({
+      nombre, zona, categoria: normalizarCategoria(tipo),
+      telefono: tel, direccion: dir, mail
+    });
+  }
+  return {status:'success', clientes: out};
+}
+
+function saveClientes(rowsJson){
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName('CLIENTES');
+  if (!sh) return {status:'error', message:'No existe hoja CLIENTES'};
+
+  const rows = Array.isArray(rowsJson) ? rowsJson : JSON.parse(rowsJson||'[]');
+
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0]
+    .map(h => String(h||'').trim().toUpperCase());
+  const col = (...names)=>{ for (const n of names){ const j = headers.indexOf(n); if (j!==-1) return j+1; } return -1; };
+
+  const width = sh.getLastColumn();
+  const data = [];
+
+  for (let i=0;i<rows.length;i++){
+    const r = rows[i] || {};
+    const fila = new Array(width).fill('');
+    const put = (val,...hs)=>{ const c = col(...hs); if (c>0) fila[c-1] = val||''; };
+
+    put(r.nombre,    'NOMBRE','NOMBRE DEL COMERCIO','COMERCIO');
+    put(r.zona,      'ZONA');
+    put(normalizarCategoria(r.categoria),'TIPO','CATEGORIA','CATEGORÍA');
+    put(r.telefono,  'TELEFONO','TELÉFONO');
+    put(r.direccion, 'DIRECCION','DIRECCIÓN');
+    put(r.mail,      'MAIL','EMAIL','CORREO');
+
+    data.push(fila);
+  }
+
+  sh.getRange(2,1,Math.max(1,data.length),width).setValues(data.length?data:[new Array(width).fill('')]);
+
+  return {status:'success'};
+}
+
+function obtenerDatosFormulario() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const zonasData = {};
+  ['ZONA1','ZONA2','ZONA3','ZONA4'].forEach(z => {
+    const hoja = libro.getSheetByName(z);
+    if (hoja) {
+      const vals = hoja.getRange(2,1,Math.max(hoja.getLastRow()-1,0),1)
+        .getValues().flat().filter(Boolean);
+      zonasData[z] = vals;
+    }
+  });
+
+  const hojaPrecios = libro.getSheetByName('PRECIOS');
+  const garrafasData = hojaPrecios
+    ? hojaPrecios.getRange(2,1,Math.max(hojaPrecios.getLastRow()-1,0),2).getValues()
+        .map(r => ({ nombre: String(r[0]).trim(), precio: r[1] }))
+    : [];
+
+  return { zonas: zonasData, garrafas: garrafasData };
+}
+
+function obtenerPrecioGarrafa(nombreGarrafa) {
+  if (!nombreGarrafa) return 0;
+  const hojaPrecios = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("PRECIOS");
+  if (!hojaPrecios) return 0;
+  const datos = hojaPrecios.getRange("A2:B" + hojaPrecios.getLastRow()).getValues();
+  const garrafa = datos.find(row => String(row[0]).trim() === String(nombreGarrafa));
+  return garrafa ? Number(garrafa[1]) || 0 : 0;
+}
+
+function obtenerZonasDeClientes() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('CLIENTES');
+  if (!sh) return { status: 'success', zonas: [] };
+
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return { status: 'success', zonas: [] };
+
+  // Buscamos la columna ZONA por nombre
+  const headers = data[0].map(h => String(h).toUpperCase().trim());
+  const idxZona = headers.indexOf('ZONA');
+
+  if (idxZona === -1) return { status: 'success', zonas: [] };
+
+  const zonasSet = new Set();
+  
+  for (let i = 1; i < data.length; i++) {
+    const val = String(data[i][idxZona]).toUpperCase().trim();
+    if (val) zonasSet.add(val);
+  }
+
+  // Retornamos array ordenado
+  return { 
+    status: 'success', 
+    zonas: Array.from(zonasSet).sort() 
+  };
+}
+// =======================================================
+// 5. SISTEMA DE ALARMAS
+// =======================================================
+
+function _getAlarmsSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('ALARMAS');
+  if (!sh) {
+    sh = ss.insertSheet('ALARMAS');
+    sh.appendRow(['FECHA','HORA','TIPO','DESCRIPCION','USUARIO','PENDIENTE']);
+  } else {
+    const headers = sh.getRange(1,1,1,Math.max(6, sh.getLastColumn())).getValues()[0]
+      .map(h=>String(h||'').toUpperCase().trim());
+    if (headers.indexOf('PENDIENTE') === -1) {
+      const lastCol = sh.getLastColumn();
+      if (lastCol < 6) sh.insertColumnsAfter(lastCol, 6-lastCol);
+      sh.getRange(1,6).setValue('PENDIENTE');
+    }
+  }
+  return sh;
+}
+
+function registrarAlarma(tipo, descripcion, usuario) {
+  const sh = _getAlarmsSheet();
+  const ahora = new Date();
+  const fecha = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const hora  = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm:ss');
+
+  sh.insertRows(2, 1);
+  sh.getRange(2, 1, 1, 6).setValues([[fecha, hora, tipo || '', descripcion || '', usuario || 'Sin usuario', 1]]);
+}
+
+function alarmasCount() {
+  const sh = _getAlarmsSheet();
+  const lr = sh.getLastRow();
+  if (lr < 2) return 0;
+  const vals = sh.getRange(2, 6, lr-1, 1).getValues().flat();
+  return vals.reduce((acc,v)=> acc + (String(v).trim()==='1' ? 1 : 0), 0);
+}
+
+function listAlarmas(onlyPending, limit) {
+  const sh = _getAlarmsSheet();
+  const lr = sh.getLastRow();
+  const lc = Math.max(6, sh.getLastColumn());
+  if (lr < 2) return [];
+
+  const rows = sh.getRange(2,1,lr-1,lc).getValues();
+  const out = [];
+  for (let i=0; i<rows.length; i++){
+    const r = rows[i];
+    const item = {
+      row: i+2,
+      fecha: r[0], hora: r[1], tipo: r[2], descripcion: r[3], usuario: r[4],
+      pendiente: String(r[5]).trim()==='1'
+    };
+    if (onlyPending && !item.pendiente) continue;
+    out.push(item);
+    if (limit && out.length >= limit) break;
+  }
+  return out;
+}
+
+function marcarAlarma(row) {
+  const sh = _getAlarmsSheet();
+  if (!row || row < 2 || row > sh.getLastRow()) return false;
+  sh.getRange(row, 6).setValue(0);
+  return true;
+}
+
+function marcarTodasAlarmas() {
+  const sh = _getAlarmsSheet();
+  const lr = sh.getLastRow();
+  if (lr < 2) return;
+  sh.getRange(2, 6, lr-1, 1).setValue(0);
+}
+
+function saveAlarmasBatch(list){
+  try{
+    const sh = _getAlarmsSheet();
+    if (!Array.isArray(list) || list.length === 0) return true;
+
+    const updates = [];
+    list.forEach(x=>{
+      const row = Number(x?.row || 0);
+      if (!row || row < 2 || row > sh.getLastRow()) return;
+      const pendiente = String(x?.pendiente).trim()==='1' || String(x?.pendiente).trim().toLowerCase()==='true';
+      updates.push({ row, val: pendiente ? 1 : 0 });
+    });
+
+    updates.forEach(u => sh.getRange(u.row, 6).setValue(u.val));
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+
+// =======================================================
+// 6. AUTENTICACIÓN Y SESIONES
+// =======================================================
+
+function loginYGenerarToken(usuario, clave) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('USUARIOS');
+  if (!sh) return { status:'error', message: 'No existe hoja USUARIOS' };
+
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0]
+                  .map(h => String(h||'').trim().toUpperCase());
+  const col = (name) => headers.indexOf(name) + 1;
+
+  const cUSER = col('USUARIO');
+  const cPASS = col('PASSWORD');
+  const cNAME = col('NOMBRE A MOSTRAR');
+
+  const cALM  = col('ALARMAS');
+  const cTAB  = col('TABLERO');
+  const cUSR  = col('USUARIOS');
+  const cFOR  = col('FORMULARIO');
+  const cCLI  = col('CLIENTES');
+  const cPRE  = col('PRECIOS');
+  const cSTK  = col('STOCK');
+  const cGTO  = col('GASTOS');
+  const cCRG  = col('CARGA');
+  const cFIN  = col('FINANZAS');
+  const cCNF  = col('CONFINANZAS');
+
+  const lr = sh.getLastRow();
+  if (lr < 2) return { status:'error', message:'Usuarios no encontrados' };
+
+  const data = sh.getRange(2, 1, lr-1, sh.getLastColumn()).getValues();
+  for (let i=0; i<data.length; i++){
+    const row = data[i];
+    const u = String(row[cUSER-1]||'').trim();
+    const p = String(row[cPASS-1]||'').trim();
+
+    if (usuario.toLowerCase() === u.toLowerCase() && clave === p){
+      const nombre = String((cNAME>0 ? row[cNAME-1] : u) || u);
+      
+      const hasPerm = (idx) => (idx > 0 && String(row[idx-1]||'').trim() === '1');
+      
+      const permsObj = {
+          formulario:  hasPerm(cFOR),
+          clientes:    hasPerm(cCLI),
+          precios:     hasPerm(cPRE),
+          usuarios:    hasPerm(cUSR),
+          alarmas:     hasPerm(cALM),
+          tablero:     hasPerm(cTAB),
+          stock:       hasPerm(cSTK),
+          gastos:      hasPerm(cGTO),
+          carga:       hasPerm(cCRG),
+          finanzas:    hasPerm(cFIN),
+          confinanzas: hasPerm(cCNF)
+      };
+
+      const k = Utilities.getUuid();
+      const ahora = new Date().getTime();
+      const expira = ahora + (TIEMPO_SESION * 1000); 
+
+      const cache = CacheService.getScriptCache();
+      const datosSesion = {
+          usuario: u,
+          nombre: nombre,
+          perms: permsObj, 
+          inicio: ahora
+      };
+      cache.put(k, JSON.stringify(datosSesion), TIEMPO_SESION);
+
+      let sheetSesiones = ss.getSheetByName('SESIONES');
+      if (!sheetSesiones) {
+          sheetSesiones = ss.insertSheet('SESIONES');
+          sheetSesiones.appendRow(['TOKEN', 'USUARIO', 'EXPIRA', 'PERMISOS_JSON', 'FECHA_CREACION']);
+      }
+      
+      if(sheetSesiones.getLastRow() > 5000) {
+         sheetSesiones.deleteRows(2, 100);
+      }
+
+      sheetSesiones.appendRow([k, u, expira, JSON.stringify(permsObj), new Date()]);
+
+      return { status:'success', k: k, usuario: u, nombre: nombre, perms: permsObj };
+    }
+  }
+  return { status:'error', message:'Credenciales incorrectas' };
+}
+
+function validarTokenSesion(k) {
+    const datos = obtenerDatosPorToken(k);
+    return datos.valido;
+}
+
+function obtenerDatosPorToken(k) {
+  if (!k) return { valido: false };
+
+  const cache = CacheService.getScriptCache();
+  const cachedJson = cache.get(k);
+
+  if (cachedJson) {
+    const data = JSON.parse(cachedJson);
+    cache.put(k, cachedJson, TIEMPO_SESION); // Renovar
+    return { 
+        valido: true, 
+        usuario: data.usuario, 
+        nombre: data.nombre, 
+        perms: data.perms 
+    };
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('SESIONES');
+  if (!sh) return { valido: false };
+
+  const data = sh.getDataRange().getValues();
+  const ahora = new Date().getTime();
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    if (row[0] === k) {
+        const expira = Number(row[2]);
+        
+        if (expira > ahora) {
+             const usuarioRecuperado = row[1];
+             let permsRecuperados = {};
+             try { permsRecuperados = JSON.parse(row[3]); } catch(e){ permsRecuperados = {}; }
+             
+             const datosRecuperados = {
+               usuario: usuarioRecuperado,
+               nombre: usuarioRecuperado, 
+               perms: permsRecuperados,
+               inicio: ahora 
+             };
+             cache.put(k, JSON.stringify(datosRecuperados), TIEMPO_SESION);
+
+             return { 
+                 valido: true, 
+                 usuario: usuarioRecuperado, 
+                 nombre: usuarioRecuperado, 
+                 perms: permsRecuperados 
+             };
+        } else {
+            return { valido: false }; 
+        }
+    }
+  }
+  return { valido: false };
+}
+
+function getUserInfo(usuario) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('USUARIOS');
+  if (!sh) return null;
+
+  const headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0]
+                  .map(h => String(h||'').trim().toUpperCase());
+  const col = (name) => headers.indexOf(name) + 1;
+
+  const cUSER = col('USUARIO');
+  const cNAME = col('NOMBRE A MOSTRAR');
+
+  const cALM  = col('ALARMAS');
+  const cTAB  = col('TABLERO');
+  const cUSR  = col('USUARIOS');
+  const cFOR  = col('FORMULARIO');
+  const cCLI  = col('CLIENTES');
+  const cPRE  = col('PRECIOS');
+  const cSTK  = col('STOCK');
+  const cGTO  = col('GASTOS');
+  const cCRG  = col('CARGA');
+  const cFIN  = col('FINANZAS');
+  const cCNF  = col('CONFINANZAS');
+
+  if (cUSER <= 0) return null;
+
+  const lr = sh.getLastRow();
+  const data = sh.getRange(2, 1, Math.max(lr-1,1), sh.getLastColumn()).getValues();
+  
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const u = String(row[cUSER - 1] || '').trim();
+    if (u === usuario) {
+      const nombre = String((cNAME > 0 ? row[cNAME - 1] : u) || u);
+      
+      const hasPerm = (idx) => (idx > 0 && String(row[idx-1]||'').trim() === '1');
+      
+      const permsObj = {
+          formulario:  hasPerm(cFOR),
+          clientes:    hasPerm(cCLI),
+          precios:     hasPerm(cPRE),
+          usuarios:    hasPerm(cUSR),
+          alarmas:     hasPerm(cALM),
+          tablero:     hasPerm(cTAB),
+          stock:       hasPerm(cSTK),
+          gastos:      hasPerm(cGTO),
+          carga:       hasPerm(cCRG),
+          finanzas:    hasPerm(cFIN),
+          confinanzas: hasPerm(cCNF)
+      };
+
+      return { usuario: u, nombre, perms: permsObj };
+    }
+  }
+  return null;
+}
+
+// =======================================================
+// 7. CONTROL DE CARGA Y LOGÍSTICA
+// =======================================================
+
+function _getCargaSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('CCARGA');
+  if (!sh) {
+    sh = ss.insertSheet('CCARGA');
+    const headers = [
+      'ID_VIAJE', 'ESTADO', 'CHOFER', 'FECHA_SAL', 'HORA_SAL',
+      'S_L10', 'S_V10', 'S_L15', 'S_V15', 'S_L45', 'S_V45',
+      'FECHA_LLEG', 'HORA_LLEG',
+      'L_L10', 'L_V10', 'L_L15', 'L_V15', 'L_L45', 'L_V45',
+      'DIFERENCIA', 'MOTIVO', 'AUDITOR', 'ALERTA_ENVIADA'
+    ];
+    sh.appendRow(headers);
+  }
+  return sh;
+}
+
+function getDriversList() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('USUARIOS');
+  if (!sh) return [];
+  const vals = sh.getRange(2, 1, Math.max(sh.getLastRow()-1, 1), 1).getValues().flat();
+  return vals.filter(u => u && String(u).trim() !== '');
+}
+
+function checkDriverAvailability(chofer) {
+  const sh = _getCargaSheet();
+  const data = sh.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+     if (String(data[i][1]).trim() === 'EN_RUTA' && String(data[i][2]).trim() === chofer) {
+       return false;
+     }
+  }
+  return true;
+}
+
+function procesarTransporte(p, auditor) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('CCARGA');
+  
+  if (!sh) {
+    sh = ss.insertSheet('CCARGA');
+    sh.appendRow([
+      'ID_VIAJE', 'ESTADO', 'CHOFER', 'FECHA_SALIDA', 'HORA_SALIDA', 
+      'S_L10', 'S_V10', 'S_L15', 'S_V15', 'S_L45', 'S_V45', 
+      'FECHA_LLEGADA', 'HORA_LLEGADA', 
+      'L_L10', 'L_V10', 'L_L15', 'L_V15', 'L_L45', 'L_V45', 
+      'DIFERENCIA', 'MOTIVO', 'AUDITOR'
+    ]);
+  }
+
+  const ahora = new Date();
+  const fecha = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const hora = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm:ss');
+  const n = (val) => Number(val) || 0; 
+
+  // --- CASO 1: SALIDA ---
+  if (p.modo === 'SALIDA') {
+    const idViaje = Utilities.getUuid().slice(0,8).toUpperCase();
+    sh.appendRow([
+      idViaje, 'EN_RUTA', p.chofer, fecha, hora,
+      n(p.L10), n(p.V10), n(p.L15), n(p.V15), n(p.L45), n(p.V45),
+      '', '', '', '', '', '', '', '', '', '', auditor
+    ]);
+    return { status: 'success', message: 'Salida registrada', idViaje: idViaje };
+  }
+
+  // --- CASO 2: LLEGADA ---
+  if (p.modo === 'LLEGADA') {
+    const data = sh.getDataRange().getValues();
+    let rowIndex = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === p.idViaje) {
+        rowIndex = i + 1; // Fila real (base 1)
+        break;
+      }
+    }
+
+    if (rowIndex === -1) return { status: 'error', message: 'Viaje no encontrado' };
+
+    const row = rowIndex;
+    sh.getRange(row, 2).setValue('FINALIZADO'); // Col B: Estado
+    sh.getRange(row, 12).setValue(fecha);       // Col L: Fecha Llegada
+    sh.getRange(row, 13).setValue(hora);        // Col M: Hora Llegada
+    
+    sh.getRange(row, 14).setValue(n(p.L10));    // LL10
+    sh.getRange(row, 15).setValue(n(p.V10));    // LV10
+    sh.getRange(row, 16).setValue(n(p.L15));    // LL15
+    sh.getRange(row, 17).setValue(n(p.V15));    // LV15
+    sh.getRange(row, 18).setValue(n(p.L45));    // LL45
+    sh.getRange(row, 19).setValue(n(p.V45));    // LV45
+    
+    sh.getRange(row, 21).setValue(p.motivo || ''); // Motivo
+    
+    return { status: 'success', message: 'Viaje finalizado' };
+  }
+
+  // --- CASO 3: RETROACTIVO ---
+  if (p.modo === 'RETROACTIVO') {
+    const idViaje = Utilities.getUuid().slice(0,8).toUpperCase() + '-R'; // Marca R de retro
+    const estado = (n(p.diferencia) !== 0) ? 'CON_DIFERENCIA' : 'FINALIZADO';
+    
+    sh.appendRow([
+      idViaje, estado, p.chofer, fecha, hora,
+      n(p.SL10), n(p.SV10), n(p.SL15), n(p.SV15), n(p.SL45), n(p.SV45),
+      fecha, hora, // Llegada inmediata
+      n(p.RL10), n(p.RV10), n(p.RL15), n(p.RV15), n(p.RL45), n(p.RV45),
+      n(p.diferencia), p.motivo, auditor
+    ]);
+    return { status: 'success', message: 'Carga retroactiva guardada' };
+  }
+
+  return { status: 'error', message: 'Modo de transporte desconocido' };
+}
+
+// =======================================================
+// 8. CONTROL DE STOCK (CSTOCK)
+// =======================================================
+ 
+function calcularMovimientosDesde(stockInicial) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Parseamos la fecha de inicio del turno
+  const fechaInicio = parseDateTime(stockInicial.fecha, stockInicial.hora);
+  
+  // Copia del stock inicial para ir restando/sumando
+  let final = { ...stockInicial }; 
+  
+  // CÁLCULO BASADO EN VENTAS (BD1)
+  const shBD1 = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  if (shBD1 && fechaInicio) { // Solo si tenemos hoja y fecha válida
+    const data = shBD1.getDataRange().getValues();
+    
+    if (data.length > 1) {
+        // Mapeo de columnas
+        const headers = data[1].map(h => String(h).toUpperCase().trim());
+        const idx = (n) => headers.indexOf(n);
+        
+        const iF = idx('FECHA'); 
+        const iH = idx('HORA');
+        
+        const mapCols = {
+          10: { gas: [idx('VS10'), idx('VC10'), idx('VRP10'), idx('VU10')], env: idx('CE10') },
+          15: { gas: [idx('VS15'), idx('VC15'), idx('VRP15'), idx('VU15')], env: idx('CE15') },
+          45: { gas: [idx('VS45'), idx('VC45'), idx('VRP45'), idx('VU45')], env: idx('CE45') }
+        };
+
+        // Recorrer filas desde la 3 (indice 2)
+        for (let i = 2; i < data.length; i++) {
+          const row = data[i];
+          const fOp = parseDateTime(row[iF], row[iH]);
+          
+          // LA CONDICIÓN DE ORO: ¿La venta fue DESPUÉS de abrir turno?
+          if (fOp && fOp.getTime() > fechaInicio.getTime()) {
+             [10, 15, 45].forEach(k => {
+                 const cols = mapCols[k];
+                 
+                 // 1. Recargas (Solo Gas)
+                 let ventaGas = 0;
+                 cols.gas.forEach(c => { if(c > -1) ventaGas += (Number(row[c])||0); });
+                 
+                 // 2. Envases (Gas + Casco)
+                 let ventaEnv = (cols.env > -1) ? (Number(row[cols.env])||0) : 0;
+                 
+                 // MATEMÁTICA:
+                 // Sale Lleno = Gas + Envase
+                 final[`L${k}`] -= (ventaGas + ventaEnv); 
+                 
+                 // Entra Vacío = Solo Gas (El envase se lleva el casco)
+                 final[`V${k}`] += ventaGas; 
+             });
+          }
+        }
+    }
+  }
+  return final;
+}
+
+function _getStockSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('CSTOCK');
+  if (!sh) {
+    sh = ss.insertSheet('CSTOCK');
+    sh.appendRow([
+      'ID_TURNO','ESTADO','FECHA','HORA_INI','USUARIO',
+      'INI_L10','INI_V10','INI_L15','INI_V15','INI_L45','INI_V45',
+      'HORA_FIN',
+      'FIN_L10','FIN_V10','FIN_L15','FIN_V15','FIN_L45','FIN_V45',
+      'SISTEMA_CALC','HAY_DIF','MOTIVO'
+    ]);
+  }
+  return sh;
+}
+
+function obtenerEstadoStock() {
+  const sh = _getStockSheet();
+  const data = sh.getDataRange().getValues();
+  
+  const bloqueo = hayCamionesEnRuta();
+  
+  if (data.length < 2) return { estado: 'CERRADO', sugerido: null, bloqueo: bloqueo };
+
+  let filaAbierta = -1;
+  let stockInicial = null;
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]).toUpperCase().trim() === 'ABIERTO') {
+      filaAbierta = i;
+      stockInicial = {
+        fecha: data[i][2], hora: data[i][3],
+        L10: Number(data[i][5]), V10: Number(data[i][6]),
+        L15: Number(data[i][7]), V15: Number(data[i][8]),
+        L45: Number(data[i][9]), V45: Number(data[i][10])
+      };
+      break; 
+    }
+  }
+
+  if (filaAbierta === -1) {
+    const ult = data[data.length - 1];
+    let sugerido = null;
+    if (data.length > 1) {
+       sugerido = {
+         L10: ult[12], V10: ult[13], L15: ult[14], V15: ult[15], L45: ult[16], V45: ult[17]
+       };
+    }
+    return { estado: 'CERRADO', sugerido: sugerido, bloqueo: bloqueo };
+  }
+
+  const calculado = calcularMovimientosDesde(stockInicial);
+  
+  return { 
+    estado: 'ABIERTO', 
+    idTurno: data[filaAbierta][0], 
+    inicio: stockInicial,
+    calculado: calculado,
+    bloqueo: bloqueo 
+  };
+}
+
+function nuevaSaveStock(e) {
+  const p = e.parameter;
+  const sh = _getStockSheet();
+  const n = (v) => Number(v) || 0;
+  
+  const ahora = new Date();
+  const fecha = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const hora = Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm:ss');
+
+  // --- MODO APERTURA (INICIO) ---
+  if (p.tipo === 'INICIO' || p.tipo === 'INICIAL') {
+    const estado = obtenerEstadoStock();
+    if (estado.estado === 'ABIERTO') return { status: 'error', message: 'Ya hay un turno abierto.' };
+
+    const idTurno = Utilities.getUuid().slice(0,8).toUpperCase();
+    
+    sh.appendRow([
+      idTurno, 'ABIERTO', fecha, hora, p.usuario,
+      n(p.L10), n(p.V10), n(p.L15), n(p.V15), n(p.L45), n(p.V45),
+      '', '', '', '', '', '', '', '', '', '' 
+    ]);
+    return { status: 'success', message: 'Turno iniciado' };
+  }
+
+  // --- MODO CIERRE (FINAL) ---
+  if (p.tipo === 'FINAL' || p.tipo === 'CIERRE') {
+    
+    // 🔥 BLOQUEO DE SEGURIDAD 🔥
+    if (hayCamionesEnRuta()) {
+        return { 
+            status: 'error', 
+            message: '⛔ NO SE PUEDE CERRAR: Hay camiones EN RUTA. Finalícelos en Control de Carga primero.' 
+        };
+    }
+
+    const data = sh.getDataRange().getValues();
+    let rowIndex = -1;
+
+    for (let i = data.length - 1; i >= 1; i--) {
+       if (String(data[i][1]).toUpperCase().trim() === 'ABIERTO') {
+         rowIndex = i + 1; 
+         break;
+       }
+    }
+
+    if (rowIndex === -1) return { status: 'error', message: 'No se encontró turno abierto para cerrar.' };
+
+    sh.getRange(rowIndex, 12).setValue(hora);
+    const stockFinal = [[ n(p.L10), n(p.V10), n(p.L15), n(p.V15), n(p.L45), n(p.V45) ]];
+    sh.getRange(rowIndex, 13, 1, 6).setValues(stockFinal);
+    sh.getRange(rowIndex, 19).setValue('Calculado OK'); 
+    sh.getRange(rowIndex, 20).setValue(p.hasDiff === 'true' ? 'SI' : 'NO');
+    sh.getRange(rowIndex, 21).setValue(p.motivo || '');
+    sh.getRange(rowIndex, 2).setValue('CERRADO');
+
+    if (p.hasDiff === 'true') {
+       registrarAlarma('STOCK_DESCUADRE', `Cierre con diferencias. Usuario: ${p.usuario}. Motivo: ${p.motivo}`, p.usuario);
+    }
+
+    return { status: 'success', message: 'Turno cerrado correctamente' };
+  }
+}
+
+function hayCamionesEnRuta() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('CCARGA');
+  if (!sh) return false;
+  
+  const data = sh.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]).toUpperCase().trim() === 'EN_RUTA') return true;
+  }
+  return false;
+}
+
+// =======================================================
+// 9. AUDITORÍA DE VENTAS (La solución corregida)
+// =======================================================
+
+function getPendingTripsWithAlarms() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('CCARGA');
+  
+  if (!sh) return [];
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return []; 
+
+  const trips = [];
+  const n = (v) => Number(v) || 0;
+  
+  // Helper interno de formato fecha para el Frontend
+  const fmt = (val, f) => {
+      try { 
+        if (!val) return '';
+        return Utilities.formatDate(new Date(val), Session.getScriptTimeZone(), f); 
+      } catch(e) { return String(val); } 
+  };
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    
+    if (String(row[1]).trim() === 'EN_RUTA') {
+      const sL10=n(row[5]), sL15=n(row[7]), sL45=n(row[9]);
+      const totalCarga = sL10 + sL15 + sL45;
+      
+      const chofer = row[2];
+      const fSalida = row[3];
+      const hSalida = row[4];
+      
+      // 🔥 ESTA ES LA CLAVE: Usamos la función de auditoría correcta
+      const vDetalle = calcularVentasAuditoria(chofer, fSalida, hSalida);
+      
+      const totalVendido = 
+          (vDetalle[10].gas + vDetalle[10].env) +
+          (vDetalle[15].gas + vDetalle[15].env) +
+          (vDetalle[45].gas + vDetalle[45].env);
+
+      trips.push({
+        idViaje: row[0],
+        chofer: chofer,
+        fechaSalida: fmt(fSalida, 'dd/MM'),
+        horaSalida: fmt(hSalida, 'HH:mm'),
+        cargaLabel: `Carga: ${totalCarga} | Vendido: ${totalVendido}`,
+        isLate: false, 
+        sDetails: {
+          l10: n(row[5]), v10: n(row[6]),
+          l15: n(row[7]), v15: n(row[8]),
+          l45: n(row[9]), v45: n(row[10])
+        },
+        ventasDetalle: vDetalle 
+      });
+    }
+  }
+  return trips;
+}
+
+function calcularVentasAuditoria(chofer, fechaSalida, horaSalida) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  
+  const vacio = { 
+    10: { gas:0, env:0 }, 15: { gas:0, env:0 }, 45: { gas:0, env:0 } 
+  };
+
+  if (!sh) return vacio;
+
+  const data = sh.getDataRange().getValues();
+  if (data.length < 3) return vacio; 
+
+  const headers = data[1].map(h => String(h).toUpperCase().trim());
+  const idx = (names) => {
+    const list = Array.isArray(names) ? names : [names];
+    for(let n of list) {
+      const i = headers.indexOf(n);
+      if(i > -1) return i;
+    }
+    return -1;
+  };
+
+  const iUser  = idx(['USUARIO', 'CHOFER', 'VENDEDOR', 'REPARTIDOR']);
+  const iFecha = idx(['FECHA']);
+  const iHora  = idx(['HORA']);
+
+  if (iUser === -1 || iFecha === -1) return vacio;
+
+  const map = {
+    10: { gas: [idx('VS10'), idx('VC10'), idx('VRP10'), idx('VU10')], env: idx('CE10') },
+    15: { gas: [idx('VS15'), idx('VC15'), idx('VRP15'), idx('VU15')], env: idx('CE15') },
+    45: { gas: [idx('VS45'), idx('VC45'), idx('VRP45'), idx('VU45')], env: idx('CE45') }
+  };
+
+  const dtSalida = parseDateTime(fechaSalida, horaSalida);
+  const timeSalida = dtSalida ? dtSalida.getTime() : 0;
+  const choferID = String(chofer).toUpperCase().trim();
+  const n = (val) => Number(val) || 0;
+
+  let res = JSON.parse(JSON.stringify(vacio)); 
+
+  for (let i = 2; i < data.length; i++) {
+    const row = data[i];
+    const rowUser = String(row[iUser] || '').toUpperCase().trim();
+
+    if (rowUser === choferID) {
+      const dtVenta = parseDateTime(row[iFecha], row[iHora]);
+      
+      // Si la fecha de venta es válida y MAYOR a la salida (+1 minuto de tolerancia)
+      if (dtVenta && dtVenta.getTime() > (timeSalida + 60000)) {
+         [10, 15, 45].forEach(k => {
+             map[k].gas.forEach(c => { if(c > -1) res[k].gas += n(row[c]); });
+             if(map[k].env > -1) res[k].env += n(row[map[k].env]);
+         });
+      }
+    }
+  }
+  return res;
+}
+
+function parseDateTime(f, h) {
+  if (!f) return null;
+  let fechaBase = new Date(); 
+
+  // A. Parsear FECHA
+  if (f instanceof Date) {
+    fechaBase = new Date(f); 
+  } else if (typeof f === 'string') {
+    const parts = f.split('/');
+    if (parts.length === 3) {
+      fechaBase = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+    }
+  }
+  
+  if (isNaN(fechaBase.getTime())) return null;
+  fechaBase.setHours(0,0,0,0);
+
+  // B. Parsear HORA
+  let horas = 0, minutos = 0;
+  if (h) {
+    if (h instanceof Date) {
+      horas = h.getHours();
+      minutos = h.getMinutes();
+    } else if (typeof h === 'string') {
+      const partsH = h.split(':');
+      if (partsH.length >= 2) {
+        horas = Number(partsH[0]);
+        minutos = Number(partsH[1]);
+      }
+    }
+  }
+
+  fechaBase.setHours(horas, minutos, 0, 0);
+  return fechaBase;
+}
+
+
+// =======================================================
+// BLOQUE EXCLUSIVO: CONTROL DE CARGA (AISLADO)
+// =======================================================
+
+function getPendingTrips_Carga() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('CCARGA');
+  
+  if (!sh) return [];
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return []; 
+
+  const trips = [];
+  const n = (v) => Number(v) || 0;
+  
+  // Helper visual para fecha
+  const fmt = (val, f) => {
+      try { return Utilities.formatDate(new Date(val), Session.getScriptTimeZone(), f); } 
+      catch(e) { return String(val); } 
+  };
+
+  // Recorremos CCARGA
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    
+    // Si está EN_RUTA
+    if (String(row[1]).trim() === 'EN_RUTA') {
+      const chofer = row[2];
+      const fSalida = row[3]; // Objeto Date o String
+      const hSalida = row[4]; // Objeto Date o String
+      
+      const sL10=n(row[5]), sL15=n(row[7]), sL45=n(row[9]);
+      const totalCarga = sL10 + sL15 + sL45;
+
+      // 🔥 LLAMADA A LA FUNCIÓN EXCLUSIVA DE CARGA 🔥
+      const vDetalle = calcularVentas_Carga(chofer, fSalida, hSalida);
+      
+      // Total vendido (Gas + Envase) para mostrar en la tarjeta
+      const totalVendido = 
+          (vDetalle[10].gas + vDetalle[10].env) +
+          (vDetalle[15].gas + vDetalle[15].env) +
+          (vDetalle[45].gas + vDetalle[45].env);
+
+      trips.push({
+        idViaje: row[0],
+        chofer: chofer,
+        fechaSalida: fmt(fSalida, 'dd/MM'),
+        horaSalida: fmt(hSalida, 'HH:mm'),
+        cargaLabel: `Carga: ${totalCarga} | Vendido: ${totalVendido}`,
+        isLate: false, 
+        sDetails: {
+          l10: n(row[5]), v10: n(row[6]),
+          l15: n(row[7]), v15: n(row[8]),
+          l45: n(row[9]), v45: n(row[10])
+        },
+        ventasDetalle: vDetalle 
+      });
+    }
+  }
+  return trips;
+}
+
+function calcularVentas_Carga(chofer, fechaSalida, horaSalida) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName('BD1') || ss.getSheetByName('DB1');
+  
+  const vacio = { 10: { gas:0, env:0 }, 15: { gas:0, env:0 }, 45: { gas:0, env:0 } };
+  if (!sh) return vacio;
+  
+  const data = sh.getDataRange().getValues();
+  if (data.length < 3) return vacio; 
+
+  const headers = data[1].map(h => String(h).toUpperCase().trim());
+  const idx = (n) => headers.indexOf(n);
+  
+  const iUser = idx('USUARIO') > -1 ? idx('USUARIO') : idx('CHOFER');
+  const iFecha = idx('FECHA');
+  
+  if (iUser === -1 || iFecha === -1) return vacio;
+
+  const map = {
+    10: { gas: [idx('VS10'), idx('VC10'), idx('VRP10'), idx('VU10')], env: idx('CE10') },
+    15: { gas: [idx('VS15'), idx('VC15'), idx('VRP15'), idx('VU15')], env: idx('CE15') },
+    45: { gas: [idx('VS45'), idx('VC45'), idx('VRP45'), idx('VU45')], env: idx('CE45') }
+  };
+
+  const choferID = String(chofer).toUpperCase().trim();
+  
+  // FUNCIÓN PARA LIMPIAR NÚMEROS SUCIOS
+  const n = (val) => {
+    if (val == null || val === '') return 0;
+    if (typeof val === 'number') return val;
+    return parseFloat(String(val).replace(',', '.').replace(/[^0-9.-]/g, '')) || 0;
+  };
+
+  // FUNCIÓN PARA COMPARAR SOLO DÍAS (IGNORAR HORA)
+  const esMismoDiaOPosterior = (fSalida, fVenta) => {
+      if (!fSalida || !fVenta) return false;
+      const d1 = new Date(fSalida);
+      const d2 = new Date(fVenta);
+      // Comparamos fecha pura (Año, Mes, Día)
+      const t1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate()).getTime();
+      const t2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate()).getTime();
+      return t2 >= t1; // Si la venta es el mismo día o después, entra.
+  };
+
+  let res = JSON.parse(JSON.stringify(vacio)); 
+
+  for (let i = 2; i < data.length; i++) {
+    const row = data[i];
+    const rowUser = String(row[iUser] || '').toUpperCase().trim();
+
+    if (rowUser === choferID) {
+      // 🔥 CONDICIÓN DE ORO: SI ES EL MISMO DÍA, SUMA. (Sin importar la hora)
+      if (esMismoDiaOPosterior(fechaSalida, row[iFecha])) {
+         [10, 15, 45].forEach(k => {
+             map[k].gas.forEach(c => { if(c > -1) res[k].gas += n(row[c]); });
+             if(map[k].env > -1) res[k].env += n(row[map[k].env]);
+         });
+      }
+    }
+  }
+  return res;
+}
+
+// FUNCION FECHA BRUTA (Exclusiva para Carga)
+// Convierte todo a milisegundos para comparar números, no fechas
+function getTimestamp_Carga(f, h) {
+  if (!f) return 0;
+  
+  let baseMs = 0;
+  
+  // A. Obtener fecha base (sin hora)
+  if (Object.prototype.toString.call(f) === '[object Date]') {
+    let temp = new Date(f.getTime());
+    temp.setHours(0,0,0,0);
+    baseMs = temp.getTime();
+  } else if (typeof f === 'string') {
+    // Asume DD/MM/YYYY
+    const p = f.split('/');
+    if (p.length === 3) {
+      // Mes es base 0 en JS
+      baseMs = new Date(p[2], p[1]-1, p[0]).getTime();
+    }
+  }
+  
+  if (!baseMs) return 0;
+
+  // B. Sumar horas y minutos
+  let addMs = 0;
+  if (h) {
+    if (Object.prototype.toString.call(h) === '[object Date]') {
+      addMs = (h.getHours() * 3600000) + (h.getMinutes() * 60000);
+    } else if (typeof h === 'string') {
+      const ph = h.split(':');
+      if (ph.length >= 2) {
+        addMs = (Number(ph[0]) * 3600000) + (Number(ph[1]) * 60000);
+      }
+    }
+  }
+
+  return baseMs + addMs;
+}
+
+// =======================================================
+// 5. HELPER FECHA BRUTA (CORREGIDO "WALL TIME")
+// =======================================================
+function getTimestamp_Bruto(f, h) {
+  if (!f) return 0;
+  
+  let year = 0, month = 0, day = 0;
+  let hours = 0, minutes = 0;
+
+  // A. Extraer partes de FECHA
+  if (Object.prototype.toString.call(f) === '[object Date]') {
+    year = f.getFullYear();
+    month = f.getMonth();
+    day = f.getDate();
+  } else if (typeof f === 'string') {
+    const p = f.split('/'); // DD/MM/YYYY
+    if (p.length === 3) {
+      year = Number(p[2]); month = Number(p[1]) - 1; day = Number(p[0]);
+    }
+  }
+
+  // B. Extraer partes de HORA
+  if (h) {
+    if (Object.prototype.toString.call(h) === '[object Date]') {
+      hours = h.getHours();
+      minutes = h.getMinutes();
+    } else if (typeof h === 'string') {
+      const ph = h.split(':'); // HH:mm
+      if (ph.length >= 2) {
+        hours = Number(ph[0]); minutes = Number(ph[1]);
+      }
+    }
+  }
+
+  // C. Construir fecha nueva LIMPIA (sin ruido de zonas horarias viejas)
+  // Usamos el constructor básico que usa la zona local del script para todo.
+  if (year === 0) return 0;
+  return new Date(year, month, day, hours, minutes, 0).getTime();
+}
+
+// ============================================================
+// ----- FUNCIÓN PARA OBTENER OPCIONES DE LA HOJA 'DATOS' -----
+// ============================================================
+function getOptionsData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("DATOS");
+  
+  // Si no existe la hoja, devolvemos vacíos
+  if (!sheet) return { status: 'success', zonas: [], categorias: [], productos: [] };
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', zonas: [], categorias: [], productos: [] };
+
+  // Leemos 3 columnas: A (Zonas), B (Categorías), C (Productos)
+  // getRange(fila2, col1, hastaFondo, 3cols)
+  const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  
+  let zonas = new Set();
+  let categorias = new Set();
+  let productos = new Set();
+
+  data.forEach(row => {
+    // Columna A: Zonas
+    if (row[0] && String(row[0]).trim() !== "") {
+      zonas.add(String(row[0]).trim().toUpperCase());
+    }
+    // Columna B: Categorías
+    if (row[1] && String(row[1]).trim() !== "") {
+      categorias.add(String(row[1]).trim().toUpperCase());
+    }
+    // Columna C: Productos / Envases (NUEVO)
+    if (row[2] && String(row[2]).trim() !== "") {
+      productos.add(String(row[2]).trim().toUpperCase());
+    }
+  });
+
+  return { 
+    status: "success",
+    zonas: Array.from(zonas).sort(), 
+    categorias: Array.from(categorias).sort(),
+    productos: Array.from(productos).sort()
+  };
+}
+
+function guardarPrecioIndividual(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('PRECIOS');
+  
+  // Si no existe la hoja, error
+  if (!sh) return { status: 'error', message: 'No existe hoja PRECIOS' };
+
+  // Limpiamos los datos que vienen del formulario
+  const cat = String(p.categoria || '').toUpperCase().trim();
+  const tipo = String(p.tipo || '').toUpperCase().trim();
+  const precio = Number(p.precio);
+
+  if (!cat || !tipo) return { status: 'error', message: 'Faltan datos (Categoría o Tipo)' };
+
+  const data = sh.getDataRange().getValues();
+  let rowIndex = -1;
+
+  // 1. Buscamos si ya existe esa combinación (Categoría + Tipo)
+  // Empezamos de 1 para saltar encabezados
+  for (let i = 1; i < data.length; i++) {
+    const rowCat = String(data[i][0] || '').toUpperCase().trim();
+    const rowTipo = String(data[i][1] || '').toUpperCase().trim();
+    
+    if (rowCat === cat && rowTipo === tipo) {
+      rowIndex = i + 1; // Guardamos el número de fila real (base 1)
+      break;
+    }
+  }
+
+  // Fecha para saber cuándo se cambió
+  const ahora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+
+  if (rowIndex > 0) {
+    // === ACTUALIZAR EXISTENTE ===
+    // Columna 3 es Precio (C), Columna 4 es Fecha (D)
+    sh.getRange(rowIndex, 3).setValue(precio);
+    sh.getRange(rowIndex, 4).setValue(ahora); 
+  } else {
+    // === CREAR NUEVO ===
+    sh.appendRow([cat, tipo, precio, ahora]);
+  }
+
+  return { status: 'success' };
+}

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <title>Control de Stock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(0, 0, 0, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --input-bg: rgba(0, 0, 0, 0.4);
+      
+      --accent: #FFD700; 
+      --start: #4CAF50; /* Verde */
+      --end: #FF5722;   /* Naranja */
+      --error: #ff4444; /* Rojo */
+      
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.6);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; 
+      color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a;
+      background-attachment: fixed;
+      min-height: 100vh; padding: 20px;
+      
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+
+    .header { text-align: center; margin-bottom: 20px; position: relative; }
+    .header h3 { color: var(--accent); font-weight: 800; margin: 0; font-size: 24px; letter-spacing: -1px; }
+    
+    .container {
+      max-width: 600px; margin: 0 auto; 
+      background: var(--glass); 
+      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+      padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    /* TARJETA DE ESTADO */
+    .status-card {
+        background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+        padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px;
+    }
+    .status-badge {
+        display: inline-block; padding: 8px 16px; border-radius: 20px;
+        font-weight: 800; text-transform: uppercase; font-size: 14px; margin-bottom: 5px;
+    }
+    .st-open { background: rgba(76, 175, 80, 0.2); color: var(--start); border: 1px solid var(--start); }
+    .st-closed { background: rgba(255, 87, 34, 0.2); color: var(--end); border: 1px solid var(--end); }
+    .status-msg { font-size: 12px; color: var(--text-muted); }
+
+    /* FILAS DE STOCK */
+    .stock-row { 
+        background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid transparent;
+    }
+    .kilo-title { font-weight: 800; color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+    
+    .comparison-wrapper { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .col-sys, .col-real { flex: 1; text-align: center; }
+    
+    label { display: block; font-size: 10px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; }
+
+    input {
+        width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--glass-border);
+        border-radius: 8px; color: white; text-align: center; font-weight: bold; font-size: 16px; outline: none;
+    }
+    
+    .inp-sys { background: rgba(255,255,255,0.05); color: #aaa; border: 1px dashed #555; pointer-events: none; font-size: 14px; }
+    
+    .inp-real:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+    .inp-real.match { border-color: var(--start); color: var(--start); background: rgba(76, 175, 80, 0.1); }
+    .inp-real.diff { border-color: var(--error); color: var(--error); background: rgba(255, 68, 68, 0.1); }
+
+    /* JUSTIFICACIÓN */
+    #diffSection { display: none; margin-top: 20px; animation: slideDown 0.3s; background: rgba(255, 68, 68, 0.1); padding: 15px; border-radius: 12px; border: 1px solid var(--error); }
+    textarea {
+        width: 100%; height: 80px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+        border-radius: 8px; color: white; padding: 10px; margin-top: 5px; resize: none;
+    }
+    
+    /* BOTONES */
+    .btn-main {
+        width: 100%; padding: 18px; border: none; border-radius: 12px; margin-top: 20px;
+        font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .btn-start { background: linear-gradient(90deg, var(--start), #43A047); color: #000; }
+    .btn-end { background: linear-gradient(90deg, var(--end), #D84315); color: white; }
+    .btn-disabled { background: #444; color: #888; cursor: not-allowed; filter: grayscale(1); }
+    
+    .btn-magic {
+        background: var(--accent); color: black; border: none; padding: 8px; 
+        border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; margin-bottom: 20px;
+        width: 100%; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.2);
+    }
+
+    .btn-volver {
+        background: transparent; border: 1px solid var(--glass-border); color: white;
+        padding: 8px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; font-weight: 600;
+        transition: all 0.2s;
+        position: absolute; left: 0; top: 0;
+    }
+    .btn-volver:hover { background: rgba(255,255,255,0.1); border-color: white; }
+
+    @keyframes slideDown { from {opacity:0; transform:translateY(-10px);} to {opacity:1; transform:translateY(0);} }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="btn-volver" id="btnBack">⬅ Volver</button>
+    <h3>CONTROL DE STOCK</h3>
+  </div>
+
+  <div class="container">
+    
+    <div class="status-card">
+        <div id="statusBadge" class="status-badge">CONECTANDO...</div>
+        <div id="statusText" class="status-msg">Verificando estado del turno...</div>
+    </div>
+
+    <button id="btnMagic" class="btn-magic" style="display:none;" onclick="copiarSistemaAReal()">✨ TODO COINCIDE (COPIAR DATOS)</button>
+
+    <div id="stockForm">
+       <div style="text-align:center; padding:20px; color:#aaa;">Cargando datos...</div>
+    </div>
+
+    <div id="diffSection">
+        <div style="color:var(--error); font-weight:bold; font-size:14px; margin-bottom:5px;">⚠️ HAY DIFERENCIAS DE STOCK</div>
+        <div style="font-size:12px; color:#ddd;">Es obligatorio justificar el motivo para poder cerrar el turno.</div>
+        <textarea id="txtMotivo" placeholder="Ej: Se rompió un envase de 10kg al bajar del camión..."></textarea>
+    </div>
+
+    <button id="btnAction" class="btn-main btn-disabled" disabled>ESPERANDO...</button>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    
+    // ==========================================
+    // 🛡️ SEGURIDAD & SESIÓN 🛡️
+    // ==========================================
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
+
+    function expulsar() { 
+        sessionStorage.clear(); 
+        window.location.replace('index3.html'); 
+    }
+
+    if (!k) {
+        expulsar();
+    } else {
+        sessionStorage.setItem('k', k);
+        if (window.history.replaceState) {
+           window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    window.addEventListener('pageshow', (e) => { 
+        if (e.persisted) window.location.reload(); 
+    });
+
+    // --- TIMER INVISIBLE (3 MINUTOS) ---
+    let sessionTimeout = 180; // 3 minutos
+
+    function startTimer() {
+        setInterval(() => {
+            sessionTimeout--;
+            if(sessionTimeout <= 0) {
+                expulsar(); // Adiós sin mensaje
+            }
+        }, 1000);
+    }
+
+    function refreshSession() {
+        sessionTimeout = 180;
+    }
+
+    // Resetear timer con actividad
+    ['click', 'mousemove', 'keydown', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, refreshSession);
+    });
+
+    // ==========================================
+    // 🧠 LÓGICA DE STOCK 🧠
+    // ==========================================
+    
+    let currentMode = ''; 
+    let systemValues = {}; 
+
+    async function init() {
+        startTimer(); // Iniciar reloj invisible
+        
+        try {
+            // Consulta Estado al Backend
+            const r = await fetch(`${SCRIPT_URL}?action=getstockstatus&k=${k}`);
+            const d = await r.json();
+            
+            // Si el backend dice error de sesión
+            if(d.status === 'error' && d.message.includes('Sesión')) expulsar();
+
+            document.body.style.opacity = 1;
+            setupUI(d);
+        } catch(e) { 
+            expulsar(); // Si falla la red al inicio, mejor salir por seguridad
+        }
+    }
+
+    function setupUI(data) {
+        const isClosed = data.estado === 'CERRADO';
+        currentMode = isClosed ? 'INICIO' : 'CIERRE';
+        
+        const badge = document.getElementById('statusBadge');
+        const txt = document.getElementById('statusText');
+        const btn = document.getElementById('btnAction');
+        
+        if (isClosed) {
+            // MODO APERTURA
+            badge.textContent = "TURNO CERRADO";
+            badge.className = "status-badge st-closed";
+            txt.textContent = "Ingrese el stock físico para INICIAR el turno.";
+            btn.textContent = "GUARDAR INICIO 🟢";
+            btn.className = "btn-main btn-start";
+            
+            renderGrid(data.sugerido || {}, false); 
+
+        } else {
+            // MODO CIERRE (AUDITORÍA)
+            badge.textContent = "TURNO ABIERTO";
+            badge.className = "status-badge st-open";
+            txt.textContent = "Auditoría: El sistema calculó el stock esperado.";
+            btn.textContent = "GUARDAR CIERRE 🔴";
+            btn.className = "btn-main btn-end";
+            
+            document.getElementById('btnMagic').style.display = 'block';
+            
+            systemValues = data.calculado; 
+            renderGrid(systemValues, true); 
+        }
+        
+        btn.disabled = false;
+        btn.onclick = guardar;
+    }
+
+    function renderGrid(vals, isAudit) {
+        const kilos = [10, 15, 45];
+        const container = document.getElementById('stockForm');
+        container.innerHTML = '';
+
+        kilos.forEach(kg => {
+            const lVal = vals[`L${kg}`] || 0;
+            const vVal = vals[`V${kg}`] || 0;
+
+            const html = `
+            <div class="stock-row">
+                <div class="kilo-title">${kg}<small>kg</small></div>
+                
+                <div style="margin-bottom:12px;">
+                    <div style="font-size:11px; color:var(--start); margin-bottom:4px; font-weight:bold;">LLENOS</div>
+                    <div class="comparison-wrapper">
+                        ${isAudit ? `<div class="col-sys"><label>SISTEMA</label><input class="inp-sys" value="${lVal}" readonly></div>` : ''}
+                        <div class="col-real"><label>REAL</label><input type="number" id="L${kg}" class="inp-real" placeholder="0" oninput="validar()" value="${isAudit ? '' : lVal}"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-size:11px; color:var(--accent); margin-bottom:4px; font-weight:bold;">VACÍOS</div>
+                    <div class="comparison-wrapper">
+                        ${isAudit ? `<div class="col-sys"><label>SISTEMA</label><input class="inp-sys" value="${vVal}" readonly></div>` : ''}
+                        <div class="col-real"><label>REAL</label><input type="number" id="V${kg}" class="inp-real" placeholder="0" oninput="validar()" value="${isAudit ? '' : vVal}"></div>
+                    </div>
+                </div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+        
+        validar(); 
+    }
+
+    function validar() {
+        if (currentMode === 'INICIO') return; 
+
+        let hasDiff = false;
+        const inputs = document.querySelectorAll('.inp-real');
+        
+        inputs.forEach(inp => {
+            const wrapper = inp.parentElement.parentElement;
+            const sysInput = wrapper.querySelector('.inp-sys');
+            
+            if (sysInput) {
+                const sysVal = Number(sysInput.value || 0);
+                const realVal = Number(inp.value || 0);
+                
+                if (realVal !== sysVal) {
+                    inp.classList.add('diff');
+                    inp.classList.remove('match');
+                    hasDiff = true;
+                } else {
+                    inp.classList.add('match');
+                    inp.classList.remove('diff');
+                }
+            }
+        });
+
+        const diffSec = document.getElementById('diffSection');
+        const btn = document.getElementById('btnAction');
+        const motivo = document.getElementById('txtMotivo').value.trim();
+
+        if (hasDiff) {
+            diffSec.style.display = 'block';
+            if (motivo.length < 5) {
+                btn.disabled = true;
+                btn.textContent = "JUSTIFIQUE LA DIFERENCIA...";
+                btn.classList.add('btn-disabled');
+            } else {
+                btn.disabled = false;
+                btn.textContent = "GUARDAR CON DIFERENCIA ⚠️";
+                btn.classList.remove('btn-disabled');
+            }
+        } else {
+            diffSec.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = "GUARDAR CIERRE ✅";
+            btn.classList.remove('btn-disabled');
+        }
+    }
+    
+    document.getElementById('txtMotivo').addEventListener('input', validar);
+
+    function copiarSistemaAReal() {
+        if(!confirm("¿Copiar valores del sistema a Real? Úselo solo si ha verificado físicamente.")) return;
+        
+        [10,15,45].forEach(k => {
+            document.getElementById(`L${k}`).value = systemValues[`L${k}`];
+            document.getElementById(`V${k}`).value = systemValues[`V${k}`];
+        });
+        validar();
+    }
+
+    async function guardar() {
+        const btn = document.getElementById('btnAction');
+        btn.disabled = true; btn.textContent = "Procesando...";
+
+        const hasDiff = document.getElementById('diffSection').style.display === 'block';
+        const val = (id) => Number(document.getElementById(id).value) || 0;
+
+        const payload = {
+            action: 'savestock',
+            k: k,
+            tipo: currentMode,
+            hasDiff: hasDiff,
+            motivo: document.getElementById('txtMotivo').value,
+            
+            L10: val('L10'), V10: val('V10'),
+            L15: val('L15'), V15: val('V15'),
+            L45: val('L45'), V45: val('V45'),
+            
+            T10: val('L10')+val('V10'),
+            T15: val('L15')+val('V15'),
+            T45: val('L45')+val('V45')
+        };
+
+        const fd = new FormData();
+        for(let key in payload) fd.append(key, payload[key]);
+
+        try {
+            const r = await fetch(SCRIPT_URL, { method:'POST', body:fd });
+            const j = await r.json();
+            if(j.status === 'success') {
+                alert(`✅ Stock ${currentMode} registrado correctamente.`);
+                window.location.replace(`inicio.html?k=${k}`);
+            } else {
+                throw new Error(j.message);
+            }
+        } catch(e) {
+            alert("Error: " + e.message);
+            btn.disabled = false;
+            btn.textContent = "REINTENTAR";
+        }
+    }
+    
+    document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+    init();
+  </script>
+</body>
+</html>

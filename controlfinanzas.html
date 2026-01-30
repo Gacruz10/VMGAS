@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<title>Control Finanzas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+
+<style>
+  :root {
+    --glass: rgba(0, 0, 0, 0.6);
+    --glass-solid: #130620; 
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --accent: #FFD700; 
+    --text-primary: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --success: #2dd4bf;
+    --danger: #ff5e5e;
+    --bg-color: #0d031a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                #020617;
+    background-attachment: fixed; min-height: 100vh;
+    padding: 0; 
+    opacity: 0; transition: opacity 0.5s ease;
+    font-size: 13px;
+    padding-bottom: 80px; 
+  }
+
+  /* --- ZONA FIJA SUPERIOR --- */
+  .fixed-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 3, 26, 0.98); 
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 10px 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .page-title { font-size: 1.1rem; color: var(--accent); font-weight: 800; text-transform: uppercase; margin: 0; }
+  .btn-back { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 12px; }
+  
+  .filter-panel {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+  }
+  .date-group { position: relative; flex: 1; }
+  .date-group input {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+    color: white; padding: 8px 8px 8px 28px; border-radius: 8px;
+    font-family: inherit; font-size: 12px; cursor: pointer; outline: none;
+  }
+  .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size:10px; pointer-events: none; }
+  
+  .btn-load {
+    background: var(--accent); color: #000; border: none; padding: 8px 15px;
+    border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 12px;
+  }
+
+  /* DASHBOARD */
+  .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .card {
+    background: rgba(255,255,255,0.05); padding: 8px; border-radius: 10px;
+    border: 1px solid var(--glass-border); text-align: center;
+  }
+  .card.active-selection { border-color: var(--accent); background: rgba(255, 215, 0, 0.15); }
+  .card label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 2px; }
+  .card .value { font-size: 1.1em; font-weight: 800; }
+  .pos { color: var(--success); }
+  .neg { color: var(--danger); }
+
+  /* BOTONES DE VISTA (NUEVO) */
+  .view-controls {
+      display: flex; gap: 5px; justify-content: center;
+  }
+  .btn-view {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+  }
+  .btn-view:hover, .btn-view.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border-color: var(--text-muted);
+  }
+
+  /* --- ZONA DE SCROLL (ÁRBOL) --- */
+  .scroll-content {
+      padding: 15px;
+  }
+
+  .tree-container {
+    border-radius: 16px; 
+    padding-bottom: 20px;
+  }
+  
+  details { 
+      background: rgba(255,255,255,0.03); 
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+  }
+  
+  summary { 
+      padding: 10px 15px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; 
+      background: rgba(255,255,255,0.02);
+  }
+  summary:active { background: rgba(255,255,255,0.08); }
+  summary:focus { outline: none; }
+
+  /* Checkbox */
+  input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px;
+    margin-right: 12px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0;
+  }
+  input[type="checkbox"]:checked { background-color: var(--accent); border-color: var(--accent); }
+  input[type="checkbox"]:checked::after { content: "✓"; color: #000; font-size: 12px; font-weight: bold; }
+
+  .l1-name { font-weight: 700; font-size: 13px; color: #fff; }
+  
+  .l2-container { padding: 0; border-top: 1px solid rgba(255,255,255,0.05); }
+  .l2-details summary { padding-left: 35px; background: rgba(0,0,0,0.2); font-size: 12px; }
+  .l2-name { color: var(--accent); font-weight: 600; }
+
+  /* Tabla */
+  .table-responsive { overflow-x: auto; width: 100%; background: rgba(0,0,0,0.3); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .col-desc { width: 100%; white-space: normal; } 
+  .col-monto { text-align: right; font-family: monospace; font-weight: 600; font-size: 12px; }
+
+  /* FAB & MODAL */
+  .fab {
+    position: fixed; bottom: 25px; right: 25px; background: var(--accent); color: #000;
+    width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 28px; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+    cursor: pointer; border: none; z-index: 200; transition: transform 0.2s;
+  }
+  .fab:hover { transform: scale(1.1) rotate(90deg); }
+
+  #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(5px); }
+  .modal-content { background: #1a0b2e; padding: 25px; width: 90%; max-width: 400px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+  .modal-content h3 { margin-top: 0; color: var(--accent); text-align: center; }
+
+  .form-group { margin-bottom: 15px; }
+  .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 14px; outline: none; }
+  .form-control:focus { border-color: var(--accent); }
+  
+  .btn-save { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+  .btn-cancel { width: 100%; background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px; margin-top: 10px; cursor: pointer; border-radius: 8px; }
+  
+  #mode-indicator {
+     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+     background: var(--accent); color: #000; padding: 8px 20px; border-radius: 20px;
+     font-size: 12px; font-weight: 800; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+     display: none; z-index: 150; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+  <div class="fixed-header">
+      <div class="header-top">
+         <button class="btn-back" id="btnVolver">⬅ Volver</button>
+         <h2 class="page-title">Finanzas</h2>
+         <div style="width: 70px;"></div>
+      </div>
+
+      <div class="filter-panel">
+          <div class="date-group">
+              <span class="date-icon">📅</span>
+              <input type="text" id="filter-start" placeholder="Desde">
+          </div>
+          <div style="color:var(--text-muted); font-size:10px">➜</div>
+          <div class="date-group">
+              <span class="date-icon">📅</span>
+              <input type="text" id="filter-end" placeholder="Hasta">
+          </div>
+          <button class="btn-load" onclick="cargarDatos()">VER</button>
+      </div>
+
+      <div class="dashboard" id="dashboard-panel">
+          <div class="card">
+              <label id="lbl-in">INGRESOS</label>
+              <div class="value pos" id="dash-in">...</div>
+          </div>
+          <div class="card">
+              <label id="lbl-out">GASTOS</label>
+              <div class="value neg" id="dash-out">...</div>
+          </div>
+          <div class="card">
+              <label id="lbl-total">BALANCE</label>
+              <div class="value" id="dash-total">...</div>
+          </div>
+      </div>
+
+      <div class="view-controls">
+          <button class="btn-view" onclick="setTreeView('L1')">Cuentas</button>
+          <button class="btn-view" onclick="setTreeView('L2')">Subcuentas</button>
+          <button class="btn-view" onclick="setTreeView('ALL')">Detalle</button>
+      </div>
+  </div>
+
+  <div class="scroll-content">
+      <div id="mode-indicator">MODO SELECCIÓN</div>
+
+      <div id="tree-root" class="tree-container">
+          <div style="padding:50px; text-align:center; color:var(--text-muted);">Iniciando...</div>
+      </div>
+  </div>
+
+  <button class="fab" onclick="openModal()">+</button>
+
+  <div id="modal">
+    <div class="modal-content">
+      <h3>Nueva Transacción</h3>
+      <form id="expenseForm">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="text" class="form-control" id="modal-fecha" required>
+        </div>
+        <div class="form-group">
+           <label>Rubro (Nivel 1)</label>
+           <input list="list_l1" class="form-control" id="input_l1" placeholder="Ej: Operativo" onchange="updateDatalistL2()" required autocomplete="off">
+           <datalist id="list_l1"></datalist>
+        </div>
+        <div class="form-group">
+           <label>Sub-rubro (Nivel 2)</label>
+           <input list="list_l2" class="form-control" id="input_l2" placeholder="Ej: Combustible" required autocomplete="off">
+           <datalist id="list_l2"></datalist>
+        </div>
+        <div class="form-group">
+           <label>Detalle</label>
+           <input type="text" class="form-control" id="l3" placeholder="Descripción" required>
+        </div>
+        <div class="form-group">
+           <label>Monto (Negativo = Gasto)</label>
+           <input type="number" step="0.01" class="form-control" id="monto" placeholder="-1500" required>
+        </div>
+        <button type="button" class="btn-save" onclick="enviarDatos()">GUARDAR</button>
+        <button type="button" class="btn-cancel" onclick="closeModal()">CANCELAR</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    const TIMEOUT_SESION = 180000; 
+
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get('k') || params.get('token');
+
+    if (!k) window.location.replace('index3.html');
+    if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
+
+    let tIdle;
+    function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => window.location.replace('index3.html'), TIMEOUT_SESION); }
+    ['click','mousemove','keydown','touchstart'].forEach(e => document.addEventListener(e, resetTimer));
+    resetTimer();
+
+    var globalData = {};
+    var currentSummary = {}; 
+
+    async function init() {
+        try {
+            const fd = new FormData(); fd.append('action','verificarsesion'); fd.append('k',k);
+            const r = await fetch(API_URL, {method:'POST', body:fd});
+            const d = await r.json();
+            if(d.status !== 'success') throw new Error();
+
+            document.body.style.opacity = 1;
+            
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            flatpickr("#filter-start", { defaultDate: firstDay, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            flatpickr("#filter-end", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            flatpickr("#modal-fecha", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+
+            cargarDatos();
+        } catch(e) { window.location.replace('index3.html'); }
+    }
+
+    function cargarDatos() {
+       const start = document.getElementById('filter-start').value;
+       const end = document.getElementById('filter-end').value;
+       
+       document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-muted)">Cargando datos...</div>';
+       
+       fetch(`${API_URL}?action=getfinancetree&k=${k}&start=${start}&end=${end}`)
+       .then(r => r.json())
+       .then(data => {
+           globalData = data;
+           currentSummary = data.summary;
+           updateDashboardValues(currentSummary.ingresos, currentSummary.gastos, currentSummary.total, false);
+           renderTree(data.tree);
+           setupDatalists(data.options);
+           
+           // Por defecto: Solo Cuentas Principales (L1) cerradas
+           setTreeView('L1');
+       })
+       .catch(e => {
+           document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error al cargar datos.<br><small>Verifique hoja CONFINANZAS</small></div>';
+       });
+    }
+
+    // --- NUEVA LÓGICA DE VISTAS ---
+    function setTreeView(mode) {
+        // Actualizar estado botones
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        if(mode === 'L1') document.querySelectorAll('.btn-view')[0].classList.add('active');
+        if(mode === 'L2') document.querySelectorAll('.btn-view')[1].classList.add('active');
+        if(mode === 'ALL') document.querySelectorAll('.btn-view')[2].classList.add('active');
+
+        // Lógica de apertura/cierre
+        const l1Details = document.querySelectorAll('.l1-details');
+        const l2Details = document.querySelectorAll('.l2-details');
+
+        if (mode === 'L1') {
+            // Cuentas Principales: Cerrar todo L1 (y L2 por si acaso)
+            l1Details.forEach(d => d.removeAttribute('open'));
+            l2Details.forEach(d => d.removeAttribute('open')); // Para que al abrir L1, L2 esté cerrado
+        } else if (mode === 'L2') {
+            // Subcuentas: Abrir L1, pero cerrar L2
+            l1Details.forEach(d => d.setAttribute('open', ''));
+            l2Details.forEach(d => d.removeAttribute('open'));
+        } else if (mode === 'ALL') {
+            // Todo: Abrir todo
+            l1Details.forEach(d => d.setAttribute('open', ''));
+            l2Details.forEach(d => d.setAttribute('open', ''));
+        }
+    }
+
+    function updateDashboardValues(ingresos, gastos, total, isSelectionMode) {
+       document.getElementById('dash-in').innerText = formatMoney(ingresos);
+       document.getElementById('dash-out').innerText = formatMoney(gastos);
+       document.getElementById('dash-total').innerText = formatMoney(total);
+       document.getElementById('dash-total').style.color = total >= 0 ? 'var(--success)' : 'var(--danger)';
+
+       const cards = document.querySelectorAll('.card');
+       const indicator = document.getElementById('mode-indicator');
+
+       if (isSelectionMode) {
+           cards.forEach(c => c.classList.add('active-selection'));
+           indicator.style.display = 'block';
+           document.getElementById('lbl-in').innerText = "INGRESOS (SEL)";
+           document.getElementById('lbl-out').innerText = "GASTOS (SEL)";
+           document.getElementById('lbl-total').innerText = "BALANCE (SEL)";
+       } else {
+           cards.forEach(c => c.classList.remove('active-selection'));
+           indicator.style.display = 'none';
+           document.getElementById('lbl-in').innerText = "INGRESOS";
+           document.getElementById('lbl-out').innerText = "GASTOS";
+           document.getElementById('lbl-total').innerText = "BALANCE";
+       }
+    }
+
+    function calcSelection() {
+       const checks = document.querySelectorAll('.item-check:checked');
+       if (checks.length === 0) {
+           updateDashboardValues(currentSummary.ingresos, currentSummary.gastos, currentSummary.total, false);
+           return;
+       }
+       let selIngresos = 0, selGastos = 0;
+       checks.forEach(c => {
+           let val = parseFloat(c.value);
+           if (val >= 0) selIngresos += val; else selGastos += val;
+       });
+       updateDashboardValues(selIngresos, selGastos, selIngresos + selGastos, true);
+    }
+
+    function renderTree(tree) {
+       let html = '';
+       if (Object.keys(tree).length === 0) {
+           document.getElementById('tree-root').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">Sin registros en este período.</div>';
+           return;
+       }
+       
+       for (let l1 in tree) {
+         // Clase 'l1-details' agregada para control masivo
+         html += `<details class="l1-details">
+           <summary>
+               <div style="display:flex; align-items:center;">
+                   <input type="checkbox" class="parent-check" onchange="toggleChildren(this)">
+                   <span class="l1-name">${l1}</span>
+               </div>
+               <span style="font-family:'monospace'; font-weight:700">${formatMoney(tree[l1].total)}</span>
+           </summary>`;
+         
+         for (let l2 in tree[l1].subs) {
+           let sub = tree[l1].subs[l2];
+           html += `<div class="l2-container">
+             <details class="l2-details"> <summary>
+                   <div style="display:flex; align-items:center">
+                       <input type="checkbox" class="parent-check" onchange="toggleChildren(this)">
+                       <span class="l2-name">${l2}</span>
+                   </div>
+                   <span style="font-size:0.9em; opacity:0.8">${formatMoney(sub.total)}</span>
+               </summary>
+               <div class="table-responsive">
+                   <table>
+                     ${sub.items.map(item => `
+                       <tr>
+                           <td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td>
+                           <td width="60">${item.fecha}</td>
+                           <td class="col-desc">${item.detalle}</td>
+                           <td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td>
+                       </tr>`).join('')}
+                   </table>
+               </div>
+             </details>
+           </div>`;
+         }
+         html += `</details>`;
+       }
+       document.getElementById('tree-root').innerHTML = html;
+    }
+
+    function toggleChildren(source) {
+       const parent = source.closest('details');
+       const children = parent.querySelectorAll('input[type="checkbox"]');
+       children.forEach(c => { 
+           if (c !== source) c.checked = source.checked; 
+       });
+       calcSelection(); 
+    }
+
+    function setupDatalists(options) {
+       const dl1 = document.getElementById('list_l1');
+       dl1.innerHTML = '';
+       for(let key in options) {
+           let op = document.createElement('option'); op.value = key; dl1.appendChild(op);
+       }
+    }
+
+    function updateDatalistL2() {
+       const val1 = document.getElementById('input_l1').value;
+       const dl2 = document.getElementById('list_l2');
+       dl2.innerHTML = '';
+       document.getElementById('input_l2').value = '';
+       if(globalData.options && globalData.options[val1]) {
+           globalData.options[val1].forEach(sub => {
+               let op = document.createElement('option'); op.value = sub; dl2.appendChild(op);
+           });
+       }
+    }
+
+    function enviarDatos() {
+       const btn = document.querySelector('.btn-save');
+       btn.innerText = "Guardando..."; btn.disabled = true;
+
+       const payload = {
+           fecha: document.getElementById('modal-fecha').value,
+           nivel1: document.getElementById('input_l1').value,
+           nivel2: document.getElementById('input_l2').value,
+           nivel3: document.getElementById('l3').value,
+           monto: document.getElementById('monto').value
+       };
+
+       const fd = new FormData();
+       fd.append('action', 'saveexpense');
+       fd.append('k', k);
+       fd.append('data', JSON.stringify(payload));
+
+       fetch(API_URL, { method: "POST", body: fd })
+       .then(r => r.json())
+       .then(d => {
+           if(d.status === 'success') {
+               closeModal();
+               document.getElementById('expenseForm').reset();
+               cargarDatos();
+               flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+           } else alert("Error: " + JSON.stringify(d));
+           btn.innerText = "GUARDAR"; btn.disabled = false;
+       });
+    }
+
+    function formatMoney(n) { return '$ ' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
+    function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    
+    document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+    window.onload = init;
+  </script>
+</body>
+</html>

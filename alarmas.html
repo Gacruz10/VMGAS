@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+<title>Gestión de Alarmas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --glass: rgba(0, 0, 0, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --text-primary: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --accent: #FFD700;
+    --chip-ok: #2dd4bf;
+    --chip-bad: #f97316;
+    --btn-bg: rgba(255, 255, 255, 0.1);
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0; 
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+    background-color: #0d031a;
+    background-attachment: fixed;
+    color: var(--text-primary);
+    min-height: 100vh;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .wrap{ max-width: 900px; margin: 0 auto; padding: 30px 20px 80px; }
+  h1{ font-size: clamp(24px, 4vw, 36px); text-align: center; margin: 0 0 10px; font-weight: 800; letter-spacing: -1px; }
+  .sub{ color: var(--text-muted); text-align: center; font-size: 14px; margin-bottom: 30px; }
+  .actions{ display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+  .btn{ border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 24px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; background: var(--btn-bg); color: white; backdrop-filter: blur(5px); transition: all 0.3s ease; }
+  .btn:hover { background: var(--accent); color: #000; transform: translateY(-2px); border-color: var(--accent); }
+  
+  .list{ display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media(min-width: 768px) { .list { grid-template-columns: 1fr 1fr; } }
+  
+  .item{ background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 15px; transition: transform 0.2s ease; }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 5px; }
+  .card-type { font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  .msg { font-size: 15px; line-height: 1.5; color: rgba(255,255,255,0.9); flex-grow: 1; }
+  
+  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .footer-left { display: flex; flex-direction: column; gap: 8px; }
+  
+  .user-info { font-size: 12px; color: var(--text-muted); font-style: italic; display: flex; align-items: center; gap: 5px; }
+  
+  .chip{ font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; width: fit-content; }
+  .ok { background: rgba(45, 212, 191, 0.2); color: var(--chip-ok); border: 1px solid var(--chip-ok); }
+  .bad{ background: rgba(249, 115, 22, 0.2); color: var(--chip-bad); border: 1px solid var(--chip-bad); }
+  
+  .state{ display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 8px; }
+  input[type="checkbox"]{ width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .empty{ text-align:center; color: var(--text-muted); margin-top:40px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GESTIÓN DE ALARMAS</h1>
+    <div class="sub" id="statusHeader">Cargando...</div>
+    <div class="actions">
+      <button class="btn" id="btnGuardar">Guardar Cambios</button>
+      <button class="btn" id="btnRefresh">Refrescar</button>
+      <button class="btn" id="btnBack">Volver</button>
+    </div>
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty" style="display:none">No hay alarmas pendientes.</div>
+  </div>
+
+<script>
+// --- PROTOCOLO DE SEGURIDAD (VETERINARIO) ---
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+const TIMEOUT_SESION = 300000; // 5 minutos
+
+// 1. DETECTOR DE "ATRÁS"
+window.addEventListener('pageshow', (e) => { 
+    if (e.persisted || (window.performance && window.performance.navigation.type === 2)) window.location.reload(); 
+});
+
+// 2. OBTENER Y VALIDAR K
+const params = new URLSearchParams(window.location.search);
+const k = params.get('k') || params.get('token');
+
+function expulsar() { 
+    sessionStorage.clear(); 
+    window.location.replace('index3.html'); 
+}
+
+if (!k) {
+    expulsar();
+} else {
+    // Limpieza URL
+    if (window.history.replaceState) {
+       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    validarSesion();
+}
+
+async function validarSesion() {
+  try {
+    const fd = new FormData();
+    fd.append('action', 'verificarsesion');
+    fd.append('k', k); // Enviamos K
+    const r = await fetch(API, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.status !== 'success') throw new Error();
+    document.body.style.opacity = 1;
+    load(); // Cargar datos tras validar
+  } catch (e) { expulsar(); }
+}
+
+// 3. INACTIVIDAD (5 MIN)
+let tIdle;
+function resetTimer() { 
+    clearTimeout(tIdle); 
+    tIdle = setTimeout(expulsar, TIMEOUT_SESION); 
+}
+['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, resetTimer));
+resetTimer();
+
+// 4. VOLVER SEGURO
+document.getElementById('btnBack').onclick = () => { 
+    window.location.replace(`inicio.html?k=${k}`); 
+};
+// ---------------------------------------------
+
+let alarms = [];
+let localStates = new Map();
+
+// Formateo de fecha y hora robusto
+const fmt = (d, t) => {
+  try {
+    const formatDate = (x) => {
+      if (!x) return '';
+      if (String(x).includes('T')) { const dt = new Date(x); return dt.toLocaleDateString('es-AR'); }
+      return x;
+    };
+    const formatTime = (x) => {
+      if (!x) return '';
+      if (String(x).includes('T')) { const dt = new Date(x); return dt.toTimeString().slice(0, 5); }
+      return x;
+    };
+    return `${formatDate(d)} ${formatTime(t)}`;
+  } catch { return `${d || ''} ${t || ''}`; }
+};
+
+function render(){
+  const listEl = document.getElementById('list');
+  listEl.innerHTML = '';
+  if (!alarms.length){ document.getElementById('empty').style.display='block'; return; }
+  document.getElementById('empty').style.display='none';
+
+  alarms.forEach(a=>{
+    const pending = localStates.has(a.row) ? localStates.get(a.row) : !!a.pendiente;
+    const chipText = pending ? 'Pendiente' : 'Revisado';
+    
+    // Asegurarnos que el usuario se vea
+    const user = (a.usuario && String(a.usuario).trim()) ? String(a.usuario).trim() : 'Sin usuario';
+
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div class="card-header">
+        <span class="card-type">${(a.tipo||'ALERTA')}</span>
+        <span>${fmt(a.fecha, a.hora)}</span>
+      </div>
+      <div class="msg">${a.descripcion||''}</div>
+      <div class="card-footer">
+        <div class="footer-left">
+           <div class="user-info">👤 ${user}</div>
+           <span class="chip ${pending?'bad':'ok'}" data-chip="${a.row}">${chipText}</span>
+        </div>
+        <label class="state">
+          <span>Marcar</span>
+          <input type="checkbox" ${!pending?'checked':''} data-row="${a.row}">
+        </label>
+      </div>`;
+    listEl.appendChild(div);
+  });
+
+  listEl.querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+    chk.onchange = (e) => {
+      const row = Number(e.target.dataset.row);
+      const isPending = !e.target.checked;
+      localStates.set(row, isPending);
+      const chip = document.querySelector(`.chip[data-chip="${row}"]`);
+      chip.textContent = isPending ? 'Pendiente' : 'Revisado';
+      chip.className = `chip ${isPending?'bad':'ok'}`;
+    };
+  });
+}
+
+async function load(){
+  try{
+    const url = `${API}?action=listalarmas&limit=50&k=${k}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    if(j.status === 'success'){
+      alarms = j.alarmas || [];
+      localStates.clear();
+      alarms.forEach(a => localStates.set(a.row, !!a.pendiente));
+      render();
+      document.getElementById('statusHeader').textContent = "Últimas 50 alarmas";
+    } else { throw new Error(); }
+  } catch(e){ document.getElementById('statusHeader').textContent = "Error al cargar alarmas."; }
+}
+
+async function save(){
+  try{
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    
+    const rowsToSend = [];
+    localStates.forEach((val, key) => { rowsToSend.push({ row: key, pendiente: val ? 1 : 0 }); });
+
+    const fd = new FormData();
+    fd.append('action', 'savealarmas'); 
+    fd.append('k', k); // Enviamos K
+    fd.append('rows', JSON.stringify(rowsToSend));
+
+    const r = await fetch(API, { method: 'POST', body: fd });
+    const j = await r.json();
+    if(j.status === 'success'){
+      btn.textContent = 'Guardado...';
+      // 🔥 CAMBIO AQUÍ: Redirigir al inicio tras 1 segundo
+      setTimeout(() => {
+          window.location.replace(`inicio.html?k=${k}`);
+      }, 1000);
+    } else { throw new Error(); }
+  } catch(e){ alert("Error al guardar"); }
+  finally { 
+    const btn = document.getElementById('btnGuardar');
+    // Solo rehabilitamos si hubo error, si no, se queda deshabilitado esperando el redireccionamiento
+    if(btn.textContent !== 'Guardado...') {
+        btn.disabled = false; btn.textContent = 'Guardar Cambios';
+    }
+  }
+}
+
+document.getElementById('btnRefresh').onclick = load;
+document.getElementById('btnGuardar').onclick = save;
+
+</script>
+</body>
+</html>

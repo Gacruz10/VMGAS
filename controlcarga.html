@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torre de Control - Carga</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(0, 0, 0, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --accent: #FFD700; 
+      --ok: #2dd4bf; 
+      --error: #ff4444; 
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a; background-attachment: fixed;
+      min-height: 100vh; padding: 20px; opacity: 0; transition: opacity 0.5s ease;
+    }
+    .header { text-align: center; margin-bottom: 25px; position: relative; }
+    .header h3 { color: var(--accent); font-weight: 800; margin: 0; font-size: 22px; text-transform: uppercase; }
+    
+    .btn-volver {
+        background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white;
+        padding: 8px 12px; border-radius: 8px; cursor: pointer; position: absolute; left: 0; top: 0;
+        font-weight: bold;
+    }
+
+    .container {
+      max-width: 600px; margin: 0 auto; background: var(--glass); 
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border);
+    }
+    .tabs { display: flex; gap: 8px; margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
+    .tab {
+      flex: 1; padding: 10px; text-align: center; border-radius: 10px;
+      color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px;
+      transition: all 0.3s ease;
+    }
+    .tab.active { background: rgba(255,255,255,0.1); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .section { display: none; animation: slideIn 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    select {
+        width: 100%; padding: 14px; background: #1a1a1a; color: white; border: 1px solid var(--glass-border);
+        border-radius: 12px; font-size: 16px; font-weight: 600; outline: none; margin-bottom: 20px;
+    }
+
+    option.ocupado { background-color: #3f0e0e; color: #ff8888; font-style: italic; }
+
+    .trip-list { display: grid; gap: 12px; }
+    .trip-card {
+        background: var(--card-bg); border: 1px solid var(--glass-border);
+        padding: 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .trip-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .trip-info h4 { margin: 0 0 5px 0; font-size: 16px; color: white; }
+    .trip-info span { font-size: 12px; color: var(--text-muted); display: block; }
+    .trip-detail { font-size: 11px; color: var(--accent); font-weight: bold; margin-top: 6px; background:rgba(255, 215, 0, 0.1); padding:4px 8px; border-radius:6px; display:inline-block;}
+    
+    .trip-card.alert { border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05); }
+
+    .grid-inputs { display: grid; gap: 8px; margin-top: 15px; }
+    .row-input { 
+      display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; 
+      background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px;
+    }
+    .label-kilo { font-weight: 900; color: var(--accent); text-align: center; font-size: 14px; }
+    .input-wrapper { position: relative; }
+    .input-wrapper label { position: absolute; top: -6px; left: 6px; font-size: 8px; background: #333; padding: 0 4px; color: #aaa; border-radius: 4px; }
+    
+    input[type="number"] {
+      width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+      border-radius: 8px; color: white; text-align: center; font-weight: 700; outline: none; font-size: 16px;
+    }
+
+    .diff-box { margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 12px; font-size: 13px; min-height: 20px;}
+    .diff-item { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);}
+    .diff-alert { color: var(--error); font-weight: bold; }
+    .diff-ok { color: var(--ok); font-weight: bold; }
+
+    textarea { 
+        width: 100%; height: 80px; 
+        background: rgba(0,0,0,0.3); 
+        border-radius: 8px; color: white; 
+        padding: 10px; resize: none; margin-top: 10px; 
+        font-family: 'Inter', sans-serif;
+        border: 1px solid var(--glass-border);
+        transition: all 0.3s ease;
+    }
+    
+    .tx-novedad { border: 1px solid var(--accent) !important; }
+    .tx-novedad::placeholder { color: rgba(255, 215, 0, 0.7); }
+
+    .tx-obligatorio { border: 2px solid var(--error) !important; background: rgba(255, 68, 68, 0.1); }
+    .tx-obligatorio::placeholder { color: rgba(255, 68, 68, 0.8); font-weight: 800; text-transform: uppercase; }
+
+    .btn-main {
+      width: 100%; padding: 16px; margin-top: 20px; border: none; border-radius: 12px;
+      font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-salida { background: var(--accent); color: #000; }
+    .btn-llegada { background: var(--ok); color: #000; }
+    .btn-retro { background: #a855f7; color: white; font-size: 12px; padding: 12px; margin-top: 10px;}
+    
+    .retro-section { border: 1px dashed #a855f7; padding: 15px; border-radius: 12px; margin-top: 20px; display: none; }
+    .spinner { text-align: center; padding: 40px; color: var(--accent); font-weight: bold; font-size: 14px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="btn-volver" id="btnBack">⬅ VOLVER</button>
+    <h3>CONTROL DE CARGA</h3>
+  </div>
+  <div class="container">
+    <div id="loader" class="spinner">📡 Validando sesión...</div>
+    <div id="mainContent" class="hidden">
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('salida')">SALIDA</div>
+        <div class="tab" onclick="switchTab('llegada')">LLEGADA</div>
+      </div>
+
+      <div id="viewSalida" class="section active">
+        <label style="font-size:11px; color:var(--accent); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER</label>
+        <select id="selChofer"><option value="">Cargando...</option></select>
+        
+        <div class="grid-inputs" id="gridSalida"></div>
+        
+        <div class="diff-box" style="text-align:center;">
+             <span style="color:#aaa; font-size:10px;">TOTAL A BORDO</span><br>
+             <span id="totalSalidaDisplay" style="font-size:24px; font-weight:900; color:var(--accent)">0</span>
+        </div>
+
+        <button class="btn-main btn-salida" id="btnRegistrarSalida">REGISTRAR SALIDA</button>
+        <div style="text-align:center; margin-top:15px;"><small style="color:#a855f7; cursor:pointer; text-decoration:underline;" onclick="toggleRetro()">Opción Retroactiva</small></div>
+        
+        <div id="retroContainer" class="retro-section">
+            <div style="text-align:center; color:#a855f7; font-weight:800; margin-bottom:10px;">MODO RETROACTIVO</div>
+            <div id="gridRetro"></div> <div id="retroDiffBox" class="diff-box"></div>
+            <textarea id="retroMotivoTxt" class="tx-obligatorio" placeholder="Motivo de diferencia..."></textarea>
+            <button class="btn-main btn-retro" id="btnRegistrarRetro">GUARDAR RETROACTIVO</button>
+        </div>
+      </div>
+
+      <div id="viewLlegadaList" class="section">
+         <div id="listViajes" class="trip-list"><div style="text-align:center; color:#aaa;">Buscando camiones...</div></div>
+      </div>
+
+      <div id="viewLlegadaForm" class="section">
+          <button style="background:none; border:none; color:#aaa; cursor:pointer; margin-bottom:10px;" onclick="cancelLlegada()">⬅ Volver a la lista</button>
+          <div style="color:var(--accent); font-weight:bold; font-size:18px; margin-bottom:10px;" id="lblChoferLlegada"></div>
+          
+          <div class="grid-inputs" id="gridLlegada"></div>
+          
+          <div id="llegadaDiffBox" class="diff-box">
+              <div style="text-align:center; color:#aaa;">Ingrese la carga para calcular...</div>
+          </div>
+          
+          <textarea id="txtMotivo" class="tx-novedad" placeholder="Novedades... (Opcional)"></textarea>
+          
+          <button class="btn-main btn-llegada" id="btnFinalizar">FINALIZAR VIAJE ✅</button>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+// --- CONFIGURACIÓN ---
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+
+const params = new URLSearchParams(window.location.search);
+let k = params.get('k') || params.get('token');
+
+// Al inicio no validamos visualmente, solo guardamos el parámetro si existe
+if (k) {
+    sessionStorage.setItem('k', k);
+    window.history.replaceState({}, document.title, window.location.pathname);
+} else {
+    k = sessionStorage.getItem('k');
+}
+
+// Función de Expulsión Inmediata
+function logout() {
+    sessionStorage.removeItem('k');
+    window.location.replace('index3.html');
+}
+
+if (!k) logout();
+
+document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+// --- TIMER 3 MIN ---
+let sessionTime = 180; 
+let timerInterval;
+
+function startSessionTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        sessionTime--;
+        if (sessionTime <= 0) {
+            alert('⏱️ Inactividad detectada. Sesión cerrada.');
+            logout(); // Kick
+        }
+    }, 1000);
+}
+
+function refreshSession() { sessionTime = 180; }
+
+['click','mousemove','keydown','touchstart'].forEach(ev => 
+    document.addEventListener(ev, refreshSession)
+);
+
+// --- APP LOGIC ---
+
+let viajesPendientes = [];
+let viajeSeleccionado = null;
+let hayDiferenciaLlegada = false;
+
+async function init() {
+    // 1. 🔥 VALIDACIÓN BLOQUEANTE SERVIDOR
+    try {
+        const fd = new FormData();
+        fd.append('action', 'verificarsesion');
+        fd.append('k', k);
+        const r = await fetch(API, { method: 'POST', body: fd });
+        const d = await r.json();
+        
+        if (d.status !== 'success') {
+            logout(); 
+            return;
+        }
+    } catch(e) {
+        logout(); 
+        return;
+    }
+
+    // 2. Interfaz
+    startSessionTimer();
+    document.body.style.opacity = 1;
+    document.getElementById('loader').textContent = "Cargando datos...";
+
+    renderGrid('gridSalida', 'S');
+    renderGrid('gridLlegada', 'L');
+    document.getElementById('gridRetro').innerHTML = renderRetroInputs();
+
+    // 3. Cargar datos
+    await Promise.all([loadDrivers(), loadTrips()]);
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+    
+    // Listeners
+    document.querySelectorAll('.calc-S').forEach(i => i.addEventListener('input', () => {
+        const t = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
+        document.getElementById('totalSalidaDisplay').textContent = t;
+    }));
+
+    setupCalc('L', calcLlegadaDiff);
+    setupCalc('R', calcRetroDiff);
+    
+    // Listener Bloqueo Chofer
+    document.getElementById('selChofer').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.dataset.ocupado === "true") {
+             const nombre = selectedOption.text.replace('⛔ ', '').replace(' (En Ruta)', '');
+             alert(`⛔ EL USUARIO ${nombre} YA ESTÁ EN RUTA.\n\nNo puedes asignarle una nueva salida hasta que finalice su viaje.`);
+             this.value = ""; 
+        }
+    });
+}
+
+function renderGrid(id, pre) {
+    const html = [10, 15, 45].map(kg => `
+        <div class="row-input">
+            <div class="label-kilo">${kg}</div>
+            <div class="input-wrapper"><label>LLENOS</label><input type="number" id="${pre}L${kg}" class="calc-${pre}" placeholder="0"></div>
+            <div class="input-wrapper"><label>VACÍOS</label><input type="number" id="${pre}V${kg}" class="calc-${pre}" placeholder="0"></div>
+        </div>
+    `).join('');
+    document.getElementById(id).innerHTML = html;
+}
+
+function renderRetroInputs() {
+    return [10,15,45].map(kg => `
+        <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">
+            <div style="text-align:center; font-size:10px; color:var(--accent); font-weight:bold; margin-bottom:5px;">${kg} KG</div>
+            <div class="row-input" style="background:rgba(255,215,0,0.05)">
+                <div style="font-size:9px; color:#aaa;">SALIO</div>
+                <input type="number" id="SL${kg}" class="calc-R" placeholder="Llenos">
+                <input type="number" id="SV${kg}" class="calc-R" placeholder="Vacíos">
+            </div>
+            <div class="row-input" style="background:rgba(45,212,191,0.05)">
+                <div style="font-size:9px; color:#aaa;">VOLVIO</div>
+                <input type="number" id="RL${kg}" class="calc-R" placeholder="Llenos">
+                <input type="number" id="RV${kg}" class="calc-R" placeholder="Vacíos">
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadDrivers() {
+    try {
+        const r = await fetch(`${API}?action=listusuarios`); 
+        const d = await r.json();
+        
+        const sel = document.getElementById('selChofer');
+        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+        
+        let lista = [];
+        if (d.status === 'success' && Array.isArray(d.usuarios)) lista = d.usuarios;
+
+        let enRutaSet = new Set();
+        try {
+           const r2 = await fetch(`${API}?action=getdrivers`);
+           const d2 = await r2.json();
+           if(d2.drivers) {
+               d2.drivers.forEach(x => { 
+                   if(x.enRuta) enRutaSet.add(String(x.nombre).toUpperCase().trim());
+               });
+           }
+        } catch(e) {}
+
+        if (lista.length > 0) {
+            lista.forEach(item => {
+                const idReal = String(item.usuario || '').trim();
+                const nombreMostrar = item.nombreMostrar || item.nombre || idReal; 
+                const idUpper = idReal.toUpperCase();
+                const estaOcupado = enRutaSet.has(idUpper);
+
+                const o = document.createElement('option');
+                o.value = idReal; 
+                
+                if(estaOcupado) {
+                    o.text = `⛔ ${nombreMostrar} (En Ruta)`;
+                    o.className = "ocupado";
+                    o.dataset.ocupado = "true"; 
+                } else {
+                    o.text = nombreMostrar;
+                    o.dataset.ocupado = "false";
+                }
+                sel.add(o);
+            });
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function loadTrips() {
+    try {
+        const r = await fetch(`${API}?action=getpendingtrips&k=${k}`);
+        const d = await r.json();
+        if(d.status === 'error' && d.message.includes('Sesión')) logout();
+
+        viajesPendientes = d.trips || [];
+        renderTripList();
+        refreshSession();
+    } catch(e){}
+}
+
+function renderTripList() {
+    const list = document.getElementById('listViajes');
+    list.innerHTML = '';
+    if(!viajesPendientes.length) return list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Sin camiones en ruta.</div>';
+
+    viajesPendientes.forEach(v => {
+        const card = document.createElement('div');
+        card.className = `trip-card ${v.isLate ? 'alert' : ''}`;
+        card.onclick = () => selectTrip(v);
+        card.innerHTML = `
+            <div class="trip-info">
+                <h4>${v.chofer}</h4>
+                <span>${v.fechaSalida} - ${v.horaSalida}</span>
+                <div class="trip-detail">${v.cargaLabel}</div>
+            </div>
+            <div style="font-size:20px;">${v.isLate ? '⚠️' : '🚚'}</div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function selectTrip(trip) {
+    viajeSeleccionado = trip;
+    document.getElementById('viewLlegadaList').classList.remove('active');
+    document.getElementById('viewLlegadaForm').classList.add('active');
+    
+    const v = trip.ventasDetalle || { 10: {gas:0, env:0}, 15: {gas:0, env:0}, 45: {gas:0, env:0} };
+    const totalVentas = (v[10].gas + v[10].env) + (v[15].gas + v[15].env) + (v[45].gas + v[45].env);
+
+    document.getElementById('lblChoferLlegada').innerHTML = 
+        `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Vendió: ${totalVentas})</span>`;
+    
+    const s = trip.sDetails;
+
+    document.getElementById('LL10').value = Math.max(0, s.l10 - (v[10].gas + v[10].env));
+    document.getElementById('LV10').value = s.v10 + v[10].gas;
+    document.getElementById('LL15').value = Math.max(0, s.l15 - (v[15].gas + v[15].env));
+    document.getElementById('LV15').value = s.v15 + v[15].gas;
+    document.getElementById('LL45').value = Math.max(0, s.l45 - (v[45].gas + v[45].env));
+    document.getElementById('LV45').value = s.v45 + v[45].gas;
+
+    calcLlegadaDiff(); 
+}
+
+function cancelLlegada() {
+    viajeSeleccionado = null;
+    document.getElementById('viewLlegadaForm').classList.remove('active');
+    document.getElementById('viewLlegadaList').classList.add('active');
+}
+
+function val(id) { return Number(document.getElementById(id).value) || 0; }
+
+function calcLlegadaDiff() {
+    if(!viajeSeleccionado) return;
+    const s = viajeSeleccionado.sDetails; 
+    const v = viajeSeleccionado.ventasDetalle;
+
+    const eLL10 = Math.max(0, s.l10 - (v[10].gas + v[10].env));
+    const eLV10 = s.v10 + v[10].gas;
+    const eLL15 = Math.max(0, s.l15 - (v[15].gas + v[15].env));
+    const eLV15 = s.v15 + v[15].gas;
+    const eLL45 = Math.max(0, s.l45 - (v[45].gas + v[45].env));
+    const eLV45 = s.v45 + v[45].gas;
+
+    let diff = 0;
+    diff += Math.abs(val('LL10') - eLL10);
+    diff += Math.abs(val('LV10') - eLV10);
+    diff += Math.abs(val('LL15') - eLL15);
+    diff += Math.abs(val('LV15') - eLV15);
+    diff += Math.abs(val('LL45') - eLL45);
+    diff += Math.abs(val('LV45') - eLV45);
+    
+    hayDiferenciaLlegada = diff > 0;
+    
+    const txt = document.getElementById('txtMotivo');
+    const box = document.getElementById('llegadaDiffBox');
+    
+    if (hayDiferenciaLlegada) {
+        txt.className = "tx-obligatorio";
+        txt.placeholder = "⚠️ MOTIVO DE LA DIFERENCIA (OBLIGATORIO)...";
+        box.innerHTML = '<div style="text-align:center; color:var(--error); font-weight:bold;">⚠️ HAY DIFERENCIAS EN LA CARGA</div>';
+    } else {
+        txt.className = "tx-novedad";
+        txt.placeholder = "Novedades... (Opcional)";
+        box.innerHTML = '<div style="text-align:center; color:var(--ok); font-weight:bold;">✅ CARGA COINCIDE CON VENTAS</div>';
+    }
+}
+
+function calcRetroDiff() {
+    const d10 = (val('SL10')+val('SV10')) - (val('RL10')+val('RV10'));
+    const d15 = (val('SL15')+val('SV15')) - (val('RL15')+val('RV15'));
+    const d45 = (val('SL45')+val('SV45')) - (val('RL45')+val('RV45'));
+
+    let html = '';
+    let hasDiff = false;
+    const row = (kg, diff) => {
+        if(diff === 0) return '';
+        hasDiff = true;
+        const msg = diff > 0 ? `Faltan ${diff}` : `Sobran ${Math.abs(diff)}`;
+        return `<div class="diff-item"><span>${kg}kg</span><span class="diff-alert">${msg}</span></div>`;
+    };
+
+    html += row(10, d10); html += row(15, d15); html += row(45, d45);
+    const totalInput = val('SL10')+val('SL15')+val('SL45');
+    if(!hasDiff && totalInput > 0) html = '<div style="text-align:center; color:var(--ok); font-weight:bold;">✅ COINCIDE</div>';
+    document.getElementById('retroDiffBox').innerHTML = html;
+    
+    const txtRetro = document.getElementById('retroMotivoTxt');
+    if(hasDiff) {
+        txtRetro.className = "tx-obligatorio";
+        txtRetro.style.display = 'block';
+    } else {
+        txtRetro.className = "tx-novedad";
+        txtRetro.style.display = 'none';
+    }
+}
+
+function setupCalc(cls, fn) {
+    document.querySelectorAll(`.calc-${cls}`).forEach(i => i.addEventListener('input', fn));
+}
+
+function toggleRetro() {
+    const el = document.getElementById('retroContainer');
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+function switchTab(t) {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+    if(t === 'salida') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('viewSalida').classList.add('active');
+    } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('viewLlegadaList').classList.add('active');
+        loadTrips();
+    }
+}
+
+async function enviar(payload) {
+    if(!confirm('¿Confirmar operación?')) return;
+    document.querySelectorAll('button').forEach(b => {b.disabled=true; b.innerText='...'});
+    
+    const fd = new FormData();
+    fd.append('action', 'savetransporte');
+    fd.append('k', k);
+    for(let key in payload) fd.append(key, payload[key]);
+    
+    try {
+        const r = await fetch(API, {method:'POST', body:fd});
+        const j = await r.json();
+        if(j.status === 'success') { 
+            alert('✅ Guardado'); 
+            // 🔥 CAMBIO AQUÍ: Redirección al Inicio tras guardar
+            window.location.replace(`inicio.html?k=${k}`); 
+        } else {
+            if(j.message.includes('Sesión')) logout();
+            throw new Error(j.message);
+        }
+    } catch(e) { alert('Error: '+e.message); window.location.reload(); }
+}
+
+document.getElementById('btnRegistrarSalida').onclick = () => {
+    const sel = document.getElementById('selChofer');
+    const c = sel.value;
+    const total = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
+    
+    if(!c) return alert('Selecciona chofer');
+    
+    const optionSelected = sel.options[sel.selectedIndex];
+    if (optionSelected.dataset.ocupado === "true") {
+        return alert("⛔ ERROR: Chofer en ruta.");
+    }
+
+    if(total === 0) return alert('La carga está vacía');
+
+    enviar({
+        modo: 'SALIDA', chofer: c, totalSalida: total,
+        L10: val('SL10'), V10: val('SV10'),
+        L15: val('SL15'), V15: val('SV15'),
+        L45: val('SL45'), V45: val('SV45')
+    });
+};
+
+document.getElementById('btnFinalizar').onclick = () => {
+    const motivo = document.getElementById('txtMotivo').value.trim();
+    
+    if (hayDiferenciaLlegada && !motivo) {
+        alert("⚠️ ATENCIÓN:\n\nHay diferencias detectadas. Debes explicar el motivo en el campo rojo para continuar.");
+        document.querySelectorAll('button').forEach(b => {b.disabled=false;});
+        document.getElementById('btnFinalizar').innerText = "FINALIZAR VIAJE ✅";
+        return;
+    }
+    
+    const totalLleg = val('LL10')+val('LV10')+val('LL15')+val('LV15')+val('LL45')+val('LV45');
+    
+    enviar({
+        modo: 'LLEGADA', idViaje: viajeSeleccionado.idViaje, 
+        totalLlegada: totalLleg, 
+        motivo: motivo,
+        L10: val('LL10'), V10: val('LV10'),
+        L15: val('LL15'), V15: val('LV15'),
+        L45: val('LL45'), V45: val('LV45')
+    });
+};
+
+document.getElementById('btnRegistrarRetro').onclick = () => {
+    const c = document.getElementById('selChofer').value;
+    const motivo = document.getElementById('retroMotivoTxt').value;
+    const isDiff = document.getElementById('retroMotivoTxt').classList.contains('tx-obligatorio');
+    
+    if(!c) return alert('Selecciona chofer arriba');
+    const totSal = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
+    const totLleg = val('RL10')+val('RV10')+val('RL15')+val('RV15')+val('RL45')+val('RV45');
+    
+    if(totSal === 0) return alert('Salida vacía');
+    if(isDiff && !motivo) return alert('Falta motivo obligatorio');
+
+    enviar({
+        modo: 'RETROACTIVO', chofer: c, motivo: motivo,
+        totalSalida: totSal, totalLlegada: totLleg, diferencia: totSal - totLleg,
+        SL10: val('SL10'), SV10: val('SV10'),
+        SL15: val('SL15'), SV15: val('SV15'),
+        SL45: val('SL45'), SV45: val('SV45'),
+        RL10: val('RL10'), RV10: val('RV10'),
+        RL15: val('RL15'), RV15: val('RV15'),
+        RL45: val('RL45'), RV45: val('RV45')
+    });
+};
+
+init();
+</script>
+</body>
+</html>

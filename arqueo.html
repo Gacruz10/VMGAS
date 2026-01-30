@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arqueo de Caja - Finanzas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(0, 0, 0, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --accent: #FFD700; 
+      --ok: #2dd4bf; 
+      --error: #ff4444; 
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #0f172a 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #1e1b4b 0%, transparent 50%),
+                  #020617;
+      background-attachment: fixed; min-height: 100vh; padding: 20px;
+      
+      /* SEGURIDAD VISUAL: INICIA INVISIBLE */
+      opacity: 0; 
+      transition: opacity 0.5s ease;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header h1 { font-size: 1.2rem; font-weight: 800; color: var(--accent); margin: 0; }
+    .btn-volver { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 600; }
+    .container { max-width: 800px; margin: 0 auto; display: grid; gap: 20px; grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .container { grid-template-columns: 1fr 1fr; } .full-width { grid-column: 1 / -1; } }
+    .card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; transition: border-color 0.3s ease; }
+    .card-title { font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; }
+    .data-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .data-label { color: var(--text-muted); font-size: 0.9rem; }
+    .data-value { font-weight: 700; }
+    .data-total { font-size: 1.4rem; color: var(--accent); margin-top: 10px; border: none; }
+    .input-group { margin-bottom: 15px; }
+    .input-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; }
+    input[type="number"], textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; color: white; font-size: 1.1rem; font-weight: 700; outline: none; }
+    textarea { font-size: 0.9rem; font-weight: 400; min-height: 80px; resize: none; }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    
+    /* VALIDACIÓN VISUAL */
+    .required-field { border-color: var(--error) !important; background: rgba(255, 68, 68, 0.05) !important; }
+    .required-label { color: var(--error) !important; font-weight: bold; }
+    
+    .result-box { text-align: center; padding: 20px; border-radius: 16px; margin-top: 10px; transition: all 0.3s ease; }
+    .status-ok { background: rgba(45, 212, 191, 0.1); border: 1px solid var(--ok); color: var(--ok); }
+    .status-error { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--error); color: var(--error); }
+    .status-neutral { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-muted); }
+    
+    .btn-confirm { width: 100%; padding: 18px; background: var(--accent); border: none; border-radius: 16px; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: all 0.3s; }
+    .btn-confirm:disabled { background: #333; color: #666; cursor: not-allowed; }
+    
+    #loader { text-align: center; color: var(--accent); font-weight: 600; padding: 20px; }
+    .hidden { display: none; }
+    
+    /* TABLA DE GASTOS */
+    .gastos-container { margin-top: 10px; background: rgba(255,68,68,0.1); border-radius: 8px; padding: 10px; border: 1px dashed var(--error); }
+    .gastos-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .gastos-table td { padding: 4px 0; color: #ffcccc; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .gastos-table td:last-child { text-align: right; font-weight: 700; color: var(--error); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>ARQUEO DE CAJA</h1>
+    <button class="btn-volver" id="btnBack">VOLVER</button>
+  </div>
+
+  <div id="loader">Cargando datos maestros...</div>
+
+  <div class="container hidden" id="mainUI">
+    
+    <div class="card full-width">
+      <div class="card-title">Paso 1: Identificación del Turno</div>
+      <select id="selChofer" style="width:100%; padding:15px; background:#1a1a1a; color:white; border-radius:12px; font-weight:700;">
+        <option value="">Cargando lista...</option>
+      </select>
+    </div>
+
+    <div class="card" id="cardSistema">
+      <div class="card-title">Cálculo del Sistema (BD1) <span>TEÓRICO</span></div>
+      <div id="monitorSistema">
+        <div class="data-row">
+          <span class="data-label">Ventas en Efectivo (+)</span>
+          <span class="data-value" id="sisEfectivo">$ 0</span>
+        </div>
+        
+        <div class="data-row">
+          <span class="data-label">Gastos Declarados (-)</span>
+          <span class="data-value" id="sisGastos" style="color:var(--error)">$ 0</span>
+        </div>
+
+        <div id="divDetalleGastos" class="gastos-container" style="display:none;">
+           </div>
+
+        <div class="data-row data-total">
+          <span class="data-label" style="color:var(--accent)">Efectivo a Rendir</span>
+          <div style="text-align:right;">
+             <div class="data-value" id="sisTotal">$ 0</div>
+             <div id="alertRuta" style="display:none; font-size:0.75rem; color:var(--accent); margin-top:4px;">⚠️ CAMIÓN EN RUTA</div>
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);">
+          <div class="data-row">
+            <span class="data-label">Transferencias (CBU/MP)</span>
+            <span class="data-value" id="sisTransf" style="color:var(--ok)">$ 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Arqueo Manual <span>FÍSICO</span></div>
+      
+      <div class="input-group">
+        <label>Efectivo entregado por chofer</label>
+        <input type="number" id="realEfectivo" placeholder="0.00">
+      </div>
+
+      <div class="input-group">
+        <label>Transferencias validadas en banco</label>
+        <input type="number" id="realTransf" placeholder="0.00">
+      </div>
+
+      <div id="resultBox" class="result-box status-neutral">
+        <span id="resultMsg">Ingrese los montos para comparar</span>
+        <div id="resultDiff" style="font-size: 1.5rem; font-weight: 800;">$ 0.00</div>
+      </div>
+    </div>
+
+    <div class="card full-width">
+      <div class="card-title">Confirmación de Arqueo</div>
+      <div class="input-group">
+          <label id="lblObs">Observaciones (Obligatorio si hay diferencia)</label>
+          <textarea id="obsArqueo" placeholder="Detalle aquí cualquier diferencia o novedad del turno..."></textarea>
+      </div>
+      <button class="btn-confirm" id="btnCerrarCaja" disabled>REGISTRAR CIERRE Y GUARDAR</button>
+    </div>
+
+  </div>
+
+<script>
+// --- CONFIGURACIÓN & SEGURIDAD BLINDADA ---
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+const TIMEOUT_SESION = 180000; // 3 Minutos (180 segundos)
+
+// 1. VALIDACIÓN PRELIMINAR DE URL
+const params = new URLSearchParams(window.location.search);
+let k = params.get('k') || params.get('token');
+
+// Función de salida segura
+function expulsar() {
+    sessionStorage.clear();
+    window.location.replace('index3.html'); // Vuelve al inicio (login)
+}
+
+if (!k) {
+    expulsar();
+} else {
+    // Limpieza visual de URL
+    if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // Iniciamos validación estricta contra el servidor
+    validarSesion();
+}
+
+// 2. VALIDACIÓN ASÍNCRONA (BLINDAJE DE CARGA)
+async function validarSesion() {
+    try {
+        const fd = new FormData();
+        fd.append('action', 'verificarsesion');
+        fd.append('k', k);
+        const r = await fetch(API, { method: 'POST', body: fd });
+        const d = await r.json();
+        
+        if (d.status !== 'success') {
+            throw new Error();
+        }
+
+        // SI ES EXITOSO: MOSTRAR INTERFAZ Y CARGAR DATOS
+        document.body.style.opacity = 1;
+        init(); // Carga la lógica de la app
+
+    } catch (e) {
+        expulsar();
+    }
+}
+
+// 3. TIMEOUT SILENCIOSO (3 MINUTOS)
+let tIdle;
+function resetTimer() {
+    clearTimeout(tIdle);
+    tIdle = setTimeout(expulsar, TIMEOUT_SESION);
+}
+// Eventos que mantienen viva la sesión
+['click','mousemove','keydown','touchstart','scroll'].forEach(evt => 
+    document.addEventListener(evt, resetTimer)
+);
+resetTimer(); // Arranca el contador
+
+document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+let sisData = { efectivo: 0, transf: 0, gastos: 0, total: 0 };
+let hayDiferencia = false;
+
+// --- LÓGICA PRINCIPAL (Solo se ejecuta si la sesión es válida) ---
+async function init() {
+    try {
+        const r = await fetch(`${API}?action=getdrivers&k=${k}`);
+        const d = await r.json();
+        
+        if(d.status === 'success') {
+            const sel = document.getElementById('selChofer');
+            
+            if (d.drivers.length === 0) {
+                 sel.innerHTML = '<option value="">✅ Todo al día (Sin pendientes)</option>';
+            } else {
+                 sel.innerHTML = '<option value="">Seleccione chofer a auditar...</option>';
+                 d.drivers.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.nombre;
+                    const iconTruck = item.enRuta ? '🚚 ' : '';
+                    const moneyFmt = item.saldo.toLocaleString('es-AR', {style: 'currency', currency: 'ARS', minimumFractionDigits: 0});
+                    o.text = `${iconTruck}${item.nombre} (${moneyFmt})`;
+                    o.dataset.ruta = item.enRuta; 
+                    sel.add(o);
+                 });
+            }
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('mainUI').classList.remove('hidden');
+        }
+    } catch(e) { alert("Error conectando con la base."); }
+}
+
+document.getElementById('selChofer').onchange = async (e) => {
+    const chofer = e.target.value;
+    if(!chofer) return;
+
+    // Resetear UI
+    document.getElementById('divDetalleGastos').style.display = 'none';
+    document.getElementById('divDetalleGastos').innerHTML = '';
+    document.getElementById('realEfectivo').value = '';
+    document.getElementById('realTransf').value = '';
+    document.getElementById('obsArqueo').value = '';
+    
+    validarCierre();
+
+    const opt = e.target.options[e.target.selectedIndex];
+    const enRuta = opt.dataset.ruta === 'true';
+
+    const cardSis = document.getElementById('cardSistema');
+    const alertTag = document.getElementById('alertRuta');
+
+    if(enRuta) {
+        cardSis.style.borderColor = 'var(--accent)';
+        alertTag.style.display = 'block';
+    } else {
+        cardSis.style.borderColor = 'var(--glass-border)';
+        alertTag.style.display = 'none';
+    }
+
+    document.getElementById('monitorSistema').style.opacity = '0.5';
+    
+    try {
+        const r = await fetch(`${API}?action=getfinanzas&chofer=${chofer}&k=${k}`);
+        const res = await r.json();
+        
+        if(res.status === 'success') {
+            sisData = {
+                efectivo: Number(res.efectivo) || 0,
+                transf: Number(res.transf) || 0,
+                gastos: Number(res.gastos) || 0,
+                total: (Number(res.efectivo) || 0) - (Number(res.gastos) || 0)
+            };
+            
+            document.getElementById('sisEfectivo').textContent = `$ ${sisData.efectivo.toLocaleString()}`;
+            document.getElementById('sisTransf').textContent = `$ ${sisData.transf.toLocaleString()}`;
+            document.getElementById('sisGastos').textContent = `$ ${sisData.gastos.toLocaleString()}`;
+            document.getElementById('sisTotal').textContent = `$ ${sisData.total.toLocaleString()}`;
+            
+            if (res.listaGastos && res.listaGastos.length > 0) {
+                const div = document.getElementById('divDetalleGastos');
+                let html = '<table class="gastos-table">';
+                res.listaGastos.forEach(g => {
+                    html += `<tr>
+                        <td>${g.motivo}</td>
+                        <td>-$ ${g.monto.toLocaleString()}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                div.innerHTML = html;
+                div.style.display = 'block';
+            }
+
+            document.getElementById('monitorSistema').style.opacity = '1';
+            actualizarDiferencia();
+        }
+    } catch(err) { alert("Error al obtener datos del chofer."); }
+};
+
+document.getElementById('realEfectivo').oninput = actualizarDiferencia;
+document.getElementById('realTransf').oninput = actualizarDiferencia;
+document.getElementById('obsArqueo').oninput = validarCierre;
+
+function actualizarDiferencia() {
+    const realE = Number(document.getElementById('realEfectivo').value) || 0;
+    const realT = Number(document.getElementById('realTransf').value) || 0;
+
+    const diffEfectivo = realE - sisData.total;
+    const diffTransf = realT - sisData.transf;
+    const diffTotal = diffEfectivo + diffTransf;
+
+    const box = document.getElementById('resultBox');
+    const msg = document.getElementById('resultMsg');
+    const val = document.getElementById('resultDiff');
+
+    val.textContent = `$ ${diffTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+    if (Math.abs(diffTotal) <= 50) { 
+        box.className = "result-box status-ok";
+        msg.textContent = "✅ CAJA BALANCEADA";
+        hayDiferencia = false;
+    } else if (diffTotal < 0) {
+        box.className = "result-box status-error";
+        msg.textContent = `🛑 FALTANTE DE DINERO`;
+        hayDiferencia = true;
+    } else {
+        box.className = "result-box status-error"; 
+        msg.textContent = `⚠️ SOBRANTE DE DINERO`;
+        box.style.borderColor = "var(--accent)";
+        box.style.color = "var(--accent)";
+        hayDiferencia = true;
+    }
+    
+    validarCierre();
+}
+
+function validarCierre() {
+    const btn = document.getElementById('btnCerrarCaja');
+    const txtObs = document.getElementById('obsArqueo');
+    const lblObs = document.getElementById('lblObs');
+    const obs = txtObs.value.trim();
+    
+    const realE = document.getElementById('realEfectivo').value;
+    if (realE === '') {
+        btn.disabled = true;
+        return;
+    }
+
+    if (hayDiferencia) {
+        lblObs.classList.add('required-label');
+        txtObs.classList.add('required-field');
+        txtObs.placeholder = "⚠️ EXISTE UNA DIFERENCIA. DEBE JUSTIFICAR EL MOTIVO AQUÍ.";
+        
+        if (obs.length < 5) {
+            btn.disabled = true;
+            btn.textContent = "JUSTIFIQUE LA DIFERENCIA";
+        } else {
+            btn.disabled = false;
+            btn.textContent = "REGISTRAR CIERRE (CON DIFERENCIA)";
+        }
+    } else {
+        lblObs.classList.remove('required-label');
+        txtObs.classList.remove('required-field');
+        txtObs.placeholder = "Observaciones (Opcional)";
+        
+        btn.disabled = false;
+        btn.textContent = "REGISTRAR CIERRE Y GUARDAR";
+    }
+}
+
+document.getElementById('btnCerrarCaja').onclick = async () => {
+    const chofer = document.getElementById('selChofer').value;
+    if(!chofer) return alert("Seleccione un chofer");
+
+    if(!confirm(`¿Confirmar cierre de caja para ${chofer}?`)) return;
+
+    const btn = document.getElementById('btnCerrarCaja');
+    btn.disabled = true; btn.textContent = "PROCESANDO...";
+
+    const payload = {
+        action: 'savearqueo',
+        k: k,
+        chofer: chofer,
+        sisEfectivo: sisData.efectivo,
+        sisTransf: sisData.transf,
+        sisGastos: sisData.gastos,
+        realEfectivo: Number(document.getElementById('realEfectivo').value) || 0,
+        realTransf: Number(document.getElementById('realTransf').value) || 0,
+        observaciones: document.getElementById('obsArqueo').value,
+        hayDiferencia: hayDiferencia
+    };
+
+    const fd = new FormData();
+    for(let key in payload) fd.append(key, payload[key]);
+
+    try {
+        const r = await fetch(API, { method: 'POST', body: fd });
+        const res = await r.json();
+        if(res.status === 'success') {
+            alert("✅ Cierre guardado correctamente.");
+            window.location.reload();
+        } else {
+            alert("Error: " + res.message);
+            btn.disabled = false; btn.textContent = "REINTENTAR";
+        }
+    } catch(e) { 
+        alert("Error de red."); 
+        btn.disabled = false; btn.textContent = "REINTENTAR";
+    }
+};
+</script>
+</body>
+</html>

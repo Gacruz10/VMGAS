@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <title>Registro de Entrega</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(0, 0, 0, 0.5);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --input-bg: rgba(0, 0, 0, 0.4);
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --accent: #FFD700; 
+      --error: #ff4444;
+      --success: #4CAF50;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a; background-attachment: fixed; min-height: 100vh; padding: 20px;
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+
+    .header { text-align: center; margin-bottom: 20px; position: relative; }
+    .welcome-message { color: var(--accent); font-size: 18px; font-weight: 700; text-transform: uppercase; }
+
+    .form-container {
+      max-width: 500px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px); padding: 25px; border-radius: 24px;
+      border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.4); position: relative;
+    }
+
+    .loading-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(13, 3, 26, 0.95); z-index: 100; display: flex; justify-content: center;
+      align-items: center; border-radius: 24px;
+    }
+    .loading-text { color: var(--accent); font-size: 16px; font-weight: bold; }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-muted); }
+
+    input, select {
+      width: 100%; height: 45px; padding: 0 15px; border: 1px solid var(--glass-border);
+      border-radius: 12px; font-size: 15px; background: var(--input-bg); color: white;
+      outline: none; transition: all 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+    input[readonly] { opacity: 0.6; cursor: not-allowed; background: rgba(255,255,255,0.05); }
+
+    /* ESTILOS BUSCADOR */
+    .search-container { position: relative; margin-bottom: 20px; }
+    .search-input { 
+        padding-left: 40px; border-color: var(--accent); background: rgba(255, 215, 0, 0.1); 
+    }
+    .search-icon { position: absolute; left: 12px; top: 12px; opacity: 0.8; }
+    .search-results {
+        position: absolute; top: 100%; left: 0; right: 0;
+        background: #1a0b2e; border: 1px solid var(--glass-border);
+        border-radius: 12px; max-height: 250px; overflow-y: auto;
+        z-index: 50; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+    .result-item {
+        padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+    }
+    .result-item:hover { background: rgba(255, 215, 0, 0.1); }
+    .r-name { font-weight: bold; color: var(--accent); display: block; }
+    .r-detail { font-size: 11px; color: #aaa; }
+
+    .checkbox-item { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; }
+    .checkbox-item input[type="checkbox"] { width: 22px; height: 22px; margin-right: 12px; }
+
+    .yellow-label { color: var(--accent) !important; font-weight: 700; }
+    .red-label { color: var(--error) !important; font-size: 14px; font-weight: 700; }
+
+    .hidden-section { display: none; margin-top: 10px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; border: 1px solid var(--glass-border); }
+    .garrafa-row { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; }
+    .garrafa-cantidad { width: 80px; text-align: center; }
+    
+    .manual-check-container {
+        display: flex; justify-content: flex-end; align-items: center; margin-bottom: 15px;
+        font-size: 12px; color: var(--error); font-weight: bold;
+    }
+    .manual-check-container input { width: 16px; height: 16px; margin-right: 5px; cursor: pointer; }
+
+    .total-display {
+        background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin: 20px 0; border: 1px dashed var(--glass-border);
+    }
+    .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+    .total-final { border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 10px; font-size: 20px; font-weight: 800; color: var(--accent); }
+
+    .payment-input { display: none; margin-top: 10px; margin-bottom: 15px; padding-left: 34px; }
+    .payment-counter { text-align: right; margin: 10px 0; font-size: 14px; font-weight: 700; }
+    .payment-counter.complete { color: var(--success); }
+    .payment-counter.pending { color: var(--error); }
+
+    .submit-btn { width: 100%; height: 55px; border: none; border-radius: 15px; font-size: 16px; font-weight: 800; cursor: pointer; background: var(--accent); color: #000; transition: all 0.3s; margin-top: 10px; }
+    .submit-btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
+    
+    .flex-row { display: flex; gap: 10px; }
+    .small-col { flex: 0.4; }
+    .large-col { flex: 0.6; }
+    .btn-volver { background: transparent; border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
+
+    .client-info-box {
+        display: none; background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px; padding: 10px; margin-top: -10px;
+        margin-bottom: 15px; border: 1px solid var(--glass-border);
+    }
+    .client-info-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .input-error { border: 1px solid var(--error) !important; background: rgba(255, 0, 0, 0.1) !important; }
+    .input-error::placeholder { color: var(--error); font-weight: bold; }
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="btn-volver" id="btnVolver">⬅ VOLVER</button>
+    <div class="welcome-message" id="welcomeMessage">Cargando...</div>
+    <h1>REGISTRO DE VENTA</h1>
+  </div>
+
+  <div class="form-container is-loading" id="formContainer">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-text">Sincronizando...</div>
+    </div>
+
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="buscadorGlobal" class="search-input" placeholder="Buscar cliente por nombre..." autocomplete="off">
+        <div id="resultadosBusqueda" class="search-results"></div>
+    </div>
+
+    <div class="flex-row">
+      <div class="form-group small-col">
+        <label>Zona</label>
+        <select id="zona">
+          <option value="">Cargando...</option>
+        </select>
+      </div>
+      <div class="form-group large-col">
+        <label>Cliente</label>
+        <select id="cliente"><option value="">Elija Zona</option></select>
+      </div>
+    </div>
+
+    <div id="clientInfoBox" class="client-info-box">
+        <div class="client-info-row"><span class="client-icon">📍</span> <span id="clientAddress"></span></div>
+        <div class="client-info-row"><span class="client-icon">📞</span> <span id="clientPhone"></span></div>
+    </div>
+
+    <div id="tipoClienteDisplay" class="tipo-cliente-display" style="display:none; text-align:center; color:var(--accent); font-weight:800; margin-bottom:15px; border:1px solid var(--accent); padding:5px; border-radius:10px;">
+        CATEGORÍA: <span id="tipoClienteSpan"></span>
+    </div>
+
+    <div class="checkbox-item">
+      <input type="checkbox" id="nuevoCliente">
+      <label for="nuevoCliente" class="red-label">ALTA NUEVO CLIENTE</label>
+    </div>
+    
+    <div id="nuevoClienteSection" class="hidden-section">
+        <input type="text" id="nombreCliente" placeholder="Nombre Local / Cliente" style="margin-bottom:10px">
+        <select id="categoria" style="margin-bottom:10px">
+            <option value="USUARIO (PUBLICO)">USUARIO (PUBLICO)</option>
+            <option value="COMERCIO">COMERCIO</option>
+            <option value="SUBDISTRIBUIDOR">SUBDISTRIBUIDOR</option>
+            <option value="ROT. Y PAN.">ROT. Y PAN.</option>
+        </select>
+        <input type="text" id="nuevaDireccion" placeholder="Dirección" style="margin-bottom:10px">
+        <input type="tel" id="nuevoTelefono" placeholder="Teléfono" style="margin-bottom:10px">
+        <input type="email" id="nuevoMail" placeholder="Email (Opcional)">
+    </div>
+
+    <div class="checkbox-item"><input type="checkbox" id="entregaGas"><label for="entregaGas" class="yellow-label">GAS LLENO</label></div>
+    <div id="sectionGas" class="hidden-section">
+      <div class="garrafa-row">
+        <label style="flex:1">10kg</label>
+        <input type="text" id="precioGarrafa1" class="money-input" style="width:100px" readonly>
+        <input type="number" id="cantidadGarrafa1" class="garrafa-cantidad" value="0" min="0">
+      </div>
+      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck1"><label for="manualPriceCheck1">PRECIO MANUAL (AUTORIZADO)</label></div>
+      <div class="garrafa-row">
+        <label style="flex:1">15kg</label>
+        <input type="text" id="precioGarrafa2" class="money-input" style="width:100px" readonly>
+        <input type="number" id="cantidadGarrafa2" class="garrafa-cantidad" value="0" min="0">
+      </div>
+      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck2"><label for="manualPriceCheck2">PRECIO MANUAL (AUTORIZADO)</label></div>
+      <div class="garrafa-row">
+        <label style="flex:1">45kg</label>
+        <input type="text" id="precioGarrafa3" class="money-input" style="width:100px" readonly>
+        <input type="number" id="cantidadGarrafa3" class="garrafa-cantidad" value="0" min="0">
+      </div>
+      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck3"><label for="manualPriceCheck3">PRECIO MANUAL (AUTORIZADO)</label></div>
+    </div>
+
+    <div class="checkbox-item"><input type="checkbox" id="ventaEnvases"><label for="ventaEnvases" class="yellow-label">VENTA ENVASES (Casco)</label></div>
+    <div id="sectionEnvases" class="hidden-section">
+      <select id="tipoEnvase" style="margin-bottom:10px"></select>
+      <div class="flex-row">
+          <input type="text" id="precioEnvase" class="money-input" readonly>
+          <input type="number" id="cantidadEnvase" class="garrafa-cantidad" value="1" min="0">
+      </div>
+      <div class="manual-check-container" style="justify-content: flex-start; margin-top:5px;">
+          <input type="checkbox" id="precioAutorizadoCheck"><label for="precioAutorizadoCheck">PRECIO MANUAL (AUTORIZADO)</label>
+      </div>
+    </div>
+
+    <div class="checkbox-item"><input type="checkbox" id="declaracionGastos"><label for="declaracionGastos" class="red-label">DECLARAR GASTO</label></div>
+    <div id="sectionGastos" class="hidden-section">
+      <input type="text" id="montoGastos" placeholder="Monto $" class="money-input">
+      <input type="text" id="descripcionGastos" placeholder="Motivo del gasto (OBLIGATORIO)..." style="margin-top:10px">
+    </div>
+
+    <div class="total-display">
+        <div class="total-row"><span>Subtotal Gas:</span><span id="txtSubVenta">$0</span></div>
+        <div class="total-row"><span>Subtotal Envases:</span><span id="txtSubEnvase">$0</span></div>
+        <div class="total-final"><span>A COBRAR:</span><span id="totalFinal">$0</span></div>
+    </div>
+
+    <div class="checkbox-item"><input type="checkbox" id="pagoEfectivo"><label for="pagoEfectivo">EFECTIVO</label></div>
+    <div id="efectivoInput" class="payment-input"><input type="text" id="montoEfectivo" class="money-input" placeholder="Monto Efec."></div>
+
+    <div class="checkbox-item"><input type="checkbox" id="pagoTransferencia"><label for="pagoTransferencia">TRANSFERENCIA</label></div>
+    <div id="transferenciaInput" class="payment-input"><input type="text" id="montoTransferencia" class="money-input" placeholder="Monto Transf."></div>
+
+    <div class="payment-counter pending" id="pagoEstado">INGRESE DATOS</div>
+
+    <button type="button" id="btnGuardar" class="submit-btn" disabled>GUARDAR REGISTRO</button>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get('k') || params.get('token'); 
+
+    if (!k) window.location.replace('index3.html');
+
+    if (window.history.replaceState) {
+       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) window.location.reload();
+    });
+
+    let clientesData = []; // TODOS LOS CLIENTES (Para el buscador)
+    let preciosData = [];
+    let zonasActivas = [];
+    let clienteSeleccionado = null;
+    
+    // Timer
+    let sessionTimeout = 180;
+    function startTimer() {
+        setInterval(() => {
+            sessionTimeout--;
+            if(sessionTimeout <= 0) window.location.replace('index3.html');
+        }, 1000);
+    }
+    function refreshSession() { sessionTimeout = 180; }
+    ['click', 'mousemove', 'keydown', 'touchstart'].forEach(evt => document.addEventListener(evt, refreshSession));
+
+    const pad = (n) => n.toString().padStart(2, '0');
+    function generarID() {
+        const d = new Date();
+        const ts = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+        return ts + Math.floor(100 + Math.random() * 900);
+    }
+
+    async function init() {
+        try {
+            const fd = new FormData();
+            fd.append('action', 'verificarsesion');
+            fd.append('k', k); 
+            const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+            const d = await r.json();
+            if (d.status !== 'success') throw new Error();
+            
+            document.body.style.opacity = 1;
+            document.getElementById('welcomeMessage').textContent = `Usuario: ${d.nombre.toUpperCase()}`;
+            startTimer();
+            cargarDatos();
+        } catch (e) { window.location.replace('index3.html'); }
+    }
+
+    async function cargarDatos() {
+        try {
+            // 1. OBTENER ZONAS DINÁMICAS
+            const rZonas = await fetch(`${SCRIPT_URL}?action=getactivezones`);
+            const dZonas = await rZonas.json();
+            zonasActivas = dZonas.zonas || [];
+            
+            // 2. OBTENER CLIENTES Y PRECIOS
+            const rDatos = await fetch(`${SCRIPT_URL}?action=getDatos&k=${k}`);
+            const dDatos = await rDatos.json();
+            clientesData = dDatos.clientes;
+            preciosData = dDatos.precios;
+
+            // POBLAR ZONAS EN SELECT
+            const selZona = document.getElementById('zona');
+            selZona.innerHTML = '<option value="">Zona...</option>';
+            zonasActivas.forEach(z => {
+                const opt = document.createElement('option');
+                opt.value = z; opt.textContent = z;
+                selZona.appendChild(opt);
+            });
+
+            popularEnvases();
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('formContainer').classList.remove('is-loading');
+
+        } catch(e) { alert("Error al cargar datos"); }
+    }
+
+    // --- LÓGICA DEL BUSCADOR ---
+    const buscador = document.getElementById('buscadorGlobal');
+    const resultadosBox = document.getElementById('resultadosBusqueda');
+
+    buscador.addEventListener('input', function() {
+        const txt = this.value.toLowerCase().trim();
+        resultadosBox.innerHTML = '';
+        if(txt.length < 2) { resultadosBox.style.display = 'none'; return; }
+
+        const match = clientesData.filter(c => c.nombre.toLowerCase().includes(txt)).slice(0, 8); // Max 8 resultados
+        
+        if(match.length > 0) {
+            resultadosBox.style.display = 'block';
+            match.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `<span class="r-name">${c.nombre}</span><span class="r-detail">${c.zona} - ${c.categoria}</span>`;
+                div.onclick = () => seleccionarClienteDesdeBusqueda(c);
+                resultadosBox.appendChild(div);
+            });
+        } else {
+            resultadosBox.style.display = 'none';
+        }
+    });
+
+    function seleccionarClienteDesdeBusqueda(c) {
+        // 1. Setear Zona
+        const selZona = document.getElementById('zona');
+        selZona.value = c.zona;
+        
+        // 2. Disparar evento change de zona para poblar clientes
+        selZona.dispatchEvent(new Event('change'));
+
+        // 3. Setear Cliente
+        // Buscamos el value del option que contenga este nombre exacto
+        // Como el value es un JSON string, es complejo buscarlo por string.
+        // Mejor iteramos las opciones.
+        const selCliente = document.getElementById('cliente');
+        for(let i=0; i<selCliente.options.length; i++) {
+            try {
+                const optObj = JSON.parse(selCliente.options[i].value);
+                if(optObj.nombre === c.nombre) {
+                    selCliente.selectedIndex = i;
+                    break;
+                }
+            } catch(e){}
+        }
+
+        // 4. Disparar evento change de cliente
+        selCliente.dispatchEvent(new Event('change'));
+
+        // 5. Limpiar buscador
+        buscador.value = '';
+        resultadosBox.style.display = 'none';
+    }
+
+    // Cerrar buscador si click fuera
+    document.addEventListener('click', (e) => {
+        if(!buscador.contains(e.target)) resultadosBox.style.display = 'none';
+    });
+
+    function normalizarCategoriaUI(c) {
+        if (!c) return 'USUARIO (PUBLICO)';
+        const u = c.toUpperCase();
+        if (u.includes('ROT') || u.includes('PAN')) return 'ROT. Y PAN.';
+        if (u.includes('SUB')) return 'SUBDISTRIBUIDOR';
+        if (u.includes('COM')) return 'COMERCIO';
+        return 'USUARIO (PUBLICO)';
+    }
+
+    function obtenerCat() {
+        let cat;
+        if(document.getElementById('nuevoCliente').checked) {
+            cat = document.getElementById('categoria').value;
+        } else {
+            cat = clienteSeleccionado ? clienteSeleccionado.categoria : 'USUARIO (PUBLICO)';
+        }
+        return normalizarCategoriaUI(cat);
+    }
+
+    function actualizarPreciosAutomaticos() {
+        const cat = obtenerCat();
+        [10,15,45].forEach((t, i) => {
+            const check = document.getElementById(`manualPriceCheck${i+1}`);
+            if (!check.checked) {
+                const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t.toString());
+                document.getElementById(`precioGarrafa${i+1}`).value = (p?p.precio:0).toLocaleString('es-AR');
+            }
+        });
+        const checkEnv = document.getElementById('precioAutorizadoCheck');
+        if (!checkEnv.checked) {
+             const t = document.getElementById('tipoEnvase').value;
+             if(t) {
+                 const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t);
+                 document.getElementById('precioEnvase').value = (p?p.precio:0).toLocaleString('es-AR');
+             }
+        }
+        actualizarTotales();
+    }
+    
+    function popularEnvases() {
+        const cat = obtenerCat();
+        const sel = document.getElementById('tipoEnvase');
+        const prevVal = sel.value;
+        sel.innerHTML = '<option value="">Tipo Envase...</option>';
+        ['ENV10','ENV15','ENV45'].forEach(t => {
+            const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t);
+            const opt = document.createElement('option');
+            opt.value = t; 
+            opt.dataset.precio = p ? p.precio : 0;
+            opt.textContent = `Casco ${t.replace('ENV','')}kg`;
+            sel.appendChild(opt);
+        });
+        sel.value = prevVal; 
+        actualizarPreciosAutomaticos();
+    }
+    
+    function parseM(id) {
+        const v = document.getElementById(id).value || "0";
+        return parseFloat(v.replace(/\./g, '')) || 0;
+    }
+
+    function actualizarTotales() {
+        let v_gas = 0;
+        if(document.getElementById('entregaGas').checked) {
+            for(let i=1; i<=3; i++) {
+                const p = parseM(`precioGarrafa${i}`);
+                const c = Math.max(0, parseInt(document.getElementById(`cantidadGarrafa${i}`).value) || 0);
+                v_gas += p * c;
+            }
+        }
+
+        let v_env = 0;
+        if(document.getElementById('ventaEnvases').checked) {
+            const p = parseM('precioEnvase');
+            const c = Math.max(0, parseInt(document.getElementById('cantidadEnvase').value) || 0);
+            v_env += p * c;
+        }
+
+        const totalCobrar = v_gas + v_env;
+
+        document.getElementById('txtSubVenta').textContent = `$${v_gas.toLocaleString('es-AR')}`;
+        document.getElementById('txtSubEnvase').textContent = `$${v_env.toLocaleString('es-AR')}`;
+        document.getElementById('totalFinal').textContent = `$${totalCobrar.toLocaleString('es-AR')}`;
+        
+        validarPagos(totalCobrar);
+    }
+
+    function validarPagos(objetivo) {
+        const btn = document.getElementById('btnGuardar');
+        const el = document.getElementById('pagoEstado');
+        
+        const hayVenta = objetivo > 0 || document.getElementById('entregaGas').checked || document.getElementById('ventaEnvases').checked;
+        const clienteSeleccionado = document.getElementById('cliente').value;
+        const esNuevo = document.getElementById('nuevoCliente').checked;
+
+        if (hayVenta && !clienteSeleccionado && !esNuevo) {
+            el.textContent = "FALTA CLIENTE";
+            el.className = "payment-counter pending";
+            btn.disabled = true;
+            return;
+        }
+
+        const hayGasto = document.getElementById('declaracionGastos').checked;
+        const montoGasto = parseM('montoGastos');
+        const descGasto = document.getElementById('descripcionGastos').value.trim();
+        
+        if (hayGasto) {
+             const inputDesc = document.getElementById('descripcionGastos');
+             if (!descGasto) {
+                 el.textContent = "FALTA MOTIVO GASTO";
+                 el.className = "payment-counter pending";
+                 inputDesc.classList.add('input-error'); 
+                 btn.disabled = true;
+                 return;
+             } else {
+                 inputDesc.classList.remove('input-error');
+             }
+
+             if (montoGasto <= 0) {
+                 el.textContent = "INGRESE MONTO GASTO";
+                 el.className = "payment-counter pending";
+                 btn.disabled = true;
+                 return;
+             }
+        }
+
+        let pagado = 0;
+        if(document.getElementById('pagoEfectivo').checked) pagado += parseM('montoEfectivo');
+        if(document.getElementById('pagoTransferencia').checked) pagado += parseM('montoTransferencia');
+        
+        const dif = objetivo - pagado;
+        const operacionValida = (hayVenta && Math.abs(dif) < 1) || (!hayVenta && hayGasto);
+
+        if (operacionValida) {
+            el.textContent = "✓ LISTO PARA GUARDAR"; 
+            el.className = "payment-counter complete";
+            btn.disabled = false;
+        } else if (!hayVenta && !hayGasto) {
+            el.textContent = "INGRESE DATOS"; 
+            el.className = "payment-counter pending";
+            btn.disabled = true;
+        } else {
+            el.textContent = dif > 0 ? `FALTAN: $${dif.toLocaleString('es-AR')}` : `SOBRAN: $${Math.abs(dif).toLocaleString('es-AR')}`;
+            el.className = "payment-counter pending";
+            btn.disabled = true;
+        }
+    }
+
+    document.getElementById('zona').onchange = function() {
+        const z = this.value;
+        const sel = document.getElementById('cliente');
+        sel.innerHTML = '<option value="">Seleccione...</option>';
+        clientesData.filter(c => c.zona === z).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify(c); opt.textContent = c.nombre;
+            sel.appendChild(opt);
+        });
+        document.getElementById('clientInfoBox').style.display = 'none';
+        actualizarTotales(); 
+    };
+
+    document.getElementById('cliente').onchange = function() {
+        if(!this.value) { document.getElementById('clientInfoBox').style.display = 'none'; actualizarTotales(); return; }
+        clienteSeleccionado = JSON.parse(this.value);
+        document.getElementById('clientAddress').textContent = clienteSeleccionado.direccion || 'Sin dirección';
+        document.getElementById('clientPhone').textContent = clienteSeleccionado.telefono || 'Sin teléfono';
+        document.getElementById('clientInfoBox').style.display = 'block';
+        document.getElementById('tipoClienteSpan').textContent = clienteSeleccionado.categoria;
+        document.getElementById('tipoClienteDisplay').style.display = 'block';
+        actualizarPreciosAutomaticos();
+    };
+
+    document.getElementById('nuevoCliente').onchange = function() {
+        document.getElementById('nuevoClienteSection').style.display = this.checked ? 'block' : 'none';
+        if(this.checked) {
+             document.getElementById('cliente').value = "";
+             document.getElementById('clientInfoBox').style.display = 'none';
+             document.getElementById('tipoClienteDisplay').style.display = 'none';
+        }
+        actualizarPreciosAutomaticos();
+    };
+    document.getElementById('categoria').onchange = () => actualizarPreciosAutomaticos();
+
+    document.querySelectorAll('input, select').forEach(el => {
+        el.oninput = () => {
+            if(el.classList.contains('money-input')) {
+                let v = el.value.replace(/\D/g, "");
+                el.value = v ? parseInt(v).toLocaleString('es-AR') : "";
+            }
+            actualizarTotales();
+        };
+    });
+
+    for(let i=1; i<=3; i++) {
+        document.getElementById(`manualPriceCheck${i}`).addEventListener('change', function() {
+            const input = document.getElementById(`precioGarrafa${i}`);
+            if(this.checked) { input.removeAttribute('readonly'); input.focus(); } 
+            else { input.setAttribute('readonly', true); actualizarPreciosAutomaticos(); }
+        });
+    }
+
+    document.getElementById('precioAutorizadoCheck').addEventListener('change', function() {
+        const input = document.getElementById('precioEnvase');
+        if(this.checked) { input.removeAttribute('readonly'); input.focus(); } 
+        else { input.setAttribute('readonly', true); actualizarPreciosAutomaticos(); }
+    });
+    document.getElementById('tipoEnvase').addEventListener('change', () => actualizarPreciosAutomaticos());
+
+    document.getElementById('entregaGas').onclick = () => { document.getElementById('sectionGas').style.display = document.getElementById('entregaGas').checked ? 'block' : 'none'; actualizarTotales(); };
+    document.getElementById('ventaEnvases').onclick = () => { document.getElementById('sectionEnvases').style.display = document.getElementById('ventaEnvases').checked ? 'block' : 'none'; actualizarTotales(); };
+    
+    document.getElementById('declaracionGastos').onclick = () => { 
+        document.getElementById('sectionGastos').style.display = document.getElementById('declaracionGastos').checked ? 'block' : 'none'; 
+        actualizarTotales(); 
+    };
+    document.getElementById('descripcionGastos').addEventListener('input', actualizarTotales);
+
+    document.getElementById('pagoEfectivo').onclick = () => {
+        document.getElementById('efectivoInput').style.display = document.getElementById('pagoEfectivo').checked ? 'block' : 'none';
+        actualizarTotales();
+    };
+    document.getElementById('pagoTransferencia').onclick = () => {
+        document.getElementById('transferenciaInput').style.display = document.getElementById('pagoTransferencia').checked ? 'block' : 'none';
+        actualizarTotales();
+    };
+
+    async function guardar() {
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true; btn.textContent = "ENVIANDO...";
+        const cat = obtenerCat();
+        const esNuevo = document.getElementById('nuevoCliente').checked;
+        const esGasto = document.getElementById('declaracionGastos').checked;
+        const pfx = { 'SUBDISTRIBUIDOR': 'VS', 'COMERCIO': 'VC', 'ROT. Y PAN.': 'VRP', 'USUARIO (PUBLICO)': 'VU' }[cat];
+
+        let nombreC = esNuevo ? document.getElementById('nombreCliente').value : (clienteSeleccionado ? clienteSeleccionado.nombre : '');
+        if (!nombreC && esGasto) nombreC = 'GASTO'; 
+
+        const hayVenta = (document.getElementById('entregaGas').checked && parseM('precioGarrafa1') + parseM('precioGarrafa2') + parseM('precioGarrafa3') > 0) || document.getElementById('ventaEnvases').checked;
+        const tipoOp = hayVenta ? 'VENTA' : 'GASTO';
+
+        const garrafasArray = [];
+        const tipos = ['10', '15', '45'];
+        if (document.getElementById('entregaGas').checked) {
+             for (let i = 1; i <= 3; i++) {
+                 const cant = parseInt(document.getElementById(`cantidadGarrafa${i}`).value) || 0;
+                 if (cant > 0) {
+                     garrafasArray.push({
+                         tipo: tipos[i-1],
+                         cantidad: cant,
+                         precio: parseM(`precioGarrafa${i}`),
+                         precioAutorizado: document.getElementById(`manualPriceCheck${i}`).checked
+                     });
+                 }
+             }
+        }
+        
+        const now = new Date();
+        const hora24 = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+        const payload = {
+            action: 'guardarregistro', k,
+            USUARIO: document.getElementById('welcomeMessage').textContent.replace('Usuario: ','').toLowerCase().trim(),
+            TIPO: tipoOp, 
+            FECHA: now.toLocaleDateString('es-AR'),
+            HORA: hora24, 
+            C: nombreC,
+            N: generarID(),
+            E$: parseM('montoEfectivo'),
+            T$: parseM('montoTransferencia'),
+            
+            TOTAL: parseM('montoEfectivo') + parseM('montoTransferencia'),
+            
+            G: esGasto ? document.getElementById('descripcionGastos').value : '',
+            GASTO_TOTAL: esGasto ? parseM('montoGastos') : 0,
+            declaracionGastos: esGasto, 
+            
+            garrafas: JSON.stringify(garrafasArray),
+            precioEnvaseAutorizado: document.getElementById('precioAutorizadoCheck').checked,
+
+            esClienteNuevo: esNuevo,
+            clienteNombre: esNuevo ? document.getElementById('nombreCliente').value : '',
+            clienteZona: document.getElementById('zona').value,
+            clienteCategoria: cat,
+            clienteDireccion: document.getElementById('nuevaDireccion').value,
+            clienteTelefono: document.getElementById('nuevoTelefono').value,
+            clienteMail: document.getElementById('nuevoMail').value,
+
+            ALL10: Math.max(0, parseInt(document.getElementById('cantidadGarrafa1').value) || 0),
+            ALL15: Math.max(0, parseInt(document.getElementById('cantidadGarrafa2').value) || 0),
+            ALL45: Math.max(0, parseInt(document.getElementById('cantidadGarrafa3').value) || 0),
+            AV10: parseM('precioGarrafa1') * (parseInt(document.getElementById('cantidadGarrafa1').value) || 0),
+            AV15: parseM('precioGarrafa2') * (parseInt(document.getElementById('cantidadGarrafa2').value) || 0),
+            AV45: parseM('precioGarrafa3') * (parseInt(document.getElementById('cantidadGarrafa3').value) || 0),
+            [`${pfx}10`]: Math.max(0, parseInt(document.getElementById('cantidadGarrafa1').value) || 0),
+            [`${pfx}10$`]: parseM('precioGarrafa1') * (parseInt(document.getElementById('cantidadGarrafa1').value) || 0),
+            [`${pfx}15`]: Math.max(0, parseInt(document.getElementById('cantidadGarrafa2').value) || 0),
+            [`${pfx}15$`]: parseM('precioGarrafa2') * (parseInt(document.getElementById('cantidadGarrafa2').value) || 0),
+            [`${pfx}45`]: Math.max(0, parseInt(document.getElementById('cantidadGarrafa3').value) || 0),
+            [`${pfx}45$`]: parseM('precioGarrafa3') * (parseInt(document.getElementById('cantidadGarrafa3').value) || 0)
+        };
+
+        const tEnv = document.getElementById('tipoEnvase').value.replace('ENV','');
+        if (document.getElementById('ventaEnvases').checked && tEnv) {
+            payload[`CE${tEnv}`] = Math.max(0, parseInt(document.getElementById('cantidadEnvase').value) || 0);
+            payload[`CE${tEnv}$`] = parseM('precioEnvase') * (parseInt(document.getElementById('cantidadEnvase').value) || 0);
+        }
+
+        const fd = new FormData();
+        for(let key in payload) fd.append(key, payload[key]);
+
+        try {
+            const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+            const j = await r.json();
+            if(j.status === 'success') {
+                alert("✓ REGISTRO EXITOSO");
+                window.location.replace(`inicio.html?k=${k}`);
+            } else throw new Error();
+        } catch(e) {
+            alert("Error al guardar");
+            btn.disabled = false; btn.textContent = "GUARDAR REGISTRO";
+        }
+    }
+
+    document.getElementById('btnGuardar').onclick = guardar;
+    document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+    init();
+  </script>
+</body>
+</html>
