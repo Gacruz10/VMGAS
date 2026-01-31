@@ -274,11 +274,11 @@
     const params = new URLSearchParams(window.location.search);
     const k = params.get('k') || params.get('token');
 
-    if (!k) window.location.replace('index3.html');
+    if (!k) window.location.replace('index.html');
     if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
 
     let tIdle;
-    function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => window.location.replace('index3.html'), TIMEOUT_SESION); }
+    function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => window.location.replace('index.html'), TIMEOUT_SESION); }
     ['click','mousemove','keydown','touchstart'].forEach(e => document.addEventListener(e, resetTimer));
     resetTimer();
 
@@ -301,7 +301,7 @@
             flatpickr("#modal-fecha", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
 
             cargarDatos();
-        } catch(e) { window.location.replace('index3.html'); }
+        } catch(e) { window.location.replace('index.html'); }
     }
 
     function cargarDatos() {

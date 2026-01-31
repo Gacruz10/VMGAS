@@ -145,7 +145,7 @@ if (k) {
 
 // Si no hay token en ningún lado, expulsar
 if (!k) {
-    window.location.replace('index3.html');
+    window.location.replace('index.html');
 } else {
     // Iniciar validación ciega
     init();
@@ -157,7 +157,7 @@ function resetTimer() {
     clearTimeout(tIdle);
     tIdle = setTimeout(() => {
         // Expulsión silenciosa
-        window.location.replace('index3.html');
+        window.location.replace('index.html');
     }, TIMEOUT_SESION);
 }
 // Eventos para mantener viva la sesión
@@ -196,7 +196,7 @@ async function init() {
 
     } catch(e) { 
         // Si falla algo crítico, volver al login
-        window.location.replace('index3.html'); 
+        window.location.replace('index.html'); 
     }
 }
 

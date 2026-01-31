@@ -246,7 +246,7 @@
     const params = new URLSearchParams(window.location.search);
     const k = params.get('k') || params.get('token'); 
 
-    if (!k) window.location.replace('index3.html');
+    if (!k) window.location.replace('index.html');
 
     if (window.history.replaceState) {
        window.history.replaceState({}, document.title, window.location.pathname);
@@ -265,7 +265,7 @@
     function startTimer() {
         setInterval(() => {
             sessionTimeout--;
-            if(sessionTimeout <= 0) window.location.replace('index3.html');
+            if(sessionTimeout <= 0) window.location.replace('index.html');
         }, 1000);
     }
     function refreshSession() { sessionTimeout = 180; }
@@ -291,7 +291,7 @@
             document.getElementById('welcomeMessage').textContent = `Usuario: ${d.nombre.toUpperCase()}`;
             startTimer();
             cargarDatos();
-        } catch (e) { window.location.replace('index3.html'); }
+        } catch (e) { window.location.replace('index.html'); }
     }
 
     async function cargarDatos() {

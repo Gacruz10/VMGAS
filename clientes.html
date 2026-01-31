@@ -200,7 +200,7 @@ let GLOBAL_CATEGORIAS = [];
 const params = new URLSearchParams(window.location.search);
 const k = params.get('k') || params.get('token');
 
-function expulsar() { sessionStorage.clear(); window.location.replace('index3.html'); }
+function expulsar() { sessionStorage.clear(); window.location.replace('index.html'); }
 if (!k) expulsar();
 else {
     if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
