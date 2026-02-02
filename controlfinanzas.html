@@ -4,200 +4,243 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<title>Control Finanzas</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<title>Control de Finanzas</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <style>
   :root {
-    --glass: rgba(0, 0, 0, 0.6);
-    --glass-solid: #130620; 
-    --glass-border: rgba(255, 255, 255, 0.15);
+    --bg-dark: #050510;
     --accent: #FFD700; 
-    --text-primary: #ffffff;
-    --text-muted: rgba(255, 255, 255, 0.6);
-    --success: #2dd4bf;
-    --danger: #ff5e5e;
-    --bg-color: #0d031a;
+    --accent-glow: rgba(255, 215, 0, 0.3);
+    --text-main: #ffffff;
+    --text-sec: #a0a0b0;
+    --success: #056e03;
+    --danger: #ff4757;
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 
   body {
-    margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
-    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
-                #020617;
-    background-attachment: fixed; min-height: 100vh;
-    padding: 0; 
-    opacity: 0; transition: opacity 0.5s ease;
+    margin: 0; 
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-main);
+    background-color: var(--bg-dark);
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
+    background-attachment: fixed;
+    min-height: 100vh;
     font-size: 13px;
-    padding-bottom: 80px; 
+    padding-bottom: 90px;
+    opacity: 0; transition: opacity 0.6s ease;
   }
 
-  /* --- ZONA FIJA SUPERIOR --- */
+  /* --- HEADER --- */
   .fixed-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(13, 3, 26, 0.98); 
-      backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(5, 5, 16, 0.95);
+      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
       border-bottom: 1px solid var(--glass-border);
-      padding: 10px 15px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      padding: 8px 15px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.3);
   }
 
-  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .page-title { font-size: 1.1rem; color: var(--accent); font-weight: 800; text-transform: uppercase; margin: 0; }
-  .btn-back { background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 12px; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; max-width: 1000px; margin-inline: auto; }
   
+  .page-title { 
+      font-size: 1rem; 
+      background: linear-gradient(to right, #fff, var(--accent)); 
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0; 
+  }
+
+  .btn-action {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-sec);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .btn-action:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: var(--text-sec); }
+  
+  .export-wrapper { position: relative; }
+  .btn-export {
+    background: rgba(255, 215, 0, 0.1); border: 1px solid var(--accent); color: var(--accent);
+    padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 11px;
+  }
+  .btn-export:hover { background: var(--accent); color: #000; box-shadow: 0 0 10px var(--accent-glow); }
+  
+  .dropdown-menu {
+      display: none; position: absolute; right: 0; top: 110%;
+      background: #151525; border: 1px solid var(--glass-border);
+      border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      z-index: 1000; min-width: 160px; overflow: hidden;
+  }
+  .dropdown-menu.show { display: block; }
+  .dropdown-item { padding: 10px 12px; color: var(--text-sec); cursor: pointer; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .dropdown-item:hover { background: rgba(255, 215, 0, 0.1); color: var(--accent); }
+  
+  /* FILTERS */
   .filter-panel {
-    display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+      display: flex; gap: 8px; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.02); padding: 4px; border-radius: 10px;
+      border: 1px solid var(--glass-border); margin-bottom: 8px;
+      max-width: 500px; margin-inline: auto; height: 32px;
   }
   .date-group { position: relative; flex: 1; }
   .date-group input {
-    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
-    color: white; padding: 8px 8px 8px 28px; border-radius: 8px;
-    font-family: inherit; font-size: 12px; cursor: pointer; outline: none;
+    width: 100%; background: transparent; border: none;
+    color: white; padding: 4px 4px 4px 24px; font-family: inherit; font-size: 12px; 
+    cursor: pointer; font-weight: 500; height: 100%;
   }
-  .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size:10px; pointer-events: none; }
-  
+  .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 10px; }
   .btn-load {
-    background: var(--accent); color: #000; border: none; padding: 8px 15px;
-    border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 12px;
+      background: var(--accent); color: #000; border: none; padding: 0 15px; height: 24px;
+      border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 10px;
   }
 
   /* DASHBOARD */
-  .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .dashboard { 
+      display: flex; gap: 8px; justify-content: center; 
+      margin-bottom: 8px; flex-wrap: wrap; 
+      max-width: 800px; margin-inline: auto;
+  }
   .card {
-    background: rgba(255,255,255,0.05); padding: 8px; border-radius: 10px;
-    border: 1px solid var(--glass-border); text-align: center;
-  }
-  .card.active-selection { border-color: var(--accent); background: rgba(255, 215, 0, 0.15); }
-  .card label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 2px; }
-  .card .value { font-size: 1.1em; font-weight: 800; }
-  .pos { color: var(--success); }
-  .neg { color: var(--danger); }
-
-  /* BOTONES DE VISTA (NUEVO) */
-  .view-controls {
-      display: flex; gap: 5px; justify-content: center;
-  }
-  .btn-view {
-      flex: 1;
-      background: transparent;
+      flex: 1; min-width: 120px;
+      background: var(--card-gradient);
       border: 1px solid var(--glass-border);
-      color: var(--text-muted);
-      padding: 6px;
-      border-radius: 6px;
-      font-size: 10px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 6px 10px; border-radius: 10px;
+      text-align: center; position: relative; overflow: hidden;
   }
-  .btn-view:hover, .btn-view.active {
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border-color: var(--text-muted);
-  }
+  .card label { font-size: 9px; color: var(--text-sec); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
+  .card .value { font-size: 1.1em; font-weight: 700; color: #fff; }
+  .card.active-selection { border-color: var(--accent); background: rgba(255, 215, 0, 0.05); }
+  .pos { color: var(--success) !important; }
+  .neg { color: var(--danger) !important; }
 
-  /* --- ZONA DE SCROLL (ÁRBOL) --- */
-  .scroll-content {
-      padding: 15px;
+  /* VIEW CONTROLS */
+  .view-controls { 
+      display: flex; gap: 2px; justify-content: center; 
+      background: rgba(0,0,0,0.3); padding: 2px; border-radius: 8px; 
+      width: fit-content; margin: 0 auto; 
+      border: 1px solid var(--glass-border); 
   }
+  .btn-view { 
+      background: transparent; border: none; color: var(--text-sec); 
+      padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; 
+  }
+  .btn-view.active { background: rgba(255,255,255,0.1); color: #fff; }
 
-  .tree-container {
-    border-radius: 16px; 
-    padding-bottom: 20px;
-  }
+  /* --- TREE VIEW ESTILIZADO --- */
+  .scroll-content { padding: 15px; max-width: 1000px; margin: 0 auto; }
   
-  details { 
-      background: rgba(255,255,255,0.03); 
+  /* NIVEL 1 */
+  details.l1-details {
+      background: #000000; 
       border: 1px solid var(--glass-border);
-      border-radius: 10px;
+      border-right: 4px solid var(--accent); 
+      border-radius: 8px;
       margin-bottom: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       overflow: hidden;
   }
+  details.l1-details > summary { 
+      padding: 12px 15px; 
+      font-size: 14px; 
+      color: var(--accent); 
+      display: flex; justify-content: space-between; align-items: center; 
+  }
+  .l1-name { font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
+
+  /* NIVEL 2 */
+  .l2-container { padding: 0 0 0 0; }
   
-  summary { 
-      padding: 10px 15px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; 
-      background: rgba(255,255,255,0.02);
+  details.l2-details { 
+      background: #1a1a1a; 
+      border-top: 1px solid rgba(255,255,255,0.1); 
+      border-right: 4px solid #444; 
+      margin: 0;
+      border-radius: 0;
   }
-  summary:active { background: rgba(255,255,255,0.08); }
-  summary:focus { outline: none; }
-
-  /* Checkbox */
-  input[type="checkbox"] {
-    appearance: none; -webkit-appearance: none;
-    width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px;
-    margin-right: 12px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0;
+  details.l2-details > summary { 
+      padding: 10px 15px 10px 30px; 
+      font-size: 13px; 
+      color: #fff;
+      display: flex; justify-content: space-between; align-items: center;
   }
-  input[type="checkbox"]:checked { background-color: var(--accent); border-color: var(--accent); }
-  input[type="checkbox"]:checked::after { content: "✓"; color: #000; font-size: 12px; font-weight: bold; }
+  .l2-name { color: #fff; font-weight: 600; }
 
-  .l1-name { font-weight: 700; font-size: 13px; color: #fff; }
+  /* NIVEL 3 (DETALLES) */
+  .table-responsive { background: #e0e0e0; }
+  table { width: 100%; border-collapse: collapse; }
+  tr { border-bottom: 1px solid #ccc; }
+  tr:last-child { border-bottom: none; }
   
-  .l2-container { padding: 0; border-top: 1px solid rgba(255,255,255,0.05); }
-  .l2-details summary { padding-left: 35px; background: rgba(0,0,0,0.2); font-size: 12px; }
-  .l2-name { color: var(--accent); font-weight: 600; }
+  td { padding: 8px 15px; color: #000; font-size: 12px; font-weight: 500; }
+  .col-desc { color: #333; }
+  .col-monto { font-weight: 700; font-family: monospace; color: #000; }
+  
+  /* Checkboxes */
+  .table-responsive input[type="checkbox"] { border-color: #555; }
+  .table-responsive input[type="checkbox"]:checked::after { color: #000; }
 
-  /* Tabla */
-  .table-responsive { overflow-x: auto; width: 100%; background: rgba(0,0,0,0.3); }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); white-space: nowrap; }
-  tr:last-child td { border-bottom: none; }
-  .col-desc { width: 100%; white-space: normal; } 
-  .col-monto { text-align: right; font-family: monospace; font-weight: 600; font-size: 12px; }
-
-  /* FAB & MODAL */
-  .fab {
-    position: fixed; bottom: 25px; right: 25px; background: var(--accent); color: #000;
-    width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
-    font-size: 28px; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-    cursor: pointer; border: none; z-index: 200; transition: transform 0.2s;
+  /* FAB */
+  .fab { width: 45px; height: 45px; font-size: 24px; bottom: 20px; right: 20px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 15px var(--accent-glow); cursor: pointer; z-index: 200; }
+  
+  /* MODAL DARK GLASS */
+  #modal { 
+      backdrop-filter: blur(15px); 
+      -webkit-backdrop-filter: blur(15px); 
+      background: rgba(0,0,0,0.6); 
+      display: none; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      z-index: 300; 
+      align-items: center; justify-content: center;
   }
-  .fab:hover { transform: scale(1.1) rotate(90deg); }
-
-  #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(5px); }
-  .modal-content { background: #1a0b2e; padding: 25px; width: 90%; max-width: 400px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-  .modal-content h3 { margin-top: 0; color: var(--accent); text-align: center; }
-
-  .form-group { margin-bottom: 15px; }
-  .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 14px; outline: none; }
+  .modal-content { 
+      background: rgba(10, 10, 20, 0.85); 
+      border: 1px solid rgba(255,255,255,0.1); 
+      border-radius: 20px; 
+      padding: 25px; 
+      width: 90%; max-width: 380px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      text-align: center;
+  }
+  .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 10px; }
   .form-control:focus { border-color: var(--accent); }
-  
-  .btn-save { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+  .btn-save { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 5px; transition: 0.3s; }
+  .btn-save:hover { box-shadow: 0 0 15px var(--accent-glow); }
   .btn-cancel { width: 100%; background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px; margin-top: 10px; cursor: pointer; border-radius: 8px; }
-  
-  #mode-indicator {
-     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-     background: var(--accent); color: #000; padding: 8px 20px; border-radius: 20px;
-     font-size: 12px; font-weight: 800; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-     display: none; z-index: 150; pointer-events: none;
-  }
+
 </style>
 </head>
 <body>
 
   <div class="fixed-header">
-      <div class="header-top">
-         <button class="btn-back" id="btnVolver">⬅ Volver</button>
-         <h2 class="page-title">Finanzas</h2>
-         <div style="width: 70px;"></div>
-      </div>
+    <div class="header-top">
+       <button class="btn-action" id="btnVolver">❮ Volver</button>
+       <h2 class="page-title">Control de Finanzas</h2>
+       
+       <div class="export-wrapper">
+           <button class="btn-export" onclick="toggleExportMenu()">
+               Exportar ▼
+           </button>
+           <div id="export-menu" class="dropdown-menu">
+               <div class="dropdown-item" onclick="exportarPDF('jerarquico')">📊 Reporte Jerárquico</div>
+               <div class="dropdown-item" onclick="exportarPDF('simple')">📑 Reporte Simplificado</div>
+           </div>
+       </div>
+    </div>
 
       <div class="filter-panel">
-          <div class="date-group">
-              <span class="date-icon">📅</span>
-              <input type="text" id="filter-start" placeholder="Desde">
-          </div>
-          <div style="color:var(--text-muted); font-size:10px">➜</div>
-          <div class="date-group">
-              <span class="date-icon">📅</span>
-              <input type="text" id="filter-end" placeholder="Hasta">
-          </div>
-          <button class="btn-load" onclick="cargarDatos()">VER</button>
+          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-start" placeholder="Desde"></div>
+          <div style="color:var(--text-sec); font-size:10px">➜</div>
+          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-end" placeholder="Hasta"></div>
+          <button class="btn-load" onclick="cargarDatos()">IR</button>
       </div>
 
       <div class="dashboard" id="dashboard-panel">
@@ -223,10 +266,11 @@
   </div>
 
   <div class="scroll-content">
-      <div id="mode-indicator">MODO SELECCIÓN</div>
-
       <div id="tree-root" class="tree-container">
-          <div style="padding:50px; text-align:center; color:var(--text-muted);">Iniciando...</div>
+          <div style="padding:40px; text-align:center; color:var(--text-sec); font-size:12px;">
+              <div style="margin-bottom:5px; font-size:16px;">⚡</div>
+              Cargando...
+          </div>
       </div>
   </div>
 
@@ -234,30 +278,23 @@
 
   <div id="modal">
     <div class="modal-content">
-      <h3>Nueva Transacción</h3>
+      <h3 style="color:var(--accent); text-align:center; margin:0 0 15px 0; font-size:16px;">Nueva Transacción</h3>
       <form id="expenseForm">
-        <div class="form-group">
-          <label>Fecha</label>
-          <input type="text" class="form-control" id="modal-fecha" required>
-        </div>
-        <div class="form-group">
-           <label>Rubro (Nivel 1)</label>
-           <input list="list_l1" class="form-control" id="input_l1" placeholder="Ej: Operativo" onchange="updateDatalistL2()" required autocomplete="off">
-           <datalist id="list_l1"></datalist>
-        </div>
-        <div class="form-group">
-           <label>Sub-rubro (Nivel 2)</label>
-           <input list="list_l2" class="form-control" id="input_l2" placeholder="Ej: Combustible" required autocomplete="off">
-           <datalist id="list_l2"></datalist>
-        </div>
-        <div class="form-group">
-           <label>Detalle</label>
-           <input type="text" class="form-control" id="l3" placeholder="Descripción" required>
-        </div>
-        <div class="form-group">
-           <label>Monto (Negativo = Gasto)</label>
-           <input type="number" step="0.01" class="form-control" id="monto" placeholder="-1500" required>
-        </div>
+        <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Fecha</label>
+        <input type="text" class="form-control" id="modal-fecha" required>
+        
+        <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Rubro (Nivel 1)</label>
+        <input list="list_l1" class="form-control" id="input_l1" placeholder="Ej: Operativo" onchange="updateDatalistL2()" required autocomplete="off"><datalist id="list_l1"></datalist>
+        
+        <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Sub-rubro (Nivel 2)</label>
+        <input list="list_l2" class="form-control" id="input_l2" placeholder="Ej: Combustible" required autocomplete="off"><datalist id="list_l2"></datalist>
+        
+        <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Detalle</label>
+        <input type="text" class="form-control" id="l3" placeholder="Descripción" required>
+        
+        <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Monto (Negativo = Gasto)</label>
+        <input type="number" step="0.01" class="form-control" id="monto" placeholder="-1500" required>
+        
         <button type="button" class="btn-save" onclick="enviarDatos()">GUARDAR</button>
         <button type="button" class="btn-cancel" onclick="closeModal()">CANCELAR</button>
       </form>
@@ -270,10 +307,8 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
     const TIMEOUT_SESION = 180000; 
-
     const params = new URLSearchParams(window.location.search);
     const k = params.get('k') || params.get('token');
-
     if (!k) window.location.replace('index.html');
     if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
 
@@ -291,15 +326,12 @@
             const r = await fetch(API_URL, {method:'POST', body:fd});
             const d = await r.json();
             if(d.status !== 'success') throw new Error();
-
             document.body.style.opacity = 1;
-            
             const today = new Date();
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
             flatpickr("#filter-start", { defaultDate: firstDay, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
             flatpickr("#filter-end", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
             flatpickr("#modal-fecha", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
-
             cargarDatos();
         } catch(e) { window.location.replace('index.html'); }
     }
@@ -307,9 +339,7 @@
     function cargarDatos() {
        const start = document.getElementById('filter-start').value;
        const end = document.getElementById('filter-end').value;
-       
-       document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-muted)">Cargando datos...</div>';
-       
+       document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Actualizando...</div>';
        fetch(`${API_URL}?action=getfinancetree&k=${k}&start=${start}&end=${end}`)
        .then(r => r.json())
        .then(data => {
@@ -318,40 +348,23 @@
            updateDashboardValues(currentSummary.ingresos, currentSummary.gastos, currentSummary.total, false);
            renderTree(data.tree);
            setupDatalists(data.options);
-           
-           // Por defecto: Solo Cuentas Principales (L1) cerradas
            setTreeView('L1');
        })
        .catch(e => {
-           document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error al cargar datos.<br><small>Verifique hoja CONFINANZAS</small></div>';
+           document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error de conexión.</div>';
        });
     }
 
-    // --- NUEVA LÓGICA DE VISTAS ---
     function setTreeView(mode) {
-        // Actualizar estado botones
         document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
         if(mode === 'L1') document.querySelectorAll('.btn-view')[0].classList.add('active');
         if(mode === 'L2') document.querySelectorAll('.btn-view')[1].classList.add('active');
         if(mode === 'ALL') document.querySelectorAll('.btn-view')[2].classList.add('active');
-
-        // Lógica de apertura/cierre
         const l1Details = document.querySelectorAll('.l1-details');
         const l2Details = document.querySelectorAll('.l2-details');
-
-        if (mode === 'L1') {
-            // Cuentas Principales: Cerrar todo L1 (y L2 por si acaso)
-            l1Details.forEach(d => d.removeAttribute('open'));
-            l2Details.forEach(d => d.removeAttribute('open')); // Para que al abrir L1, L2 esté cerrado
-        } else if (mode === 'L2') {
-            // Subcuentas: Abrir L1, pero cerrar L2
-            l1Details.forEach(d => d.setAttribute('open', ''));
-            l2Details.forEach(d => d.removeAttribute('open'));
-        } else if (mode === 'ALL') {
-            // Todo: Abrir todo
-            l1Details.forEach(d => d.setAttribute('open', ''));
-            l2Details.forEach(d => d.setAttribute('open', ''));
-        }
+        if (mode === 'L1') { l1Details.forEach(d => d.removeAttribute('open')); l2Details.forEach(d => d.removeAttribute('open')); } 
+        else if (mode === 'L2') { l1Details.forEach(d => d.setAttribute('open', '')); l2Details.forEach(d => d.removeAttribute('open')); } 
+        else if (mode === 'ALL') { l1Details.forEach(d => d.setAttribute('open', '')); l2Details.forEach(d => d.setAttribute('open', '')); }
     }
 
     function updateDashboardValues(ingresos, gastos, total, isSelectionMode) {
@@ -359,84 +372,68 @@
        document.getElementById('dash-out').innerText = formatMoney(gastos);
        document.getElementById('dash-total').innerText = formatMoney(total);
        document.getElementById('dash-total').style.color = total >= 0 ? 'var(--success)' : 'var(--danger)';
-
        const cards = document.querySelectorAll('.card');
-       const indicator = document.getElementById('mode-indicator');
-
-       if (isSelectionMode) {
-           cards.forEach(c => c.classList.add('active-selection'));
-           indicator.style.display = 'block';
-           document.getElementById('lbl-in').innerText = "INGRESOS (SEL)";
-           document.getElementById('lbl-out').innerText = "GASTOS (SEL)";
-           document.getElementById('lbl-total').innerText = "BALANCE (SEL)";
-       } else {
-           cards.forEach(c => c.classList.remove('active-selection'));
-           indicator.style.display = 'none';
-           document.getElementById('lbl-in').innerText = "INGRESOS";
-           document.getElementById('lbl-out').innerText = "GASTOS";
-           document.getElementById('lbl-total').innerText = "BALANCE";
-       }
+       if (isSelectionMode) { cards.forEach(c => c.classList.add('active-selection')); document.getElementById('lbl-in').innerText = "INGRESOS (SEL)"; document.getElementById('lbl-out').innerText = "GASTOS (SEL)"; document.getElementById('lbl-total').innerText = "BALANCE (SEL)"; } 
+       else { cards.forEach(c => c.classList.remove('active-selection')); document.getElementById('lbl-in').innerText = "INGRESOS"; document.getElementById('lbl-out').innerText = "GASTOS"; document.getElementById('lbl-total').innerText = "BALANCE"; }
     }
 
     function calcSelection() {
        const checks = document.querySelectorAll('.item-check:checked');
-       if (checks.length === 0) {
+       
+       // Si no hay nada seleccionado, volvemos a mostrar los valores ORIGINALES (del servidor)
+       if (checks.length === 0) { 
            updateDashboardValues(currentSummary.ingresos, currentSummary.gastos, currentSummary.total, false);
-           return;
+           
+           // Restaurar textos originales en L1 y L2
+           document.querySelectorAll('.l1-details').forEach(l1 => {
+               const origL1 = l1.querySelector('summary > span:last-child').getAttribute('data-original');
+               if(origL1) l1.querySelector('summary > span:last-child').innerText = origL1;
+               
+               l1.querySelectorAll('.l2-details').forEach(l2 => {
+                   const origL2 = l2.querySelector('summary > span:last-child').getAttribute('data-original');
+                   if(origL2) l2.querySelector('summary > span:last-child').innerText = origL2;
+               });
+           });
+           return; 
        }
+
+       // CALCULO DINÁMICO EN DASHBOARD
        let selIngresos = 0, selGastos = 0;
-       checks.forEach(c => {
-           let val = parseFloat(c.value);
-           if (val >= 0) selIngresos += val; else selGastos += val;
-       });
+       checks.forEach(c => { let val = parseFloat(c.value); if (val >= 0) selIngresos += val; else selGastos += val; });
        updateDashboardValues(selIngresos, selGastos, selIngresos + selGastos, true);
+
+       // CALCULO DINÁMICO EN ENCABEZADOS (L1 y L2)
+       document.querySelectorAll('.l1-details').forEach(l1 => {
+           let l1Total = 0;
+           l1.querySelectorAll('.l2-details').forEach(l2 => {
+               let l2Total = 0;
+               // Sumar solo items seleccionados dentro de este L2
+               l2.querySelectorAll('.item-check:checked').forEach(chk => {
+                   l2Total += parseFloat(chk.value);
+               });
+               // Actualizar texto L2
+               l2.querySelector('summary > span:last-child').innerText = formatMoney(l2Total);
+               l1Total += l2Total;
+           });
+           // Actualizar texto L1
+           l1.querySelector('summary > span:last-child').innerText = formatMoney(l1Total);
+       });
     }
 
     function renderTree(tree) {
        let html = '';
-       if (Object.keys(tree).length === 0) {
-           document.getElementById('tree-root').innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted)">Sin registros en este período.</div>';
-           return;
-       }
-       
+       if (Object.keys(tree).length === 0) { document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Sin registros.</div>'; return; }
        for (let l1 in tree) {
-         // Clase 'l1-details' agregada para control masivo
+         // Agregamos data-original para poder restaurar si se desmarca todo
+         const l1TotalStr = formatMoney(tree[l1].total);
          html += `<details class="l1-details">
-           <summary>
-               <div style="display:flex; align-items:center;">
-                   <input type="checkbox" class="parent-check" onchange="toggleChildren(this)">
-                   <span class="l1-name">${l1}</span>
-               </div>
-               <span style="font-family:'monospace'; font-weight:700">${formatMoney(tree[l1].total)}</span>
-           </summary>`;
-         
+           <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l1-name">${l1}</span></div><span data-original="${l1TotalStr}" style="font-family:'Outfit', monospace; font-weight:700; color:#FFD700">${l1TotalStr}</span></summary>`;
          for (let l2 in tree[l1].subs) {
            let sub = tree[l1].subs[l2];
-           html += `<div class="l2-container">
-             <details class="l2-details"> <summary>
-                   <div style="display:flex; align-items:center">
-                       <input type="checkbox" class="parent-check" onchange="toggleChildren(this)">
-                       <span class="l2-name">${l2}</span>
-                   </div>
-                   <span style="font-size:0.9em; opacity:0.8">${formatMoney(sub.total)}</span>
-               </summary>
-               <div class="table-responsive">
-                   <table>
-                     ${sub.items.map(item => `
-                       <tr>
-                           <td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td>
-                           <td width="60">${item.fecha}</td>
-                           <td class="col-desc">${item.detalle}</td>
-                           <td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td>
-                       </tr>`).join('')}
-                   </table>
-               </div>
-             </details>
-           </div>`;
-         }
-         html += `</details>`;
-       }
-       document.getElementById('tree-root').innerHTML = html;
+           const l2TotalStr = formatMoney(sub.total);
+           html += `<div class="l2-container"><details class="l2-details"> <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l2-name">${l2}</span></div><span data-original="${l2TotalStr}" style="font-size:0.9em; opacity:0.9; font-family:'Outfit', monospace">${l2TotalStr}</span></summary><div class="table-responsive"><table>${sub.items.map(item => `<tr><td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td><td width="70" style="color:#000; font-weight:600">${item.fecha}</td><td class="col-desc">${item.detalle}</td><td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td></tr>`).join('')}</table></div></details></div>`;
+         } html += `</details>`;
+       } document.getElementById('tree-root').innerHTML = html;
     }
 
     function toggleChildren(source) {
@@ -448,62 +445,169 @@
        calcSelection(); 
     }
 
-    function setupDatalists(options) {
-       const dl1 = document.getElementById('list_l1');
-       dl1.innerHTML = '';
-       for(let key in options) {
-           let op = document.createElement('option'); op.value = key; dl1.appendChild(op);
-       }
-    }
-
-    function updateDatalistL2() {
-       const val1 = document.getElementById('input_l1').value;
-       const dl2 = document.getElementById('list_l2');
-       dl2.innerHTML = '';
-       document.getElementById('input_l2').value = '';
-       if(globalData.options && globalData.options[val1]) {
-           globalData.options[val1].forEach(sub => {
-               let op = document.createElement('option'); op.value = sub; dl2.appendChild(op);
-           });
-       }
-    }
-
-    function enviarDatos() {
-       const btn = document.querySelector('.btn-save');
-       btn.innerText = "Guardando..."; btn.disabled = true;
-
-       const payload = {
-           fecha: document.getElementById('modal-fecha').value,
-           nivel1: document.getElementById('input_l1').value,
-           nivel2: document.getElementById('input_l2').value,
-           nivel3: document.getElementById('l3').value,
-           monto: document.getElementById('monto').value
-       };
-
-       const fd = new FormData();
-       fd.append('action', 'saveexpense');
-       fd.append('k', k);
-       fd.append('data', JSON.stringify(payload));
-
-       fetch(API_URL, { method: "POST", body: fd })
-       .then(r => r.json())
-       .then(d => {
-           if(d.status === 'success') {
-               closeModal();
-               document.getElementById('expenseForm').reset();
-               cargarDatos();
-               flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" });
-           } else alert("Error: " + JSON.stringify(d));
-           btn.innerText = "GUARDAR"; btn.disabled = false;
-       });
-    }
-
+    function setupDatalists(options) { const dl1 = document.getElementById('list_l1'); dl1.innerHTML = ''; for(let key in options) { let op = document.createElement('option'); op.value = key; dl1.appendChild(op); } }
+    function updateDatalistL2() { const val1 = document.getElementById('input_l1').value; const dl2 = document.getElementById('list_l2'); dl2.innerHTML = ''; document.getElementById('input_l2').value = ''; if(globalData.options && globalData.options[val1]) { globalData.options[val1].forEach(sub => { let op = document.createElement('option'); op.value = sub; dl2.appendChild(op); }); } }
+    function enviarDatos() { const btn = document.querySelector('.btn-save'); btn.innerText = "Procesando..."; btn.disabled = true; const payload = { fecha: document.getElementById('modal-fecha').value, nivel1: document.getElementById('input_l1').value, nivel2: document.getElementById('input_l2').value, nivel3: document.getElementById('l3').value, monto: document.getElementById('monto').value }; const fd = new FormData(); fd.append('action', 'saveexpense'); fd.append('k', k); fd.append('data', JSON.stringify(payload)); fetch(API_URL, { method: "POST", body: fd }).then(r => r.json()).then(d => { if(d.status === 'success') { closeModal(); document.getElementById('expenseForm').reset(); cargarDatos(); flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" }); } else alert("Error: " + JSON.stringify(d)); btn.innerText = "GUARDAR"; btn.disabled = false; }); }
     function formatMoney(n) { return '$ ' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
     
+    function toggleExportMenu() { const menu = document.getElementById('export-menu'); if (menu.style.display === 'block') menu.style.display = 'none'; else menu.style.display = 'block'; }
+    window.onclick = function(event) { if (!event.target.matches('.btn-export')) { const menu = document.getElementById('export-menu'); if (menu && menu.style.display === 'block') { menu.style.display = 'none'; } } }
     document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
 
+// =========================================================
+// 📄 PDF: CÁLCULO DINÁMICO + VERDE OSCURO
+// =========================================================
+function exportarPDF(modo) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const domL1 = document.querySelectorAll('.l1-details');
+    
+    let exportGroups = [];
+    let totalIng = 0;
+    let totalGas = 0;
+
+    domL1.forEach(l1Node => {
+        const l1Name = l1Node.querySelector('.l1-name').innerText.trim();
+        const l2Nodes = l1Node.querySelectorAll('.l2-details');
+        
+        let l1Group = { name: l1Name, total: 0, subs: [], items: [] };
+        let l1HasSelection = false;
+
+        l2Nodes.forEach(l2Node => {
+            const l2Name = l2Node.querySelector('.l2-name').innerText.trim();
+            const checkedItems = l2Node.querySelectorAll('.item-check:checked');
+            
+            let l2Group = { name: l2Name, total: 0, items: [] };
+
+            checkedItems.forEach(chk => {
+                const val = parseFloat(chk.value);
+                const row = chk.closest('tr');
+                const cols = row.querySelectorAll('td');
+                const fecha = cols[1].innerText.trim();
+                const detalle = cols[2].innerText.trim();
+
+                l2Group.total += val;
+                l2Group.items.push({ fecha, detalle, monto: val });
+                l1Group.total += val;
+                
+                if(val >= 0) totalIng += val; else totalGas += val;
+                l1Group.items.push({ fecha, detalle, monto: val });
+            });
+
+            if (l2Group.items.length > 0) {
+                l1Group.subs.push(l2Group);
+                l1HasSelection = true;
+            }
+        });
+
+        if (l1HasSelection) { exportGroups.push(l1Group); }
+    });
+
+    if (exportGroups.length === 0) { alert("Selecciona ítems para exportar."); return; }
+
+    let bodyFinal = [];
+    exportGroups.forEach(group => {
+        // NIVEL 1: NEGRO + DORADO
+        bodyFinal.push([{ 
+            content: group.name.toUpperCase() + "   (" + formatMoney(group.total) + ")", 
+            colSpan: 3, 
+            styles: { 
+                fillColor: [33, 33, 33], 
+                textColor: [255, 215, 0], 
+                fontStyle: 'bold', 
+                halign: 'left', 
+                cellPadding: 4,
+                lineWidth: { bottom: 1 },
+                lineColor: [50, 50, 50]
+            } 
+        }]);
+
+        if (modo === 'jerarquico') {
+            group.subs.forEach(sub => {
+                // NIVEL 2: GRIS
+                bodyFinal.push([{ 
+                    content: "      >> " + sub.name + "   (" + formatMoney(sub.total) + ")", 
+                    colSpan: 3, 
+                    styles: { 
+                        fillColor: [240, 240, 240], 
+                        textColor: [50, 50, 50], 
+                        fontStyle: 'bold', 
+                        halign: 'left', 
+                        cellPadding: 2, 
+                        fontSize: 9
+                    } 
+                }]);
+                sub.items.forEach(item => addItemRow(item));
+            });
+        } else {
+            group.items.forEach(item => addItemRow(item));
+        }
+    });
+
+    function addItemRow(item) {
+        bodyFinal.push([
+            item.fecha, 
+            item.detalle, 
+            { 
+                content: formatMoney(item.monto), 
+                styles: { 
+                    // COLOR VERDE BOSQUE PROFUNDO (CORRECCIÓN SOLICITADA)
+                    textColor: item.monto < 0 ? [220, 53, 69] : [0, 80, 0], 
+                    halign: 'right', 
+                    fontStyle: 'bold' 
+                }
+            }
+        ]);
+    }
+
+    doc.setFontSize(14); doc.setTextColor(40);
+    const titulo = modo === 'jerarquico' ? "Reporte Jerárquico" : "Reporte Simplificado";
+    doc.text(titulo, 14, 15);
+    
+    doc.setFontSize(8); doc.setTextColor(100);
+    const fechaGen = new Date().toLocaleDateString();
+    doc.text(`Generado: ${fechaGen}`, 14, 20);
+
+    const balance = totalIng + totalGas;
+    doc.autoTable({
+        startY: 22,
+        head: [['INGRESOS', 'GASTOS', 'BALANCE']],
+        body: [[formatMoney(totalIng), formatMoney(totalGas), formatMoney(balance)]],
+        theme: 'grid',
+        headStyles: { fillColor: [33, 33, 33], textColor: 255, halign: 'center', fontSize: 9 },
+        bodyStyles: { halign: 'center', fontSize: 9, fontStyle: 'bold' },
+        columnStyles: {
+            0: { textColor: [0, 80, 0] }, // Verde oscuro
+            1: { textColor: [220, 53, 69] },
+            2: { textColor: balance >= 0 ? [0, 80, 0] : [220, 53, 69] }
+        },
+        tableWidth: 'wrap',
+        margin: { left: 14 }
+    });
+
+    doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 6,
+        head: [['FECHA', 'DETALLE', 'MONTO']],
+        body: bodyFinal,
+        theme: 'plain', 
+        styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.1 },
+        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 32 } },
+        margin: { left: 14, right: 14 }
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(150);
+        doc.text('Control Finanzas Pro', 14, doc.internal.pageSize.height - 10);
+        doc.text(`Pág ${i}/${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+    }
+    doc.save(`Reporte_${modo}_${fechaGen.replace(/\//g,'-')}.pdf`);
+}
     window.onload = init;
   </script>
 </body>
