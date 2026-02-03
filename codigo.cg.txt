@@ -1,38 +1,26 @@
-// =======================================================	
+// =======================================================
 // 1. CONFIGURACIÓN GLOBAL Y DO-GET / DO-POST
 // =======================================================
 const TIEMPO_SESION = 300; // 5 minutos (300 segundos)
 
+// =======================================================
+// 1. CONFIGURACIÓN Y RUTEO (UNIFICADO)
+// =======================================================
 function doGet(e) {
   const action = (e?.parameter?.action || '').toLowerCase();
   const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 
   try {
     switch (action) {
+      // --- EXISTENTES ---
       case 'getdatos': return output({ status: 'success', clientes: obtenerClientes(), precios: obtenerPrecios() });
       case 'getdata': { const d = obtenerDatosFormulario(); return output({ status: 'success', zonas: d.zonas, garrafas: d.garrafas }); }
       case 'listusuarios': return output(listUsuarios());
-      
-      // ➤ OBTIENE LISTA DE CHOFERES CON DEUDA O EN RUTA
-      case 'getdrivers': { 
-        const drivers = obtenerEstadoChoferes(); 
-        return output({ status: 'success', drivers: drivers });
-      }
-
-      // 🔥 LÓGICA DE VIAJES (Usa la función blindada del final)
-      case 'getpendingtrips': {
-        const trips = getPendingTrips_Carga(); 
-        return output({ status: 'success', trips: trips });
-      }
-
+      case 'getdrivers': return output({ status: 'success', drivers: obtenerEstadoChoferes() });
+      case 'getpendingtrips': return output({ status: 'success', trips: getPendingTrips_Carga() });
       case 'listclientes': return output(listClientes());
-
-      // ✅ NUEVO (Para gestión): OBTENER OPCIONES DE HOJA DATOS
       case 'getoptions': return output(getOptionsData());
-
-      // ✅ NUEVO (Para Index4): OBTENER ZONAS ACTIVAS DE HOJA CLIENTES
       case 'getactivezones': return output(obtenerZonasDeClientes());
-
       case 'listprecios': return output(listPrecios());
       case 'usuarioinfo': {
         const info = getUserInfo((e?.parameter?.usuario || '').toString().trim());
@@ -40,16 +28,19 @@ function doGet(e) {
       }
       case 'alarmascount': return output({ status: 'success', pendientes: alarmasCount() });
       case 'listalarmas': return output({ status: 'success', alarmas: listAlarmas(e?.parameter?.onlyPending === 'true', Number(e?.parameter?.limit || 0)) });
-      
-      // ➤ OBTIENE DETALLE FINANCIERO + GASTOS
       case 'getfinanzas': {
          if (!obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
          return output({ status: 'success', ...obtenerResumenFinanciero(e.parameter.chofer) });
       }
-
-      // ✅ CONTROL STOCK INTELIGENTE
       case 'getstockstatus': return output(obtenerEstadoStock());
-      
+
+      // ➤ NUEVO: ÁRBOL DE FINANZAS (CONTROLFINANZAS.HTML)
+      case 'getfinancetree': {
+         // Validamos sesión también en el GET para info sensible
+         if (!obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
+         return output(getDataTree(e.parameter.start, e.parameter.end));
+      }
+
       default: return HtmlService.createHtmlOutput('OK');
     }
   } catch (err) { return output({ status: 'error', message: err.message }); }
@@ -63,15 +54,23 @@ function doPost(e) {
     const action = (e?.parameter?.action || '').toLowerCase();
     const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 
+    // 1. Login (Sin token)
     if (action === 'login') return output(loginYGenerarToken(e.parameter.usuario, e.parameter.clave));
     
+    // 2. Validación de Seguridad Global
     const k = e.parameter.k || e.parameter.token;
     const sesion = obtenerDatosPorToken(k);
-    if (!sesion.valido && action !== 'verificarsesion') return output({ status: 'error', message: 'Sesión expirada' });
+    
+    // Si no es válido y no es una verificación, expulsar
+    if (!sesion.valido && action !== 'verificarsesion') {
+       return output({ status: 'error', message: 'Sesión expirada' });
+    }
 
+    // 3. Router de Acciones Protegidas
     switch (action) {
-      case 'saveprice_single': return output(guardarPrecioIndividual(e.parameter));
+      // --- EXISTENTES ---
       case 'verificarsesion': return output({ status: sesion.valido ? 'success' : 'error', ...sesion });
+      case 'saveprice_single': return output(guardarPrecioIndividual(e.parameter));
       case 'guardarregistro': { e.parameter.USUARIO = sesion.usuario; return output(procesarRegistro(e.parameter)); }
       case 'registrar': return output({status:'success'}); 
       case 'saveusuarios': return output(saveUsuarios(e.parameter.rows));
@@ -80,22 +79,141 @@ function doPost(e) {
       case 'checkalarma': return output({ status: marcarAlarma(Number(e?.parameter?.row)) ? 'success' : 'error' });
       case 'clearallalarmas': marcarTodasAlarmas(); return output({ status: 'success' });
       case 'savealarmas': return output({ status: saveAlarmasBatch(JSON.parse(e.parameter.rows || '[]')) ? 'success' : 'error' });
-      
-      // ✅ NUEVA LÓGICA DE STOCK (Unificada)
-      case 'savestock': {
-         e.parameter.usuario = sesion.usuario; 
-         return output(nuevaSaveStock(e));  
-      }  
-      
+      case 'savestock': { e.parameter.usuario = sesion.usuario; return output(nuevaSaveStock(e)); }  
       case 'savetransporte': return output(procesarTransporte(e.parameter, sesion.usuario));
-      
-      // ➤ GUARDAR ARQUEO
       case 'savearqueo': return output(guardarArqueo(e.parameter, sesion.usuario));
-      
+
+      // ➤ NUEVO: GUARDAR GASTO/INGRESO (CONTROLFINANZAS.HTML)
+      case 'saveexpense': {
+         // Parseamos el JSON que viene dentro del parámetro 'data'
+         const body = JSON.parse(e.parameter.data || '{}');
+         body.usuario = sesion.usuario; // Agregamos quién lo hizo
+         saveExpense(body);
+         return output({ status: 'success' });
+      }
+
       default: return output({ status: 'error', message: 'Acción desconocida' });
     }
   } catch (e) { return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: e.message })).setMimeType(ContentService.MimeType.JSON); } 
   finally { lock.releaseLock(); }
+}
+
+// =======================================================
+// NUEVAS FUNCIONES PARA FINANZAS (AGREGAR AL FINAL)
+// =======================================================
+
+function _getFinanzasSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('CONFINANZAS');
+  if (!sh) {
+    sh = ss.insertSheet('CONFINANZAS');
+    sh.appendRow(['ID', 'FECHA', 'RUBRO', 'SUBRUBRO', 'DETALLE', 'MONTO', 'USUARIO', 'TIMESTAMP']);
+  }
+  return sh;
+}
+
+function getDataTree(startStr, endStr) {
+  const sh = _getFinanzasSheet();
+  const data = sh.getDataRange().getValues();
+  
+  if (data.length < 2) {
+      return { tree: {}, summary: { ingresos:0, gastos:0, total:0 }, options: {} };
+  }
+
+  // Parsear fechas de filtro (inicio del día y fin del día)
+  const start = startStr ? new Date(startStr + 'T00:00:00') : new Date('2000-01-01');
+  const end = endStr ? new Date(endStr + 'T23:59:59') : new Date('2100-01-01');
+
+  const tree = {};
+  const options = {}; 
+  let ingresos = 0, gastos = 0;
+
+  // Recorremos los datos (fila 1 en adelante)
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    let rowDate = row[1]; // Columna B: FECHA
+    
+    // --- LÓGICA DE LIMPIEZA DE FECHA ---
+    let fechaObj;
+    
+    // Si la celda ya es un objeto Fecha (Google Sheets lo detectó)
+    if (rowDate instanceof Date) {
+        fechaObj = rowDate;
+    } else {
+        // Si es texto (ej: "2026-01-29"), lo convertimos
+        // Cortamos los primeros 10 caracteres por si viene con hora "T..."
+        fechaObj = new Date(String(rowDate).substring(0, 10) + 'T12:00:00');
+    }
+
+    // Si la fecha es inválida, saltamos
+    if (isNaN(fechaObj.getTime())) continue;
+
+    // Filtro de fechas (comparar objetos fecha)
+    // Usamos inicio de día para start y fin de día para end para ser precisos
+    const checkDate = new Date(fechaObj);
+    checkDate.setHours(12,0,0,0); // Normalizamos al mediodía para comparar solo días
+    
+    if (checkDate < start || checkDate > end) continue;
+
+    // --- AQUÍ FORMATEAMOS PARA QUE SE VEA LINDO ---
+    const dia = ("0" + fechaObj.getDate()).slice(-2);
+    const mes = ("0" + (fechaObj.getMonth() + 1)).slice(-2);
+    const anio = fechaObj.getFullYear();
+    const fechaVisual = `${dia}/${mes}/${anio}`; // Resultado: "29/01/2026"
+
+    const l1 = String(row[2]).trim() || 'VARIOS';
+    const l2 = String(row[3]).trim() || 'General';
+    const det = String(row[4]).trim();
+    const monto = Number(row[5]) || 0;
+
+    // Guardar opciones
+    if (!options[l1]) options[l1] = new Set();
+    options[l1].add(l2);
+
+    // Sumar Totales
+    if (monto >= 0) ingresos += monto;
+    else gastos += monto;
+
+    // Construir Árbol
+    if (!tree[l1]) tree[l1] = { total: 0, subs: {} };
+    tree[l1].total += monto;
+
+    if (!tree[l1].subs[l2]) tree[l1].subs[l2] = { total: 0, items: [] };
+    tree[l1].subs[l2].total += monto;
+    
+    tree[l1].subs[l2].items.push({
+      fecha: fechaVisual, // Enviamos la fecha limpia
+      detalle: det,
+      monto: monto
+    });
+  }
+
+  // Convertir Sets a Arrays
+  const finalOptions = {};
+  for(let k in options) finalOptions[k] = Array.from(options[k]).sort();
+
+  return { 
+    tree: tree, 
+    summary: { ingresos, gastos, total: ingresos + gastos },
+    options: finalOptions
+  };
+}
+
+function saveExpense(body) {
+  const sh = _getFinanzasSheet();
+  const id = Utilities.getUuid().slice(0,8);
+  const ts = new Date();
+  
+  sh.appendRow([
+    id,
+    body.fecha,        // YYYY-MM-DD
+    body.nivel1,       // Rubro
+    body.nivel2,       // Subrubro
+    body.nivel3,       // Detalle
+    Number(body.monto),
+    body.usuario || 'System',
+    ts
+  ]);
 }
 
 // =======================================================

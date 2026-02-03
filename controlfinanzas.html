@@ -15,6 +15,7 @@
   :root {
     --bg-dark: #050510;
     --accent: #FFD700; 
+    --accent-edit: #ff9100; /* Naranja para edición */
     --accent-glow: rgba(255, 215, 0, 0.3);
     --text-main: #ffffff;
     --text-sec: #a0a0b0;
@@ -23,6 +24,10 @@
     --glass-border: rgba(255, 255, 255, 0.08);
     --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
   }
+
+  /* ESTILOS DE MODO EDICIÓN */
+  body.edit-mode { --accent: var(--accent-edit); }
+  body.edit-mode .fab { background: var(--accent-edit); transform: rotate(45deg); }
 
   * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 
@@ -147,6 +152,7 @@
       margin-bottom: 8px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       overflow: hidden;
+      transition: border-color 0.3s;
   }
   details.l1-details > summary { 
       padding: 12px 15px; 
@@ -177,7 +183,7 @@
   /* NIVEL 3 (DETALLES) */
   .table-responsive { background: #e0e0e0; }
   table { width: 100%; border-collapse: collapse; }
-  tr { border-bottom: 1px solid #ccc; }
+  tr { border-bottom: 1px solid #ccc; cursor: pointer; } 
   tr:last-child { border-bottom: none; }
   
   td { padding: 8px 15px; color: #000; font-size: 12px; font-weight: 500; }
@@ -189,10 +195,10 @@
   .table-responsive input[type="checkbox"]:checked::after { color: #000; }
 
   /* FAB */
-  .fab { width: 45px; height: 45px; font-size: 24px; bottom: 20px; right: 20px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 15px var(--accent-glow); cursor: pointer; z-index: 200; }
+  .fab { width: 45px; height: 45px; font-size: 24px; bottom: 20px; right: 20px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 15px var(--accent-glow); cursor: pointer; z-index: 200; transition: 0.3s; }
   
   /* MODAL DARK GLASS */
-  #modal { 
+  #modal, #pinModal { 
       backdrop-filter: blur(15px); 
       -webkit-backdrop-filter: blur(15px); 
       background: rgba(0,0,0,0.6); 
@@ -202,19 +208,29 @@
       align-items: center; justify-content: center;
   }
   .modal-content { 
-      background: rgba(10, 10, 20, 0.85); 
+      background: rgba(10, 10, 20, 0.9); 
       border: 1px solid rgba(255,255,255,0.1); 
       border-radius: 20px; 
       padding: 25px; 
       width: 90%; max-width: 380px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8);
       text-align: center;
+      border-top: 4px solid var(--accent);
   }
   .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 10px; }
   .form-control:focus { border-color: var(--accent); }
+  
   .btn-save { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 5px; transition: 0.3s; }
   .btn-save:hover { box-shadow: 0 0 15px var(--accent-glow); }
   .btn-cancel { width: 100%; background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px; margin-top: 10px; cursor: pointer; border-radius: 8px; }
+  .btn-delete { width: 100%; background: rgba(255, 71, 87, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px; margin-top: 15px; cursor: pointer; border-radius: 8px; font-weight: 700; display: none; }
+
+  /* Pin Input */
+  .pin-wrapper { display: none; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; animation: slideDown 0.3s; }
+  @keyframes slideDown { from {opacity: 0; transform: translateY(-10px);} to {opacity: 1; transform: translateY(0);} }
+
+  /* Auditoría Visual */
+  .audit-diff { font-size: 11px; margin-top: -5px; margin-bottom: 10px; color: var(--text-sec); display: none; }
 
 </style>
 </head>
@@ -223,15 +239,17 @@
   <div class="fixed-header">
     <div class="header-top">
        <button class="btn-action" id="btnVolver">❮ Volver</button>
-       <h2 class="page-title">Control de Finanzas</h2>
+       <h2 class="page-title">Control Finanzas</h2>
        
-       <div class="export-wrapper">
-           <button class="btn-export" onclick="toggleExportMenu()">
-               Exportar ▼
-           </button>
-           <div id="export-menu" class="dropdown-menu">
-               <div class="dropdown-item" onclick="exportarPDF('jerarquico')">📊 Reporte Jerárquico</div>
-               <div class="dropdown-item" onclick="exportarPDF('simple')">📑 Reporte Simplificado</div>
+       <div style="display:flex; gap:10px">
+           <button class="btn-action" onclick="openPinModal()">🔑</button>
+           
+           <div class="export-wrapper">
+               <button class="btn-export" onclick="toggleExportMenu()">Exportar ▼</button>
+               <div id="export-menu" class="dropdown-menu">
+                   <div class="dropdown-item" onclick="exportarPDF('jerarquico')">📊 Reporte Jerárquico</div>
+                   <div class="dropdown-item" onclick="exportarPDF('simple')">📑 Reporte Simplificado</div>
+               </div>
            </div>
        </div>
     </div>
@@ -244,18 +262,9 @@
       </div>
 
       <div class="dashboard" id="dashboard-panel">
-          <div class="card">
-              <label id="lbl-in">INGRESOS</label>
-              <div class="value pos" id="dash-in">...</div>
-          </div>
-          <div class="card">
-              <label id="lbl-out">GASTOS</label>
-              <div class="value neg" id="dash-out">...</div>
-          </div>
-          <div class="card">
-              <label id="lbl-total">BALANCE</label>
-              <div class="value" id="dash-total">...</div>
-          </div>
+          <div class="card"><label id="lbl-in">INGRESOS</label><div class="value pos" id="dash-in">...</div></div>
+          <div class="card"><label id="lbl-out">GASTOS</label><div class="value neg" id="dash-out">...</div></div>
+          <div class="card"><label id="lbl-total">BALANCE</label><div class="value" id="dash-total">...</div></div>
       </div>
 
       <div class="view-controls">
@@ -268,18 +277,20 @@
   <div class="scroll-content">
       <div id="tree-root" class="tree-container">
           <div style="padding:40px; text-align:center; color:var(--text-sec); font-size:12px;">
-              <div style="margin-bottom:5px; font-size:16px;">⚡</div>
-              Cargando...
+              <div style="margin-bottom:5px; font-size:16px;">⚡</div>Cargando...
           </div>
       </div>
   </div>
 
-  <button class="fab" onclick="openModal()">+</button>
+  <button class="fab" onclick="openModal('create')">+</button>
 
   <div id="modal">
     <div class="modal-content">
-      <h3 style="color:var(--accent); text-align:center; margin:0 0 15px 0; font-size:16px;">Nueva Transacción</h3>
+      <h3 id="modal-title" style="color:var(--accent); text-align:center; margin:0 0 15px 0; font-size:16px;">Nueva Transacción</h3>
       <form id="expenseForm">
+        <input type="hidden" id="edit-id"> 
+        <input type="hidden" id="orig-amount">
+        
         <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Fecha</label>
         <input type="text" class="form-control" id="modal-fecha" required>
         
@@ -293,20 +304,39 @@
         <input type="text" class="form-control" id="l3" placeholder="Descripción" required>
         
         <label style="color:var(--text-sec); font-size:11px; display:block; text-align:left;">Monto (Negativo = Gasto)</label>
-        <input type="number" step="0.01" class="form-control" id="monto" placeholder="-1500" required>
+        <input type="number" step="0.01" class="form-control" id="monto" placeholder="-1500" required oninput="checkDiff()">
+        <div id="audit-msg" class="audit-diff"></div>
+
+        <button type="button" class="btn-save" id="btn-main" onclick="handleMainAction()">GUARDAR</button>
         
-        <button type="button" class="btn-save" onclick="enviarDatos()">GUARDAR</button>
+        <div id="pin-area" class="pin-wrapper">
+             <label style="color:var(--accent-edit); font-size:11px; font-weight:bold;">🔒 PIN DE AUTORIZACIÓN</label>
+             <input type="password" id="auth-pin" class="form-control" style="text-align:center; letter-spacing:5px;" placeholder="****" maxlength="4">
+             <button type="button" class="btn-save" style="background:var(--accent-edit); color:white;" onclick="confirmEdit()">CONFIRMAR CAMBIO</button>
+        </div>
+
+        <button type="button" class="btn-delete" id="btn-del" onclick="reqDelete()">🗑 ELIMINAR REGISTRO</button>
         <button type="button" class="btn-cancel" onclick="closeModal()">CANCELAR</button>
       </form>
     </div>
+  </div>
+
+  <div id="pinModal">
+      <div class="modal-content" style="border-top-color: #fff;">
+          <h3 style="color:#fff; margin-bottom:15px;">Cambio de PIN Maestro</h3>
+          <input type="password" id="old-pin" class="form-control" placeholder="PIN Actual" style="text-align:center">
+          <input type="password" id="new-pin" class="form-control" placeholder="Nuevo PIN (4 dígitos)" maxlength="4" style="text-align:center">
+          <button type="button" class="btn-save" style="background:#fff; color:#000;" onclick="submitPinChange()">ACTUALIZAR LLAVE</button>
+          <button type="button" class="btn-cancel" onclick="document.getElementById('pinModal').style.display='none'">CANCELAR</button>
+      </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
-    const TIMEOUT_SESION = 180000; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+    const TIMEOUT_SESION = 180000;
     const params = new URLSearchParams(window.location.search);
     const k = params.get('k') || params.get('token');
     if (!k) window.location.replace('index.html');
@@ -319,6 +349,8 @@
 
     var globalData = {};
     var currentSummary = {}; 
+    var currentEditMode = false;
+    var deleteRequested = false;
 
     async function init() {
         try {
@@ -340,6 +372,7 @@
        const start = document.getElementById('filter-start').value;
        const end = document.getElementById('filter-end').value;
        document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Actualizando...</div>';
+       
        fetch(`${API_URL}?action=getfinancetree&k=${k}&start=${start}&end=${end}`)
        .then(r => r.json())
        .then(data => {
@@ -353,6 +386,221 @@
        .catch(e => {
            document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error de conexión.</div>';
        });
+    }
+
+    function renderTree(tree) {
+       let html = '';
+       if (Object.keys(tree).length === 0) { document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Sin registros.</div>'; return; }
+       
+       for (let l1 in tree) {
+         const l1TotalStr = formatMoney(tree[l1].total);
+         html += `<details class="l1-details">
+           <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l1-name">${l1}</span></div><span data-original="${l1TotalStr}" style="font-family:'Outfit', monospace; font-weight:700; color:#FFD700">${l1TotalStr}</span></summary>`;
+         
+         for (let l2 in tree[l1].subs) {
+           let sub = tree[l1].subs[l2];
+           const l2TotalStr = formatMoney(sub.total);
+           html += `<div class="l2-container"><details class="l2-details"> <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l2-name">${l2}</span></div><span data-original="${l2TotalStr}" style="font-size:0.9em; opacity:0.9; font-family:'Outfit', monospace">${l2TotalStr}</span></summary><div class="table-responsive"><table>`;
+           
+           sub.items.forEach(item => {
+             // Escapamos comillas para evitar errores en el HTML inline
+             let safeDet = item.detalle.replace(/"/g, '&quot;');
+             html += `<tr ondblclick="openModal('edit', '${item.id}', '${item.fecha}', '${l1}', '${l2}', '${safeDet}', '${item.monto}')">
+               <td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td>
+               <td width="70" style="color:#000; font-weight:600">${item.fecha}</td>
+               <td class="col-desc">${item.detalle}</td>
+               <td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td>
+             </tr>`;
+           });
+           
+           html += `</table></div></details></div>`;
+         } 
+         html += `</details>`;
+       } 
+       document.getElementById('tree-root').innerHTML = html;
+    }
+
+    // --- MODAL Y EDICIÓN ---
+    function openModal(mode, id, fecha, l1, l2, det, monto) {
+        const m = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const btn = document.getElementById('btn-main');
+        const pinArea = document.getElementById('pin-area');
+        
+        pinArea.style.display = 'none';
+        deleteRequested = false;
+
+        if (mode === 'create') {
+            currentEditMode = false;
+            document.body.classList.remove('edit-mode');
+            document.getElementById('expenseForm').reset();
+            title.innerText = "Nueva Transacción";
+            btn.innerText = "GUARDAR";
+            document.getElementById('btn-del').style.display = 'none';
+            document.querySelector('.modal-content').style.borderColor = 'var(--glass-border)';
+            flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+        } else {
+            // MODO EDICIÓN SOMBRA
+            currentEditMode = true;
+            document.body.classList.add('edit-mode');
+            
+            document.getElementById('edit-id').value = id;
+            document.getElementById('orig-amount').value = monto;
+            
+            // Re-convertir fecha para el datepicker si viene como DD/MM/YYYY
+            let dateObj = new Date();
+            if(fecha && fecha.includes('/')) {
+                const parts = fecha.split('/');
+                dateObj = new Date(parts[2], parts[1]-1, parts[0]);
+            }
+            flatpickr("#modal-fecha", { defaultDate: dateObj, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            
+            document.getElementById('input_l1').value = l1;
+            updateDatalistL2();
+            document.getElementById('input_l2').value = l2;
+            document.getElementById('l3').value = det;
+            document.getElementById('monto').value = monto;
+            
+            title.innerText = "Modificar Registro #" + id.substr(0,4);
+            btn.innerText = "SOLICITAR CAMBIO 🔒";
+            document.getElementById('btn-del').style.display = 'block';
+            document.querySelector('.modal-content').style.borderColor = 'var(--accent-edit)';
+        }
+        m.style.display = 'flex';
+    }
+
+    function checkDiff() {
+        if(!currentEditMode) return;
+        const oldVal = parseFloat(document.getElementById('orig-amount').value);
+        const newVal = parseFloat(document.getElementById('monto').value);
+        const diff = document.getElementById('audit-msg');
+        
+        if(!isNaN(newVal) && newVal !== oldVal) {
+            let d = newVal - oldVal;
+            diff.style.display = 'block';
+            diff.innerText = `Diferencia: ${d > 0 ? '+' : ''}${formatMoney(d)}`;
+            diff.style.color = d > 0 ? 'var(--success)' : 'var(--danger)';
+        } else {
+            diff.style.display = 'none';
+        }
+    }
+
+    function handleMainAction() {
+        if (!currentEditMode) {
+            enviarDatos();
+        } else {
+            document.getElementById('pin-area').style.display = 'block';
+            document.getElementById('btn-main').style.display = 'none';
+            document.getElementById('btn-del').style.display = 'none';
+            deleteRequested = false;
+        }
+    }
+
+    function reqDelete() {
+        document.getElementById('pin-area').style.display = 'block';
+        document.getElementById('btn-main').style.display = 'none';
+        document.getElementById('btn-del').style.display = 'none';
+        deleteRequested = true;
+        document.querySelector('#pin-area label').innerText = "🔒 PIN PARA ELIMINAR";
+        document.querySelector('#pin-area button').innerText = "CONFIRMAR BORRADO";
+        document.querySelector('#pin-area button').style.background = "var(--danger)";
+    }
+
+    function enviarDatos() {
+        const btn = document.getElementById('btn-main');
+        btn.innerText = "Guardando...";
+        btn.disabled = true;
+        
+        const payload = { 
+            fecha: document.getElementById('modal-fecha').value, 
+            nivel1: document.getElementById('input_l1').value, 
+            nivel2: document.getElementById('input_l2').value, 
+            nivel3: document.getElementById('l3').value, 
+            monto: document.getElementById('monto').value 
+        };
+        
+        const fd = new FormData(); 
+        fd.append('action', 'saveexpense'); 
+        fd.append('k', k); 
+        fd.append('data', JSON.stringify(payload)); 
+        
+        fetch(API_URL, { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(d => { 
+             if(d.status === 'success') {
+                closeModal(); 
+                cargarDatos(); 
+             } else { alert("Error: " + JSON.stringify(d)); }
+             btn.innerText = "GUARDAR";
+             btn.disabled = false;
+        });
+    }
+
+    function confirmEdit() {
+        const pin = document.getElementById('auth-pin').value;
+        const id = document.getElementById('edit-id').value;
+        const type = deleteRequested ? 'DELETE' : 'UPDATE';
+        
+        const payload = { 
+            fecha: document.getElementById('modal-fecha').value, 
+            nivel1: document.getElementById('input_l1').value, 
+            nivel2: document.getElementById('input_l2').value, 
+            nivel3: document.getElementById('l3').value, 
+            monto: document.getElementById('monto').value 
+        };
+
+        const fd = new FormData();
+        fd.append('action', 'modify');
+        fd.append('k', k);
+        fd.append('type', type);
+        fd.append('id', id);
+        fd.append('pin', pin);
+        fd.append('data', JSON.stringify(payload));
+
+        fetch(API_URL, { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'success') {
+                alert(deleteRequested ? "Registro eliminado" : "Registro actualizado");
+                closeModal();
+                cargarDatos();
+            } else {
+                alert("ERROR: " + d.message);
+                document.getElementById('auth-pin').value = '';
+            }
+        });
+    }
+
+    function openPinModal() { document.getElementById('pinModal').style.display = 'flex'; }
+    function submitPinChange() {
+        const oldP = document.getElementById('old-pin').value;
+        const newP = document.getElementById('new-pin').value;
+        if(newP.length < 4) { alert("El nuevo PIN debe tener 4 dígitos"); return; }
+        
+        const fd = new FormData();
+        fd.append('action', 'changepin');
+        fd.append('k', k);
+        fd.append('oldPin', oldP);
+        fd.append('newPin', newP);
+        
+        fetch(API_URL, { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'success') { alert("¡PIN Maestro Actualizado!"); document.getElementById('pinModal').style.display='none'; }
+            else { alert("Error: " + d.message); }
+        });
+    }
+
+    function closeModal() { 
+        document.getElementById('modal').style.display = 'none'; 
+        document.getElementById('btn-main').style.display = 'block';
+        document.body.classList.remove('edit-mode');
+        // Reset textos PIN
+        document.querySelector('#pin-area label').innerText = "🔒 PIN DE AUTORIZACIÓN";
+        document.querySelector('#pin-area button').innerText = "CONFIRMAR CAMBIO";
+        document.querySelector('#pin-area button').style.background = "var(--accent-edit)";
+        document.getElementById('auth-pin').value = '';
+        document.getElementById('audit-msg').style.display = 'none';
     }
 
     function setTreeView(mode) {
@@ -379,16 +627,11 @@
 
     function calcSelection() {
        const checks = document.querySelectorAll('.item-check:checked');
-       
-       // Si no hay nada seleccionado, volvemos a mostrar los valores ORIGINALES (del servidor)
        if (checks.length === 0) { 
            updateDashboardValues(currentSummary.ingresos, currentSummary.gastos, currentSummary.total, false);
-           
-           // Restaurar textos originales en L1 y L2
            document.querySelectorAll('.l1-details').forEach(l1 => {
                const origL1 = l1.querySelector('summary > span:last-child').getAttribute('data-original');
                if(origL1) l1.querySelector('summary > span:last-child').innerText = origL1;
-               
                l1.querySelectorAll('.l2-details').forEach(l2 => {
                    const origL2 = l2.querySelector('summary > span:last-child').getAttribute('data-original');
                    if(origL2) l2.querySelector('summary > span:last-child').innerText = origL2;
@@ -396,218 +639,96 @@
            });
            return; 
        }
-
-       // CALCULO DINÁMICO EN DASHBOARD
        let selIngresos = 0, selGastos = 0;
        checks.forEach(c => { let val = parseFloat(c.value); if (val >= 0) selIngresos += val; else selGastos += val; });
        updateDashboardValues(selIngresos, selGastos, selIngresos + selGastos, true);
-
-       // CALCULO DINÁMICO EN ENCABEZADOS (L1 y L2)
        document.querySelectorAll('.l1-details').forEach(l1 => {
            let l1Total = 0;
            l1.querySelectorAll('.l2-details').forEach(l2 => {
                let l2Total = 0;
-               // Sumar solo items seleccionados dentro de este L2
-               l2.querySelectorAll('.item-check:checked').forEach(chk => {
-                   l2Total += parseFloat(chk.value);
-               });
-               // Actualizar texto L2
+               l2.querySelectorAll('.item-check:checked').forEach(chk => { l2Total += parseFloat(chk.value); });
                l2.querySelector('summary > span:last-child').innerText = formatMoney(l2Total);
                l1Total += l2Total;
            });
-           // Actualizar texto L1
            l1.querySelector('summary > span:last-child').innerText = formatMoney(l1Total);
        });
-    }
-
-    function renderTree(tree) {
-       let html = '';
-       if (Object.keys(tree).length === 0) { document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Sin registros.</div>'; return; }
-       for (let l1 in tree) {
-         // Agregamos data-original para poder restaurar si se desmarca todo
-         const l1TotalStr = formatMoney(tree[l1].total);
-         html += `<details class="l1-details">
-           <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l1-name">${l1}</span></div><span data-original="${l1TotalStr}" style="font-family:'Outfit', monospace; font-weight:700; color:#FFD700">${l1TotalStr}</span></summary>`;
-         for (let l2 in tree[l1].subs) {
-           let sub = tree[l1].subs[l2];
-           const l2TotalStr = formatMoney(sub.total);
-           html += `<div class="l2-container"><details class="l2-details"> <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l2-name">${l2}</span></div><span data-original="${l2TotalStr}" style="font-size:0.9em; opacity:0.9; font-family:'Outfit', monospace">${l2TotalStr}</span></summary><div class="table-responsive"><table>${sub.items.map(item => `<tr><td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td><td width="70" style="color:#000; font-weight:600">${item.fecha}</td><td class="col-desc">${item.detalle}</td><td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td></tr>`).join('')}</table></div></details></div>`;
-         } html += `</details>`;
-       } document.getElementById('tree-root').innerHTML = html;
     }
 
     function toggleChildren(source) {
        const parent = source.closest('details');
        const children = parent.querySelectorAll('input[type="checkbox"]');
-       children.forEach(c => { 
-           if (c !== source) c.checked = source.checked; 
-       });
+       children.forEach(c => { if (c !== source) c.checked = source.checked; });
        calcSelection(); 
     }
 
     function setupDatalists(options) { const dl1 = document.getElementById('list_l1'); dl1.innerHTML = ''; for(let key in options) { let op = document.createElement('option'); op.value = key; dl1.appendChild(op); } }
     function updateDatalistL2() { const val1 = document.getElementById('input_l1').value; const dl2 = document.getElementById('list_l2'); dl2.innerHTML = ''; document.getElementById('input_l2').value = ''; if(globalData.options && globalData.options[val1]) { globalData.options[val1].forEach(sub => { let op = document.createElement('option'); op.value = sub; dl2.appendChild(op); }); } }
-    function enviarDatos() { const btn = document.querySelector('.btn-save'); btn.innerText = "Procesando..."; btn.disabled = true; const payload = { fecha: document.getElementById('modal-fecha').value, nivel1: document.getElementById('input_l1').value, nivel2: document.getElementById('input_l2').value, nivel3: document.getElementById('l3').value, monto: document.getElementById('monto').value }; const fd = new FormData(); fd.append('action', 'saveexpense'); fd.append('k', k); fd.append('data', JSON.stringify(payload)); fetch(API_URL, { method: "POST", body: fd }).then(r => r.json()).then(d => { if(d.status === 'success') { closeModal(); document.getElementById('expenseForm').reset(); cargarDatos(); flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" }); } else alert("Error: " + JSON.stringify(d)); btn.innerText = "GUARDAR"; btn.disabled = false; }); }
+    
     function formatMoney(n) { return '$ ' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
-    function openModal() { document.getElementById('modal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
     
     function toggleExportMenu() { const menu = document.getElementById('export-menu'); if (menu.style.display === 'block') menu.style.display = 'none'; else menu.style.display = 'block'; }
     window.onclick = function(event) { if (!event.target.matches('.btn-export')) { const menu = document.getElementById('export-menu'); if (menu && menu.style.display === 'block') { menu.style.display = 'none'; } } }
     document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
 
-// =========================================================
-// 📄 PDF: CÁLCULO DINÁMICO + VERDE OSCURO
-// =========================================================
-function exportarPDF(modo) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const domL1 = document.querySelectorAll('.l1-details');
-    
-    let exportGroups = [];
-    let totalIng = 0;
-    let totalGas = 0;
-
-    domL1.forEach(l1Node => {
-        const l1Name = l1Node.querySelector('.l1-name').innerText.trim();
-        const l2Nodes = l1Node.querySelectorAll('.l2-details');
-        
-        let l1Group = { name: l1Name, total: 0, subs: [], items: [] };
-        let l1HasSelection = false;
-
-        l2Nodes.forEach(l2Node => {
-            const l2Name = l2Node.querySelector('.l2-name').innerText.trim();
-            const checkedItems = l2Node.querySelectorAll('.item-check:checked');
-            
-            let l2Group = { name: l2Name, total: 0, items: [] };
-
-            checkedItems.forEach(chk => {
-                const val = parseFloat(chk.value);
-                const row = chk.closest('tr');
-                const cols = row.querySelectorAll('td');
-                const fecha = cols[1].innerText.trim();
-                const detalle = cols[2].innerText.trim();
-
-                l2Group.total += val;
-                l2Group.items.push({ fecha, detalle, monto: val });
-                l1Group.total += val;
-                
-                if(val >= 0) totalIng += val; else totalGas += val;
-                l1Group.items.push({ fecha, detalle, monto: val });
+    // PDF EXPORT (Mismo código que antes)
+    function exportarPDF(modo) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const domL1 = document.querySelectorAll('.l1-details');
+        let exportGroups = []; let totalIng = 0; let totalGas = 0;
+        domL1.forEach(l1Node => {
+            const l1Name = l1Node.querySelector('.l1-name').innerText.trim();
+            const l2Nodes = l1Node.querySelectorAll('.l2-details');
+            let l1Group = { name: l1Name, total: 0, subs: [], items: [] };
+            let l1HasSelection = false;
+            l2Nodes.forEach(l2Node => {
+                const l2Name = l2Node.querySelector('.l2-name').innerText.trim();
+                const checkedItems = l2Node.querySelectorAll('.item-check:checked');
+                let l2Group = { name: l2Name, total: 0, items: [] };
+                checkedItems.forEach(chk => {
+                    const val = parseFloat(chk.value);
+                    const row = chk.closest('tr');
+                    const cols = row.querySelectorAll('td');
+                    const fecha = cols[1].innerText.trim();
+                    const detalle = cols[2].innerText.trim();
+                    l2Group.total += val;
+                    l2Group.items.push({ fecha, detalle, monto: val });
+                    l1Group.total += val;
+                    if(val >= 0) totalIng += val; else totalGas += val;
+                    l1Group.items.push({ fecha, detalle, monto: val });
+                });
+                if (l2Group.items.length > 0) { l1Group.subs.push(l2Group); l1HasSelection = true; }
             });
-
-            if (l2Group.items.length > 0) {
-                l1Group.subs.push(l2Group);
-                l1HasSelection = true;
-            }
+            if (l1HasSelection) { exportGroups.push(l1Group); }
         });
-
-        if (l1HasSelection) { exportGroups.push(l1Group); }
-    });
-
-    if (exportGroups.length === 0) { alert("Selecciona ítems para exportar."); return; }
-
-    let bodyFinal = [];
-    exportGroups.forEach(group => {
-        // NIVEL 1: NEGRO + DORADO
-        bodyFinal.push([{ 
-            content: group.name.toUpperCase() + "   (" + formatMoney(group.total) + ")", 
-            colSpan: 3, 
-            styles: { 
-                fillColor: [33, 33, 33], 
-                textColor: [255, 215, 0], 
-                fontStyle: 'bold', 
-                halign: 'left', 
-                cellPadding: 4,
-                lineWidth: { bottom: 1 },
-                lineColor: [50, 50, 50]
-            } 
-        }]);
-
-        if (modo === 'jerarquico') {
-            group.subs.forEach(sub => {
-                // NIVEL 2: GRIS
-                bodyFinal.push([{ 
-                    content: "      >> " + sub.name + "   (" + formatMoney(sub.total) + ")", 
-                    colSpan: 3, 
-                    styles: { 
-                        fillColor: [240, 240, 240], 
-                        textColor: [50, 50, 50], 
-                        fontStyle: 'bold', 
-                        halign: 'left', 
-                        cellPadding: 2, 
-                        fontSize: 9
-                    } 
-                }]);
-                sub.items.forEach(item => addItemRow(item));
-            });
-        } else {
-            group.items.forEach(item => addItemRow(item));
+        if (exportGroups.length === 0) { alert("Selecciona ítems para exportar."); return; }
+        let bodyFinal = [];
+        exportGroups.forEach(group => {
+            bodyFinal.push([{ content: group.name.toUpperCase() + "   (" + formatMoney(group.total) + ")", colSpan: 3, styles: { fillColor: [33, 33, 33], textColor: [255, 215, 0], fontStyle: 'bold', halign: 'left', cellPadding: 4, lineWidth: { bottom: 1 }, lineColor: [50, 50, 50] } }]);
+            if (modo === 'jerarquico') {
+                group.subs.forEach(sub => {
+                    bodyFinal.push([{ content: "      >> " + sub.name + "   (" + formatMoney(sub.total) + ")", colSpan: 3, styles: { fillColor: [240, 240, 240], textColor: [50, 50, 50], fontStyle: 'bold', halign: 'left', cellPadding: 2, fontSize: 9 } }]);
+                    sub.items.forEach(item => addItemRow(item));
+                });
+            } else { group.items.forEach(item => addItemRow(item)); }
+        });
+        function addItemRow(item) {
+            bodyFinal.push([ item.fecha, item.detalle, { content: formatMoney(item.monto), styles: { textColor: item.monto < 0 ? [220, 53, 69] : [0, 80, 0], halign: 'right', fontStyle: 'bold' } } ]);
         }
-    });
-
-    function addItemRow(item) {
-        bodyFinal.push([
-            item.fecha, 
-            item.detalle, 
-            { 
-                content: formatMoney(item.monto), 
-                styles: { 
-                    // COLOR VERDE BOSQUE PROFUNDO (CORRECCIÓN SOLICITADA)
-                    textColor: item.monto < 0 ? [220, 53, 69] : [0, 80, 0], 
-                    halign: 'right', 
-                    fontStyle: 'bold' 
-                }
-            }
-        ]);
+        doc.setFontSize(14); doc.setTextColor(40);
+        const titulo = modo === 'jerarquico' ? "Reporte Jerárquico" : "Reporte Simplificado";
+        doc.text(titulo, 14, 15);
+        doc.setFontSize(8); doc.setTextColor(100);
+        const fechaGen = new Date().toLocaleDateString();
+        doc.text(`Generado: ${fechaGen}`, 14, 20);
+        const balance = totalIng + totalGas;
+        doc.autoTable({ startY: 22, head: [['INGRESOS', 'GASTOS', 'BALANCE']], body: [[formatMoney(totalIng), formatMoney(totalGas), formatMoney(balance)]], theme: 'grid', headStyles: { fillColor: [33, 33, 33], textColor: 255, halign: 'center', fontSize: 9 }, bodyStyles: { halign: 'center', fontSize: 9, fontStyle: 'bold' }, columnStyles: { 0: { textColor: [0, 80, 0] }, 1: { textColor: [220, 53, 69] }, 2: { textColor: balance >= 0 ? [0, 80, 0] : [220, 53, 69] } }, tableWidth: 'wrap', margin: { left: 14 } });
+        doc.autoTable({ startY: doc.lastAutoTable.finalY + 6, head: [['FECHA', 'DETALLE', 'MONTO']], body: bodyFinal, theme: 'plain', styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.1 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' }, columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 32 } }, margin: { left: 14, right: 14 } });
+        const pageCount = doc.internal.getNumberOfPages();
+        for(let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(7); doc.setTextColor(150); doc.text('Control Finanzas Pro', 14, doc.internal.pageSize.height - 10); doc.text(`Pág ${i}/${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10); }
+        doc.save(`Reporte_${modo}_${fechaGen.replace(/\//g,'-')}.pdf`);
     }
-
-    doc.setFontSize(14); doc.setTextColor(40);
-    const titulo = modo === 'jerarquico' ? "Reporte Jerárquico" : "Reporte Simplificado";
-    doc.text(titulo, 14, 15);
     
-    doc.setFontSize(8); doc.setTextColor(100);
-    const fechaGen = new Date().toLocaleDateString();
-    doc.text(`Generado: ${fechaGen}`, 14, 20);
-
-    const balance = totalIng + totalGas;
-    doc.autoTable({
-        startY: 22,
-        head: [['INGRESOS', 'GASTOS', 'BALANCE']],
-        body: [[formatMoney(totalIng), formatMoney(totalGas), formatMoney(balance)]],
-        theme: 'grid',
-        headStyles: { fillColor: [33, 33, 33], textColor: 255, halign: 'center', fontSize: 9 },
-        bodyStyles: { halign: 'center', fontSize: 9, fontStyle: 'bold' },
-        columnStyles: {
-            0: { textColor: [0, 80, 0] }, // Verde oscuro
-            1: { textColor: [220, 53, 69] },
-            2: { textColor: balance >= 0 ? [0, 80, 0] : [220, 53, 69] }
-        },
-        tableWidth: 'wrap',
-        margin: { left: 14 }
-    });
-
-    doc.autoTable({
-        startY: doc.lastAutoTable.finalY + 6,
-        head: [['FECHA', 'DETALLE', 'MONTO']],
-        body: bodyFinal,
-        theme: 'plain', 
-        styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', lineColor: [220, 220, 220], lineWidth: 0.1 },
-        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-        columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 32 } },
-        margin: { left: 14, right: 14 }
-    });
-
-    const pageCount = doc.internal.getNumberOfPages();
-    for(let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(7);
-        doc.setTextColor(150);
-        doc.text('Control Finanzas Pro', 14, doc.internal.pageSize.height - 10);
-        doc.text(`Pág ${i}/${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
-    }
-    doc.save(`Reporte_${modo}_${fechaGen.replace(/\//g,'-')}.pdf`);
-}
     window.onload = init;
   </script>
 </body>
