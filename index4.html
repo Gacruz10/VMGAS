@@ -123,6 +123,14 @@
     .input-error { border: 1px solid var(--error) !important; background: rgba(255, 0, 0, 0.1) !important; }
     .input-error::placeholder { color: var(--error); font-weight: bold; }
 
+    /* ESTILOS BOTÓN SYNC */
+    #btn-sync {
+        width: 100%; margin-bottom: 20px; background: var(--error); color: white;
+        font-weight: 800; border: none; border-radius: 12px; padding: 12px;
+        animation: pulse 2s infinite; display: none; cursor: pointer;
+    }
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+
   </style>
 </head>
 <body>
@@ -131,6 +139,8 @@
     <button class="btn-volver" id="btnVolver">⬅ VOLVER</button>
     <div class="welcome-message" id="welcomeMessage">Cargando...</div>
     <h1>REGISTRO DE VENTA</h1>
+    
+    <button id="btn-sync" onclick="sincronizarCola()">🔄 SINCRONIZAR PENDIENTES</button>
   </div>
 
   <div class="form-container is-loading" id="formContainer">
@@ -251,8 +261,11 @@
     if (window.history.replaceState) {
        window.history.replaceState({}, document.title, window.location.pathname);
     }
+    // Detector de internet
+    window.addEventListener('online', actualizarIndicadorOffline);
     window.addEventListener('pageshow', function(event) {
       if (event.persisted) window.location.reload();
+      actualizarIndicadorOffline();
     });
 
     let clientesData = []; // TODOS LOS CLIENTES (Para el buscador)
@@ -283,19 +296,37 @@
             const fd = new FormData();
             fd.append('action', 'verificarsesion');
             fd.append('k', k); 
-            const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
-            const d = await r.json();
-            if (d.status !== 'success') throw new Error();
+            // Si no hay red al iniciar, tratamos de cargar el caché de la app, 
+            // pero para verificar sesión necesitamos internet. 
+            // En modo offline asumimos sesión válida si ya cargó la página.
+            let d;
+            if(navigator.onLine) {
+                const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+                d = await r.json();
+                if (d.status !== 'success') throw new Error();
+            } else {
+                d = { nombre: 'MODO OFFLINE' };
+            }
             
             document.body.style.opacity = 1;
             document.getElementById('welcomeMessage').textContent = `Usuario: ${d.nombre.toUpperCase()}`;
             startTimer();
             cargarDatos();
+            actualizarIndicadorOffline(); // Chequear cola pendiente
         } catch (e) { window.location.replace('index.html'); }
     }
 
     async function cargarDatos() {
         try {
+            if(!navigator.onLine) {
+                 // Si está offline, intentaríamos cargar de localStorage si tuviéramos caché de datos.
+                 // Por ahora, solo ocultamos el loading.
+                 document.getElementById('loadingOverlay').style.display = 'none';
+                 document.getElementById('formContainer').classList.remove('is-loading');
+                 alert("Estás OFFLINE. Puedes guardar ventas, pero no buscar clientes nuevos del servidor.");
+                 return;
+            }
+
             // 1. OBTENER ZONAS DINÁMICAS
             const rZonas = await fetch(`${SCRIPT_URL}?action=getactivezones`);
             const dZonas = await rZonas.json();
@@ -357,9 +388,6 @@
         selZona.dispatchEvent(new Event('change'));
 
         // 3. Setear Cliente
-        // Buscamos el value del option que contenga este nombre exacto
-        // Como el value es un JSON string, es complejo buscarlo por string.
-        // Mejor iteramos las opciones.
         const selCliente = document.getElementById('cliente');
         for(let i=0; i<selCliente.options.length; i++) {
             try {
@@ -610,9 +638,94 @@
         actualizarTotales();
     };
 
+    // ============================================
+    // === SISTEMA OFFLINE (LOCALSTORAGE) ===
+    // ============================================
+
+    function guardarEnCola(payload) {
+        let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]');
+        payload._offline_ts = new Date().getTime(); // Marca de tiempo
+        cola.push(payload);
+        localStorage.setItem('cola_ventas', JSON.stringify(cola));
+        
+        alert("📡 SIN CONEXIÓN: Datos guardados en el dispositivo. Se enviarán cuando recuperes señal.");
+        actualizarIndicadorOffline();
+        
+        // Simular éxito para resetear flujo (o redirigir)
+        window.location.replace(`inicio.html?k=${k}`);
+    }
+
+    function actualizarIndicadorOffline() {
+        let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]');
+        const btnSync = document.getElementById('btn-sync');
+        
+        if (cola.length > 0) {
+            btnSync.style.display = 'block';
+            btnSync.innerText = `🔄 SINCRONIZAR (${cola.length} PENDIENTES)`;
+        } else {
+            btnSync.style.display = 'none';
+        }
+    }
+
+    async function sincronizarCola() {
+        if (!navigator.onLine) {
+            alert("Todavía no tienes internet.");
+            return;
+        }
+
+        let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]');
+        if (cola.length === 0) return;
+
+        const btnSync = document.getElementById('btn-sync');
+        const origText = btnSync.innerText;
+        btnSync.innerText = "Sincronizando...";
+        btnSync.disabled = true;
+
+        let errores = 0;
+        let procesados = 0;
+        let nuevaCola = [];
+
+        for (let item of cola) {
+            try {
+                // Reconstruir FormData a partir del objeto JSON guardado
+                const fd = new FormData();
+                for (const key in item) {
+                     // Ignorar la marca interna de timestamp offline
+                     if (key !== '_offline_ts') fd.append(key, item[key]);
+                }
+
+                const response = await fetch(SCRIPT_URL, { method: "POST", body: fd });
+                const json = await response.json();
+
+                if (json.status === 'success') {
+                    procesados++;
+                } else {
+                    nuevaCola.push(item); 
+                    errores++;
+                }
+            } catch (e) {
+                nuevaCola.push(item); 
+                errores++;
+            }
+        }
+
+        localStorage.setItem('cola_ventas', JSON.stringify(nuevaCola));
+        
+        alert(`Sincronización: ${procesados} enviados, ${errores} errores.`);
+        
+        btnSync.disabled = false;
+        btnSync.innerText = origText;
+        actualizarIndicadorOffline();
+    }
+
+    // ============================================
+    // === FUNCIÓN DE GUARDADO MODIFICADA ===
+    // ============================================
+
     async function guardar() {
         const btn = document.getElementById('btnGuardar');
-        btn.disabled = true; btn.textContent = "ENVIANDO...";
+        btn.disabled = true; btn.textContent = "PROCESANDO...";
+        
         const cat = obtenerCat();
         const esNuevo = document.getElementById('nuevoCliente').checked;
         const esGasto = document.getElementById('declaracionGastos').checked;
@@ -643,6 +756,7 @@
         const now = new Date();
         const hora24 = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
+        // CONSTRUIMOS EL PAYLOAD COMO OBJETO (NO FORMDATA AÚN)
         const payload = {
             action: 'guardarregistro', k,
             USUARIO: document.getElementById('welcomeMessage').textContent.replace('Usuario: ','').toLowerCase().trim(),
@@ -691,6 +805,13 @@
             payload[`CE${tEnv}$`] = parseM('precioEnvase') * (parseInt(document.getElementById('cantidadEnvase').value) || 0);
         }
 
+        // --- PORTERO: CHECK ONLINE ---
+        if (!navigator.onLine) {
+            guardarEnCola(payload);
+            return;
+        }
+
+        // SI HAY INTERNET, INTENTAMOS ENVIAR
         const fd = new FormData();
         for(let key in payload) fd.append(key, payload[key]);
 
@@ -702,8 +823,9 @@
                 window.location.replace(`inicio.html?k=${k}`);
             } else throw new Error();
         } catch(e) {
-            alert("Error al guardar");
-            btn.disabled = false; btn.textContent = "GUARDAR REGISTRO";
+            // SI FALLA EL FETCH (EJ: ERROR DE RED AUNQUE NAVIGATOR DIGA ONLINE)
+            console.warn("Fallo de red al enviar, guardando offline...");
+            guardarEnCola(payload);
         }
     }
 
