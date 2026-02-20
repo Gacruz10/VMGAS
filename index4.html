@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
+      /* MODO OSCURO (POR DEFECTO) */
       --glass: rgba(0, 0, 0, 0.5);
       --glass-border: rgba(255, 255, 255, 0.15);
       --input-bg: rgba(0, 0, 0, 0.4);
@@ -19,27 +20,54 @@
       --accent: #FFD700; 
       --error: #ff4444;
       --success: #4CAF50;
+      --bg-gradient: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                     radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                     radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                     radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      --bg-color: #0d031a;
+    }
+
+    /* MODO CLARO (EXTERIORES / SOL) */
+    body.light-mode {
+      --glass: rgba(255, 255, 255, 0.9);
+      --glass-border: rgba(0, 0, 0, 0.2);
+      --input-bg: #ffffff;
+      --text-primary: #1a0b2e; /* Texto oscuro */
+      --text-muted: #555555;
+      --accent: #1e053a; /* Azul oscuro para contraste en lugar de amarillo */
+      --error: #d32f2f;
+      --success: #2e7d32;
+      --bg-gradient: none;
+      --bg-color: #f0f2f5; /* Gris claro sólido */
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
-      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
-                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
-                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
-      background-color: #0d031a; background-attachment: fixed; min-height: 100vh; padding: 20px;
-      opacity: 0; transition: opacity 0.5s ease;
+      background: var(--bg-gradient);
+      background-color: var(--bg-color); 
+      background-attachment: fixed; min-height: 100vh; padding: 20px;
+      opacity: 0; transition: opacity 0.5s ease, background-color 0.3s, color 0.3s;
     }
 
     .header { text-align: center; margin-bottom: 20px; position: relative; }
     .welcome-message { color: var(--accent); font-size: 18px; font-weight: 700; text-transform: uppercase; }
 
+    /* BOTÓN TEMA */
+    .theme-toggle {
+        position: absolute; right: 0; top: 0;
+        background: var(--glass); border: 1px solid var(--glass-border);
+        color: var(--text-primary); padding: 8px 12px;
+        border-radius: 12px; cursor: pointer; font-size: 20px;
+        transition: all 0.3s;
+    }
+
     .form-container {
       max-width: 500px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(15px);
       -webkit-backdrop-filter: blur(15px); padding: 25px; border-radius: 24px;
       border: 1px solid var(--glass-border); box-shadow: 0 20px 40px rgba(0,0,0,0.4); position: relative;
+      transition: background 0.3s, border-color 0.3s;
     }
 
     .loading-overlay {
@@ -47,6 +75,8 @@
       background: rgba(13, 3, 26, 0.95); z-index: 100; display: flex; justify-content: center;
       align-items: center; border-radius: 24px;
     }
+    body.light-mode .loading-overlay { background: rgba(255, 255, 255, 0.95); }
+
     .loading-text { color: var(--accent); font-size: 16px; font-weight: bold; }
 
     .form-group { margin-bottom: 15px; }
@@ -54,17 +84,23 @@
 
     input, select {
       width: 100%; height: 45px; padding: 0 15px; border: 1px solid var(--glass-border);
-      border-radius: 12px; font-size: 15px; background: var(--input-bg); color: white;
+      border-radius: 12px; font-size: 15px; background: var(--input-bg); color: var(--text-primary);
       outline: none; transition: all 0.2s;
     }
-    input:focus, select:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
-    input[readonly] { opacity: 0.6; cursor: not-allowed; background: rgba(255,255,255,0.05); }
+    input:focus, select:focus { border-color: var(--accent); }
+    /* Ajuste para input focus en modo oscuro vs claro */
+    body:not(.light-mode) input:focus, body:not(.light-mode) select:focus { background: rgba(0,0,0,0.6); }
+
+    input[readonly] { opacity: 0.6; cursor: not-allowed; background: rgba(128,128,128,0.1); }
 
     /* ESTILOS BUSCADOR */
     .search-container { position: relative; margin-bottom: 20px; }
     .search-input { 
-        padding-left: 40px; border-color: var(--accent); background: rgba(255, 215, 0, 0.1); 
+        padding-left: 40px; border-color: var(--accent); 
+        background: rgba(255, 215, 0, 0.1); 
     }
+    body.light-mode .search-input { background: rgba(30, 5, 58, 0.05); }
+
     .search-icon { position: absolute; left: 12px; top: 12px; opacity: 0.8; }
     .search-results {
         position: absolute; top: 100%; left: 0; right: 0;
@@ -72,12 +108,16 @@
         border-radius: 12px; max-height: 250px; overflow-y: auto;
         z-index: 50; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
+    body.light-mode .search-results { background: #ffffff; }
+
     .result-item {
-        padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+        padding: 12px; border-bottom: 1px solid var(--glass-border); cursor: pointer;
     }
     .result-item:hover { background: rgba(255, 215, 0, 0.1); }
+    body.light-mode .result-item:hover { background: rgba(0,0,0,0.05); }
+
     .r-name { font-weight: bold; color: var(--accent); display: block; }
-    .r-detail { font-size: 11px; color: #aaa; }
+    .r-detail { font-size: 11px; color: var(--text-muted); }
 
     .checkbox-item { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; }
     .checkbox-item input[type="checkbox"] { width: 22px; height: 22px; margin-right: 12px; }
@@ -86,6 +126,8 @@
     .red-label { color: var(--error) !important; font-size: 14px; font-weight: 700; }
 
     .hidden-section { display: none; margin-top: 10px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; border: 1px solid var(--glass-border); }
+    body.light-mode .hidden-section { background: rgba(0,0,0,0.03); }
+
     .garrafa-row { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; }
     .garrafa-cantidad { width: 80px; text-align: center; }
     
@@ -98,6 +140,8 @@
     .total-display {
         background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin: 20px 0; border: 1px dashed var(--glass-border);
     }
+    body.light-mode .total-display { background: rgba(0,0,0,0.05); border-color: var(--accent); }
+
     .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
     .total-final { border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 10px; font-size: 20px; font-weight: 800; color: var(--accent); }
 
@@ -107,18 +151,22 @@
     .payment-counter.pending { color: var(--error); }
 
     .submit-btn { width: 100%; height: 55px; border: none; border-radius: 15px; font-size: 16px; font-weight: 800; cursor: pointer; background: var(--accent); color: #000; transition: all 0.3s; margin-top: 10px; }
+    body.light-mode .submit-btn { color: white; } /* En modo claro el accent es oscuro, texto blanco */
+
     .submit-btn:disabled { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
     
     .flex-row { display: flex; gap: 10px; }
     .small-col { flex: 0.4; }
     .large-col { flex: 0.6; }
-    .btn-volver { background: transparent; border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
+    .btn-volver { background: transparent; border: 1px solid var(--glass-border); color: var(--text-primary); padding: 10px; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
 
     .client-info-box {
         display: none; background: rgba(255, 255, 255, 0.05);
         border-radius: 10px; padding: 10px; margin-top: -10px;
         margin-bottom: 15px; border: 1px solid var(--glass-border);
     }
+    body.light-mode .client-info-box { background: rgba(0,0,0,0.05); }
+
     .client-info-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
     .input-error { border: 1px solid var(--error) !important; background: rgba(255, 0, 0, 0.1) !important; }
     .input-error::placeholder { color: var(--error); font-weight: bold; }
@@ -130,13 +178,22 @@
         animation: pulse 2s infinite; display: none; cursor: pointer;
     }
     @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
-
+    
+    /* Input Global PIN */
+    #globalPinContainer {
+       display:none; margin-top: 15px; 
+       background: rgba(255, 215, 0, 0.1); 
+       padding: 10px; border-radius: 12px; border: 1px solid var(--accent);
+    }
+    body.light-mode #globalPinContainer { background: rgba(30, 5, 58, 0.1); }
   </style>
 </head>
 <body>
 
   <div class="header">
     <button class="btn-volver" id="btnVolver">⬅ VOLVER</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+    
     <div class="welcome-message" id="welcomeMessage">Cargando...</div>
     <h1>REGISTRO DE VENTA</h1>
     
@@ -201,19 +258,28 @@
         <input type="text" id="precioGarrafa1" class="money-input" style="width:100px" readonly>
         <input type="number" id="cantidadGarrafa1" class="garrafa-cantidad" value="0" min="0">
       </div>
-      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck1"><label for="manualPriceCheck1">PRECIO MANUAL (AUTORIZADO)</label></div>
+      <div class="manual-check-container">
+          <input type="checkbox" id="manualPriceCheck1" onchange="pedirPinSiCorresponde(this, 'precioGarrafa1')">
+          <label for="manualPriceCheck1">PRECIO MANUAL</label>
+      </div>
       <div class="garrafa-row">
         <label style="flex:1">15kg</label>
         <input type="text" id="precioGarrafa2" class="money-input" style="width:100px" readonly>
         <input type="number" id="cantidadGarrafa2" class="garrafa-cantidad" value="0" min="0">
       </div>
-      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck2"><label for="manualPriceCheck2">PRECIO MANUAL (AUTORIZADO)</label></div>
+      <div class="manual-check-container">
+          <input type="checkbox" id="manualPriceCheck2" onchange="pedirPinSiCorresponde(this, 'precioGarrafa2')">
+          <label for="manualPriceCheck2">PRECIO MANUAL</label>
+      </div>
       <div class="garrafa-row">
         <label style="flex:1">45kg</label>
         <input type="text" id="precioGarrafa3" class="money-input" style="width:100px" readonly>
         <input type="number" id="cantidadGarrafa3" class="garrafa-cantidad" value="0" min="0">
       </div>
-      <div class="manual-check-container"><input type="checkbox" id="manualPriceCheck3"><label for="manualPriceCheck3">PRECIO MANUAL (AUTORIZADO)</label></div>
+      <div class="manual-check-container">
+          <input type="checkbox" id="manualPriceCheck3" onchange="pedirPinSiCorresponde(this, 'precioGarrafa3')">
+          <label for="manualPriceCheck3">PRECIO MANUAL</label>
+      </div>
     </div>
 
     <div class="checkbox-item"><input type="checkbox" id="ventaEnvases"><label for="ventaEnvases" class="yellow-label">VENTA ENVASES (Casco)</label></div>
@@ -224,7 +290,8 @@
           <input type="number" id="cantidadEnvase" class="garrafa-cantidad" value="1" min="0">
       </div>
       <div class="manual-check-container" style="justify-content: flex-start; margin-top:5px;">
-          <input type="checkbox" id="precioAutorizadoCheck"><label for="precioAutorizadoCheck">PRECIO MANUAL (AUTORIZADO)</label>
+          <input type="checkbox" id="precioAutorizadoCheck" onchange="pedirPinSiCorresponde(this, 'precioEnvase')">
+          <label for="precioAutorizadoCheck">PRECIO MANUAL</label>
       </div>
     </div>
 
@@ -248,6 +315,11 @@
 
     <div class="payment-counter pending" id="pagoEstado">INGRESE DATOS</div>
 
+    <div id="globalPinContainer">
+        <label style="color: var(--accent); font-size: 12px; margin-bottom: 5px;">🔐 AUTORIZACIÓN REQUERIDA (PIN)</label>
+        <input type="password" id="globalPinInput" placeholder="Ingrese PIN de 4 dígitos" maxlength="4" style="text-align:center; letter-spacing: 5px; font-weight: bold; font-size: 18px;">
+    </div>
+
     <button type="button" id="btnGuardar" class="submit-btn" disabled>GUARDAR REGISTRO</button>
   </div>
 
@@ -261,6 +333,18 @@
     if (window.history.replaceState) {
        window.history.replaceState({}, document.title, window.location.pathname);
     }
+    
+    // GESTIÓN DE TEMA (MODO CLARO/OSCURO)
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeToggle');
+        body.classList.toggle('light-mode');
+        
+        const isLight = body.classList.contains('light-mode');
+        btn.textContent = isLight ? '🌙' : '☀️';
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    }
+
     // Detector de internet
     window.addEventListener('online', actualizarIndicadorOffline);
     window.addEventListener('pageshow', function(event) {
@@ -268,7 +352,7 @@
       actualizarIndicadorOffline();
     });
 
-    let clientesData = []; // TODOS LOS CLIENTES (Para el buscador)
+    let clientesData = []; 
     let preciosData = [];
     let zonasActivas = [];
     let clienteSeleccionado = null;
@@ -292,38 +376,47 @@
     }
 
     async function init() {
+        // Cargar Tema
+        const savedTheme = localStorage.getItem('theme');
+        if(savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeToggle').textContent = '🌙';
+        }
+
         try {
             const fd = new FormData();
             fd.append('action', 'verificarsesion');
             fd.append('k', k); 
-            // Si no hay red al iniciar, tratamos de cargar el caché de la app, 
-            // pero para verificar sesión necesitamos internet. 
-            // En modo offline asumimos sesión válida si ya cargó la página.
+            
             let d;
+            // CHECK ONLINE REAL: Intentamos conectar
             if(navigator.onLine) {
-                const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
-                d = await r.json();
-                if (d.status !== 'success') throw new Error();
+                try {
+                    const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+                    d = await r.json();
+                    if (d.status !== 'success') throw new Error();
+                } catch(e) {
+                      console.warn("Fallo verificacion sesion, entrando modo offline");
+                      d = { nombre: 'MODO OFFLINE' };
+                }
             } else {
                 d = { nombre: 'MODO OFFLINE' };
             }
             
             document.body.style.opacity = 1;
-            document.getElementById('welcomeMessage').textContent = `Usuario: ${d.nombre.toUpperCase()}`;
+            const userDisplay = d.nombre ? d.nombre.toUpperCase() : 'USUARIO';
+            document.getElementById('welcomeMessage').textContent = `Usuario: ${userDisplay}`;
             startTimer();
             cargarDatos();
-            actualizarIndicadorOffline(); // Chequear cola pendiente
+            actualizarIndicadorOffline();
         } catch (e) { window.location.replace('index.html'); }
     }
 
     async function cargarDatos() {
         try {
             if(!navigator.onLine) {
-                 // Si está offline, intentaríamos cargar de localStorage si tuviéramos caché de datos.
-                 // Por ahora, solo ocultamos el loading.
                  document.getElementById('loadingOverlay').style.display = 'none';
                  document.getElementById('formContainer').classList.remove('is-loading');
-                 alert("Estás OFFLINE. Puedes guardar ventas, pero no buscar clientes nuevos del servidor.");
                  return;
             }
 
@@ -351,7 +444,48 @@
             document.getElementById('loadingOverlay').style.display = 'none';
             document.getElementById('formContainer').classList.remove('is-loading');
 
-        } catch(e) { alert("Error al cargar datos"); }
+        } catch(e) { console.log("Error carga datos (posible offline)"); }
+    }
+
+    // --- MANEJO DE PIN (SIN PROMPT - NUEVA LÓGICA) ---
+    function pedirPinSiCorresponde(checkbox, inputId) {
+        const input = document.getElementById(inputId);
+        // Ya no usamos spans de aviso individuales, ni PROMPT
+
+        if(checkbox.checked) {
+            // Solo habilitamos el campo para editar precio
+            input.removeAttribute('readonly'); 
+            input.focus();
+            input.select(); 
+        } else {
+            // Desmarcó: Volvemos a precio automático y bloqueamos
+            input.setAttribute('readonly', true);
+            actualizarPreciosAutomaticos();
+        }
+        
+        // Revisamos si hay que mostrar el campo de PIN global
+        verificarSiNecesitaPin();
+    }
+
+    function verificarSiNecesitaPin() {
+        // Verificar si ALGUNO de los checks de precio manual está activo
+        const necesita = 
+            document.getElementById('manualPriceCheck1').checked ||
+            document.getElementById('manualPriceCheck2').checked ||
+            document.getElementById('manualPriceCheck3').checked ||
+            document.getElementById('precioAutorizadoCheck').checked;
+
+        const container = document.getElementById('globalPinContainer');
+        const pinInput = document.getElementById('globalPinInput');
+
+        if (necesita) {
+            container.style.display = 'block';
+            pinInput.setAttribute('required', 'true');
+        } else {
+            container.style.display = 'none';
+            pinInput.value = ''; // Limpiar si ya no es necesario
+            pinInput.removeAttribute('required');
+        }
     }
 
     // --- LÓGICA DEL BUSCADOR ---
@@ -363,7 +497,7 @@
         resultadosBox.innerHTML = '';
         if(txt.length < 2) { resultadosBox.style.display = 'none'; return; }
 
-        const match = clientesData.filter(c => c.nombre.toLowerCase().includes(txt)).slice(0, 8); // Max 8 resultados
+        const match = clientesData.filter(c => c.nombre.toLowerCase().includes(txt)).slice(0, 8); 
         
         if(match.length > 0) {
             resultadosBox.style.display = 'block';
@@ -380,14 +514,10 @@
     });
 
     function seleccionarClienteDesdeBusqueda(c) {
-        // 1. Setear Zona
         const selZona = document.getElementById('zona');
         selZona.value = c.zona;
-        
-        // 2. Disparar evento change de zona para poblar clientes
         selZona.dispatchEvent(new Event('change'));
 
-        // 3. Setear Cliente
         const selCliente = document.getElementById('cliente');
         for(let i=0; i<selCliente.options.length; i++) {
             try {
@@ -398,16 +528,11 @@
                 }
             } catch(e){}
         }
-
-        // 4. Disparar evento change de cliente
         selCliente.dispatchEvent(new Event('change'));
-
-        // 5. Limpiar buscador
         buscador.value = '';
         resultadosBox.style.display = 'none';
     }
 
-    // Cerrar buscador si click fuera
     document.addEventListener('click', (e) => {
         if(!buscador.contains(e.target)) resultadosBox.style.display = 'none';
     });
@@ -491,7 +616,6 @@
         }
 
         const totalCobrar = v_gas + v_env;
-
         document.getElementById('txtSubVenta').textContent = `$${v_gas.toLocaleString('es-AR')}`;
         document.getElementById('txtSubEnvase').textContent = `$${v_env.toLocaleString('es-AR')}`;
         document.getElementById('totalFinal').textContent = `$${totalCobrar.toLocaleString('es-AR')}`;
@@ -605,19 +729,6 @@
         };
     });
 
-    for(let i=1; i<=3; i++) {
-        document.getElementById(`manualPriceCheck${i}`).addEventListener('change', function() {
-            const input = document.getElementById(`precioGarrafa${i}`);
-            if(this.checked) { input.removeAttribute('readonly'); input.focus(); } 
-            else { input.setAttribute('readonly', true); actualizarPreciosAutomaticos(); }
-        });
-    }
-
-    document.getElementById('precioAutorizadoCheck').addEventListener('change', function() {
-        const input = document.getElementById('precioEnvase');
-        if(this.checked) { input.removeAttribute('readonly'); input.focus(); } 
-        else { input.setAttribute('readonly', true); actualizarPreciosAutomaticos(); }
-    });
     document.getElementById('tipoEnvase').addEventListener('change', () => actualizarPreciosAutomaticos());
 
     document.getElementById('entregaGas').onclick = () => { document.getElementById('sectionGas').style.display = document.getElementById('entregaGas').checked ? 'block' : 'none'; actualizarTotales(); };
@@ -650,8 +761,6 @@
         
         alert("📡 SIN CONEXIÓN: Datos guardados en el dispositivo. Se enviarán cuando recuperes señal.");
         actualizarIndicadorOffline();
-        
-        // Simular éxito para resetear flujo (o redirigir)
         window.location.replace(`inicio.html?k=${k}`);
     }
 
@@ -687,11 +796,9 @@
 
         for (let item of cola) {
             try {
-                // Reconstruir FormData a partir del objeto JSON guardado
                 const fd = new FormData();
                 for (const key in item) {
-                     // Ignorar la marca interna de timestamp offline
-                     if (key !== '_offline_ts') fd.append(key, item[key]);
+                      if (key !== '_offline_ts') fd.append(key, item[key]);
                 }
 
                 const response = await fetch(SCRIPT_URL, { method: "POST", body: fd });
@@ -719,11 +826,28 @@
     }
 
     // ============================================
-    // === FUNCIÓN DE GUARDADO MODIFICADA ===
+    // === FUNCIÓN DE GUARDADO MODIFICADA PARA EVITAR ERRORES DE PIN OFFLINE ===
     // ============================================
 
     async function guardar() {
         const btn = document.getElementById('btnGuardar');
+        
+        // 1. VALIDACIÓN PREVIA DE PIN (Frontend)
+        const pinContainer = document.getElementById('globalPinContainer');
+        const pinInput = document.getElementById('globalPinInput');
+        let pinParaEnviar = "";
+
+        if (pinContainer.style.display !== 'none') {
+            const val = pinInput.value.trim();
+            if (val.length < 4) {
+                alert("⚠️ FALTA AUTORIZACIÓN\nDebe ingresar el PIN de 4 dígitos para modificar precios.");
+                pinInput.focus();
+                return; // Cortamos aquí, ni siquiera intentamos enviar
+            }
+            pinParaEnviar = val;
+        }
+
+        // BLOQUEO DE BOTÓN
         btn.disabled = true; btn.textContent = "PROCESANDO...";
         
         const cat = obtenerCat();
@@ -756,7 +880,6 @@
         const now = new Date();
         const hora24 = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-        // CONSTRUIMOS EL PAYLOAD COMO OBJETO (NO FORMDATA AÚN)
         const payload = {
             action: 'guardarregistro', k,
             USUARIO: document.getElementById('welcomeMessage').textContent.replace('Usuario: ','').toLowerCase().trim(),
@@ -765,8 +888,8 @@
             HORA: hora24, 
             C: nombreC,
             N: generarID(),
-            E$: parseM('montoEfectivo'),
-            T$: parseM('montoTransferencia'),
+            'E$': parseM('montoEfectivo'),
+            'T$': parseM('montoTransferencia'),
             
             TOTAL: parseM('montoEfectivo') + parseM('montoTransferencia'),
             
@@ -776,6 +899,9 @@
             
             garrafas: JSON.stringify(garrafasArray),
             precioEnvaseAutorizado: document.getElementById('precioAutorizadoCheck').checked,
+            
+            // NUEVO: Usamos el valor del input, no la variable global
+            pin: pinParaEnviar, 
 
             esClienteNuevo: esNuevo,
             clienteNombre: esNuevo ? document.getElementById('nombreCliente').value : '',
@@ -811,20 +937,40 @@
             return;
         }
 
-        // SI HAY INTERNET, INTENTAMOS ENVIAR
         const fd = new FormData();
         for(let key in payload) fd.append(key, payload[key]);
 
         try {
             const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
             const j = await r.json();
+            
             if(j.status === 'success') {
                 alert("✓ REGISTRO EXITOSO");
                 window.location.replace(`inicio.html?k=${k}`);
-            } else throw new Error();
+            } else {
+                // 🔥 SOLUCIÓN CRÍTICA: SI EL ERROR ES DE PIN, NO GUARDAR EN COLA 🔥
+                const msg = (j.message || "").toUpperCase();
+                
+                if (msg.includes("PIN")) {
+                    alert("⛔ ERROR DE AUTORIZACIÓN:\nEl PIN ingresado es incorrecto o ya fue utilizado.\n\nIntente nuevamente con un PIN válido.");
+                    btn.disabled = false;
+                    btn.textContent = "GUARDAR REGISTRO";
+                    document.getElementById('globalPinInput').value = ''; 
+                    document.getElementById('globalPinInput').focus();
+                    // NO guardamos en cola
+                } else {
+                    throw new Error(j.message || "Error del servidor");
+                }
+            }
         } catch(e) {
-            // SI FALLA EL FETCH (EJ: ERROR DE RED AUNQUE NAVIGATOR DIGA ONLINE)
-            console.warn("Fallo de red al enviar, guardando offline...");
+            // Si el error atrapado arriba fue de PIN, ya se manejó. 
+            // Si es un error de red real, entra aquí.
+            
+            if (e.message.includes("PIN") || e.message.includes("Autorización")) {
+                 return; // Seguridad extra
+            }
+
+            console.warn("Fallo de red o servidor:", e);
             guardarEnCola(payload);
         }
     }
