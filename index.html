@@ -29,6 +29,7 @@
       --text-primary: #ffffff;
       --accent: #FFD700;       /* Dorado para acciones */
       --error: #ff5e5e;        /* Rojo para errores */
+      --success: #00C851;      /* Verde para éxito (Nuevo) */
     }
 
     body {
@@ -63,6 +64,10 @@
       max-width: 400px;
       text-align: center;
       transition: transform 0.3s ease;
+
+      /* NUEVO: Para que la animación de carga no se salga de los bordes del recuadro */
+      position: relative;
+      overflow: hidden;
     }
 
     /* Pequeña animación de entrada */
@@ -170,20 +175,55 @@
       box-shadow: none;
     }
 
-    .error-msg { 
-      color: var(--error); 
-      margin-top: 20px; 
-      font-size: 14px; 
-      min-height: 20px; 
-      font-weight: 600; 
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    /* ELIMINAMOS .error-msg ORIGINAL PARA USAR LOS TOASTS */
+
+    /* --- SISTEMA DE TOASTS (NUEVO) --- */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: rgba(255, 94, 94, 0.9); backdrop-filter: blur(10px); }
+    .toast.success { background: rgba(0, 200, 81, 0.9); backdrop-filter: blur(10px); }
+    .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+
+    /* --- ANIMACIÓN DE CARGA OVERLAY (NUEVO) --- */
+    .loading-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(13, 3, 26, 0.85); z-index: 100; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; 
+      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     }
+    .loading-overlay.active { opacity: 1; visibility: visible; }
+    
+    .spinner {
+      width: 55px; height: 55px; border: 4px solid rgba(255, 215, 0, 0.1);
+      border-left-color: var(--accent); border-radius: 50%;
+      animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
+      margin-bottom: 20px; transition: all 0.3s ease;
+    }
+    .spinner.success-mode { border-left-color: var(--success); }
+    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+
+    .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
+    .loading-text.success-mode { color: var(--success); }
 
   </style>
 </head>
 <body>
+
+  <div id="toast-container"></div>
+
   <div class="login-box">
+    
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner" id="loaderSpinner"></div>
+      <div class="loading-text" id="loaderText">VALIDANDO...</div>
+    </div>
+
     <img src="icon.png" alt="Logo de la empresa" class="login-logo">
+    
     <h1 class="login-title">Inicio de Sesión</h1>
 
     <input type="text" id="username" class="input-field" placeholder="Usuario" required
@@ -196,7 +236,6 @@
     </div>
 
     <button class="login-btn" onclick="login()">INGRESAR</button>
-    <div id="errorMessage" class="error-msg"></div>
   </div>
 
   <script>
@@ -208,21 +247,49 @@
       passwordField.type = passwordField.type === "password" ? "text" : "password";
     }
 
+    // Funciones visuales nuevas (Toast y Loader)
+    function showToast(msg, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    function toggleLoader(show, text = 'VALIDANDO...', isSuccess = false) {
+        const overlay = document.getElementById('loadingOverlay');
+        const loaderText = document.getElementById('loaderText');
+        const spinner = document.getElementById('loaderSpinner');
+        
+        loaderText.textContent = text;
+        
+        if (isSuccess) {
+            spinner.classList.add('success-mode');
+            loaderText.classList.add('success-mode');
+        } else {
+            spinner.classList.remove('success-mode');
+            loaderText.classList.remove('success-mode');
+        }
+
+        if (show) overlay.classList.add('active');
+        else overlay.classList.remove('active');
+    }
+
     function login() {
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value.trim();
-      const errorMsg = document.getElementById("errorMessage");
-      errorMsg.textContent = "";
 
       if (!username || !password) {
-        errorMsg.textContent = "Usuario y contraseña son obligatorios";
+        showToast("Usuario y contraseña son obligatorios", "error");
         return;
       }
 
       const btn = document.querySelector(".login-btn");
       const originalText = btn.textContent;
-      btn.textContent = "Validando...";
       btn.disabled = true;
+      toggleLoader(true, "AUTENTICANDO...");
 
       const formData = new URLSearchParams();
       formData.append('action', 'login');
@@ -236,24 +303,29 @@
       .then(r => r.json())
       .then(data => {
         if (data.status !== 'success') {
-          errorMsg.textContent = data.message || "Credenciales incorrectas";
-          btn.textContent = originalText;
+          toggleLoader(false);
+          showToast(data.message || "Credenciales incorrectas", "error");
           btn.disabled = false;
           return;
         }
 
-        // === ÉXITO (MODIFICADO PARA PROTOCOLO K) ===
-        const target = new URL('inicio.html', window.location.href);
-        // Backend devuelve 'k', no 'token'
-        target.searchParams.set('k', data.k); 
+        // ÉXITO: Cambiamos el loader a verde
+        toggleLoader(true, "¡ACCESO CONCEDIDO!", true);
         
-        // Usamos replace para borrar historial
-        window.location.replace(target.toString());
+        setTimeout(() => {
+            const target = new URL('inicio.html', window.location.href);
+            // Backend devuelve 'k', no 'token'
+            target.searchParams.set('k', data.k); 
+            
+            // Usamos replace para borrar historial
+            window.location.replace(target.toString());
+        }, 800); // 800ms de delay para ver la animación verde
+
       })
       .catch((e) => {
         console.error(e);
-        errorMsg.textContent = "Error de conexión con el servidor";
-        btn.textContent = originalText;
+        toggleLoader(false);
+        showToast("Error de conexión con el servidor", "error");
         btn.disabled = false;
       });
     }
