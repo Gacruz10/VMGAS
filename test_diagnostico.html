@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Diagnóstico de Conexión</title>
+    <style>
+        body { background: #111; color: #fff; font-family: monospace; padding: 20px; }
+        input, button { padding: 10px; border-radius: 5px; border: none; }
+        button { background: #ffd700; cursor: pointer; font-weight: bold; }
+        #resultado { 
+            margin-top: 20px; padding: 15px; border: 1px solid #444; 
+            background: #000; white-space: pre-wrap; word-break: break-all; 
+        }
+        .ok { color: #0f0; }
+        .error { color: #f00; }
+    </style>
+</head>
+<body>
+    <h2>💉 Diagnóstico de Respuesta del Servidor</h2>
+    
+    <p>1. Copia el TOKEN que aparece en la URL de tu "Inicio.html" (ej: ?token=...)</p>
+    <input type="text" id="tokenInput" placeholder="Pega el token aquí" style="width: 300px;">
+    
+    <p>2. Presiona el botón para hacer la petición manual.</p>
+    <button onclick="probar()">ANALIZAR RESPUESTA</button>
+
+    <div id="resultado">Esperando...</div>
+
+    <script>
+        const API = "https://script.google.com/macros/s/AKfycbx3AzPzn1z_8rlAh7JAwZNHT26aVM7I-Ud2OldRKGc7VMSuYr3jLMuMAxX-NTaELFyGDg/exec";
+
+        async function probar() {
+            const token = document.getElementById('tokenInput').value.trim();
+            const div = document.getElementById('resultado');
+            
+            if(!token) {
+                div.innerHTML = "❌ Faltan datos: Pega un token válido.";
+                return;
+            }
+
+            div.innerHTML = "⏳ Consultando al servidor (esto puede tardar unos segundos)...";
+
+            const fd = new FormData();
+            fd.append('action', 'verificarsesion');
+            fd.append('token', token);
+
+            try {
+                const response = await fetch(API, { method: 'POST', body: fd });
+                const json = await response.json();
+                
+                // Formateamos el JSON para que se lea bien
+                const texto = JSON.stringify(json, null, 4);
+                
+                if(json.perms && json.perms.length >= 8) {
+                    div.innerHTML = "<span class='ok'>✅ ÉXITO: El servidor responde correctamente.</span>\n\n" + texto;
+                } else if (json.status === 'error') {
+                     div.innerHTML = "<span class='error'>⚠️ ERROR LÓGICO: El servidor responde, pero el token venció o es inválido.</span>\n\n" + texto;
+                } else {
+                    div.innerHTML = "<span class='error'>❌ FALLO CRÍTICO: El servidor responde, pero NO envía los permisos. (Versión vieja del Script)</span>\n\n" + texto;
+                }
+
+            } catch (e) {
+                div.innerHTML = "<span class='error'>💀 ERROR DE RED: No se pudo conectar.</span>\n" + e;
+            }
+        }
+    </script>
+</body>
+</html>
