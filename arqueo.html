@@ -57,7 +57,6 @@
     .btn-confirm { width: 100%; padding: 18px; background: var(--accent); border: none; border-radius: 16px; font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: all 0.3s; }
     .btn-confirm:disabled { background: #333; color: #666; cursor: not-allowed; }
     
-    #loader { text-align: center; color: var(--accent); font-weight: 600; padding: 20px; }
     .hidden { display: none; }
     
     /* TABLA DE GASTOS */
@@ -65,16 +64,53 @@
     .gastos-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     .gastos-table td { padding: 4px 0; color: #ffcccc; border-bottom: 1px solid rgba(255,255,255,0.05); }
     .gastos-table td:last-child { text-align: right; font-weight: 700; color: var(--error); }
+
+    /* --- SISTEMA DE TOASTS --- */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: rgba(255, 68, 68, 0.9); backdrop-filter: blur(10px); }
+    .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
+    .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+
+    /* --- ANIMACIÓN DE CARGA (OVERLAY) --- */
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column;
+      justify-content: center; align-items: center; 
+      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .loading-overlay.active { opacity: 1; visibility: visible; }
+    
+    .spinner {
+      width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
+      border-left-color: var(--accent); border-radius: 50%;
+      animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
+      margin-bottom: 20px; transition: all 0.3s ease;
+    }
+    .spinner.success-mode { border-left-color: var(--ok); }
+    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+
+    .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
+    .loading-text.success-mode { color: var(--ok); }
   </style>
 </head>
 <body>
+
+  <div id="toast-container"></div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner" id="loaderSpinner"></div>
+    <div class="loading-text" id="loaderText">CARGANDO...</div>
+  </div>
 
   <div class="header">
     <h1>ARQUEO DE CAJA</h1>
     <button class="btn-volver" id="btnBack">VOLVER</button>
   </div>
-
-  <div id="loader">Cargando datos maestros...</div>
 
   <div class="container hidden" id="mainUI">
     
@@ -152,6 +188,36 @@
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
 const TIMEOUT_SESION = 180000; // 3 Minutos (180 segundos)
 
+// Funciones visuales (Toast y Loader)
+function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
+    const overlay = document.getElementById('loadingOverlay');
+    const loaderText = document.getElementById('loaderText');
+    const spinner = document.getElementById('loaderSpinner');
+    
+    loaderText.textContent = text;
+    
+    if (isSuccess) {
+        spinner.classList.add('success-mode');
+        loaderText.classList.add('success-mode');
+    } else {
+        spinner.classList.remove('success-mode');
+        loaderText.classList.remove('success-mode');
+    }
+
+    if (show) overlay.classList.add('active');
+    else overlay.classList.remove('active');
+}
+
 // 1. VALIDACIÓN PRELIMINAR DE URL
 const params = new URLSearchParams(window.location.search);
 let k = params.get('k') || params.get('token');
@@ -176,6 +242,9 @@ if (!k) {
 // 2. VALIDACIÓN ASÍNCRONA (BLINDAJE DE CARGA)
 async function validarSesion() {
     try {
+        document.body.style.opacity = 1;
+        toggleLoader(true, "VERIFICANDO SESIÓN...");
+        
         const fd = new FormData();
         fd.append('action', 'verificarsesion');
         fd.append('k', k);
@@ -186,9 +255,8 @@ async function validarSesion() {
             throw new Error();
         }
 
-        // SI ES EXITOSO: MOSTRAR INTERFAZ Y CARGAR DATOS
-        document.body.style.opacity = 1;
-        init(); // Carga la lógica de la app
+        // SI ES EXITOSO: CARGAR DATOS
+        init(); 
 
     } catch (e) {
         expulsar();
@@ -199,7 +267,10 @@ async function validarSesion() {
 let tIdle;
 function resetTimer() {
     clearTimeout(tIdle);
-    tIdle = setTimeout(expulsar, TIMEOUT_SESION);
+    tIdle = setTimeout(() => {
+        showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error');
+        setTimeout(expulsar, 1500);
+    }, TIMEOUT_SESION);
 }
 // Eventos que mantienen viva la sesión
 ['click','mousemove','keydown','touchstart','scroll'].forEach(evt => 
@@ -215,6 +286,8 @@ let hayDiferencia = false;
 // --- LÓGICA PRINCIPAL (Solo se ejecuta si la sesión es válida) ---
 async function init() {
     try {
+        toggleLoader(true, "CARGANDO DATOS MAESTROS...");
+        
         const r = await fetch(`${API}?action=getdrivers&k=${k}`);
         const d = await r.json();
         
@@ -235,10 +308,15 @@ async function init() {
                     sel.add(o);
                  });
             }
-            document.getElementById('loader').classList.add('hidden');
+            toggleLoader(false);
             document.getElementById('mainUI').classList.remove('hidden');
+        } else {
+            throw new Error(d.message);
         }
-    } catch(e) { alert("Error conectando con la base."); }
+    } catch(e) { 
+        toggleLoader(false);
+        showToast("Error conectando con la base.", "error"); 
+    }
 }
 
 document.getElementById('selChofer').onchange = async (e) => {
@@ -303,8 +381,13 @@ document.getElementById('selChofer').onchange = async (e) => {
 
             document.getElementById('monitorSistema').style.opacity = '1';
             actualizarDiferencia();
+        } else {
+            throw new Error(res.message);
         }
-    } catch(err) { alert("Error al obtener datos del chofer."); }
+    } catch(err) { 
+        document.getElementById('monitorSistema').style.opacity = '1';
+        showToast("Error al obtener datos del chofer.", "error"); 
+    }
 };
 
 document.getElementById('realEfectivo').oninput = actualizarDiferencia;
@@ -380,12 +463,14 @@ function validarCierre() {
 
 document.getElementById('btnCerrarCaja').onclick = async () => {
     const chofer = document.getElementById('selChofer').value;
-    if(!chofer) return alert("Seleccione un chofer");
+    if(!chofer) return showToast("Seleccione un chofer", "error");
 
     if(!confirm(`¿Confirmar cierre de caja para ${chofer}?`)) return;
 
     const btn = document.getElementById('btnCerrarCaja');
-    btn.disabled = true; btn.textContent = "PROCESANDO...";
+    btn.disabled = true; 
+    
+    toggleLoader(true, "PROCESANDO CIERRE...");
 
     const payload = {
         action: 'savearqueo',
@@ -406,15 +491,18 @@ document.getElementById('btnCerrarCaja').onclick = async () => {
     try {
         const r = await fetch(API, { method: 'POST', body: fd });
         const res = await r.json();
+        
         if(res.status === 'success') {
-            alert("✅ Cierre guardado correctamente.");
-            window.location.reload();
+            toggleLoader(true, "¡CIERRE GUARDADO!", true);
+            setTimeout(() => {
+                window.location.replace(`inicio.html?k=${k}`);
+            }, 1000);
         } else {
-            alert("Error: " + res.message);
-            btn.disabled = false; btn.textContent = "REINTENTAR";
+            throw new Error(res.message);
         }
     } catch(e) { 
-        alert("Error de red."); 
+        toggleLoader(false);
+        showToast("Error de red: " + e.message, "error"); 
         btn.disabled = false; btn.textContent = "REINTENTAR";
     }
 };
