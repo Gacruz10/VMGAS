@@ -9,6 +9,8 @@
 
 <title>Menú Principal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
 <style>
   :root {
     --glass: rgba(0, 0, 0, 0.5);
@@ -53,7 +55,6 @@
     flex-direction: column;
   }
 
-  /* Header Original */
   header { 
     padding: 30px 20px 20px; 
     display: flex; 
@@ -65,9 +66,8 @@
   .header-info h1 { margin: 0 0 8px; font-weight: 800; font-size: clamp(24px, 6vw, 32px); text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
   .header-info .hello { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
 
-  /* CAJITA DEL PIN (Arriba a la derecha) */
   .pin-display {
-    display: none; /* Se activa con JS */
+    display: none; 
     background: var(--pin-bg);
     border: 1px solid var(--pin-border);
     color: var(--accent);
@@ -93,7 +93,6 @@
     width: 100%;
   }
 
-  /* Tarjeta interactiva */
   .tile {
     display: flex;
     flex-direction: column;
@@ -137,14 +136,22 @@
   .tile:hover { border-color: rgba(255,255,255,0.4); transform: translateY(-3px); }
   .tile:active { transform: scale(0.96); }
 
+  /* ESTILOS DE LOS NUEVOS ICONOS */
   .tile-icon {
-    font-size: 32px;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+    font-size: 34px !important;
+    color: rgba(255, 255, 255, 0.85); /* Blanco monocromático */
     z-index: 2;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, color 0.3s ease;
   }
   
-  .tile:hover .tile-icon { transform: scale(1.1); }
+  .tile:hover .tile-icon { 
+    transform: scale(1.15); 
+    color: var(--accent); /* Se pintan de dorado al pasar el mouse */
+  }
+
+  .tile.logout:hover .tile-icon {
+    color: var(--error); /* El de cerrar sesión se pinta rojo */
+  }
 
   .tile .title { 
       font-weight: 600; font-size: 13px; line-height: 1.2; 
@@ -224,58 +231,58 @@
 
     <main class="grid" id="mainGrid" style="display:none">
       <a class="tile" id="tileFormulario" onclick="navegar('index4.html')" style="display:none">
-          <div class="tile-icon">📝</div>
+          <span class="material-symbols-rounded tile-icon">receipt_long</span>
           <span class="title">Formulario<br>de Venta</span>
       </a>
       
       <a class="tile" id="tileClientes"   onclick="navegar('clientes.html')" style="display:none">
-          <div class="tile-icon">👥</div>
+          <span class="material-symbols-rounded tile-icon">group</span>
           <span class="title">Clientes</span>
       </a>
       
       <a class="tile" id="tilePrecios"    onclick="navegar('precios.html')"  style="display:none">
-          <div class="tile-icon">🏷️</div>
+          <span class="material-symbols-rounded tile-icon">sell</span>
           <span class="title">Precios</span>
       </a>
       
       <a class="tile" id="tileUsuarios"   onclick="navegar('usuarios.html')" style="display:none">
-          <div class="tile-icon">👤</div>
+          <span class="material-symbols-rounded tile-icon">manage_accounts</span>
           <span class="title">Usuarios</span>
       </a>
       
       <a class="tile" id="tileAlarmas"    onclick="navegar('alarmas.html')"  style="display:none">
-          <div class="tile-icon">🔔</div>
+          <span class="material-symbols-rounded tile-icon">notifications_active</span>
           <span class="title">Alarmas</span>
           <span class="badge" id="alarmBadge" style="display:none"></span>
       </a>
       
       <a class="tile" id="tileTablero"    onclick="navegar('tablero.html')" style="display:none">
-          <div class="tile-icon">📊</div>
+          <span class="material-symbols-rounded tile-icon">dashboard</span>
           <span class="title">Tablero</span>
       </a>
       
       <a class="tile" id="tileStock"      onclick="navegar('controlstock.html')" style="display:none">
-          <div class="tile-icon">📦</div>
+          <span class="material-symbols-rounded tile-icon">inventory_2</span>
           <span class="title">Control<br>Stock</span>
       </a>
       
       <a class="tile" id="tileCarga"      onclick="navegar('controlcarga.html')" style="display:none">
-          <div class="tile-icon">🚚</div>
+          <span class="material-symbols-rounded tile-icon">local_shipping</span>
           <span class="title">Control<br>Carga</span>
       </a>
       
       <a class="tile finance" id="tileFinanzas"   onclick="navegar('arqueo.html')" style="display:none">
-          <div class="tile-icon">💵</div>
+          <span class="material-symbols-rounded tile-icon">account_balance_wallet</span>
           <span class="title">Arqueos</span>
       </a>
       
       <a class="tile audit" id="tileConFinanzas" onclick="navegar('controlfinanzas.html')" style="display:none">
-          <div class="tile-icon">🏦</div>
+          <span class="material-symbols-rounded tile-icon">query_stats</span>
           <span class="title">Control<br>Finanzas</span>
       </a>
 
-      <a class="tile" onclick="logout()" style="border-color: rgba(255,55,95,0.3);">
-          <div class="tile-icon">🚪</div>
+      <a class="tile logout" onclick="logout()" style="border-color: rgba(255,55,95,0.3);">
+          <span class="material-symbols-rounded tile-icon">logout</span>
           <span class="title" style="color:#ff375f">Cerrar Sesión</span>
       </a>
     </main>
