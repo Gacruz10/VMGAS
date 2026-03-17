@@ -86,6 +86,15 @@
   }
   input:focus, select:focus { border-color: var(--accent); }
   
+  /* Input bloqueado visualmente */
+  input.locked-id {
+    background: rgba(255,255,255,0.05);
+    color: #888;
+    cursor: not-allowed;
+    font-family: monospace;
+    letter-spacing: 1px;
+  }
+
   /* Selects con estilo oscuro */
   select option { background: #1a0b2e; color: white; }
 
@@ -167,7 +176,7 @@
   <div class="toolbar">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="search" id="txtBuscar" class="search-input" placeholder="Buscar por nombre, zona, dirección...">
+      <input type="search" id="txtBuscar" class="search-input" placeholder="Buscar por nombre, zona, dirección, CUIT...">
     </div>
     <div style="display:flex; gap:10px;">
         <button class="btn btn-new" onclick="abrirModal()">➕ NUEVO CLIENTE</button>
@@ -354,8 +363,10 @@ function llenarSelect(selectEl, arrayOpciones, valorSeleccionado = "") {
 function makeCard(r, index) {
   const el = document.createElement('div'); el.className = 'card';
   
-  // Renderizado con SELECTS en lugar de inputs
+  // ---> INYECCIÓN DE TRAZABILIDAD: Agregamos ID_CLIENTE (readonly) y CUIT_DNI
   el.innerHTML = `
+    <div class="row"><label style="color:var(--accent)">ID Cliente</label><input type="text" class="locked-id" value="${r.id_cliente||'Generando...'}" data-k="id_cliente" readonly title="Identificador único del cliente. No editable."></div>
+    <div class="row"><label>CUIT/DNI</label><input type="text" value="${r.cuit_dni||''}" data-k="cuit_dni" placeholder="Ej: 20-12345678-9"></div>
     <div class="row"><label>Nombre</label><input type="text" value="${r.nombre||''}" data-k="nombre"></div>
     <div class="row"><label>Zona</label><select data-k="zona"></select></div>
     <div class="row"><label>Categoría</label><select data-k="categoria"></select></div>
@@ -382,6 +393,10 @@ function makeCard(r, index) {
 function sync(i, el){
   const get = k => (el.querySelector(`[data-k="${k}"]`)?.value || '').trim();
   rows[i] = {
+    // ---> INYECCIÓN: Recolectamos ID y CUIT para enviarlos al server
+    id_cliente: get('id_cliente'),
+    cuit_dni: get('cuit_dni'),
+    
     nombre: get('nombre'), 
     zona: get('zona'), 
     categoria: get('categoria'),
@@ -460,6 +475,10 @@ function cerrarModal() {
 
 document.getElementById('btnAddClient').onclick = () => {
     const newClient = {
+        // Al crear uno nuevo, no le mandamos ID. El servidor se encarga (Codigo.gs - agregarNuevoCliente)
+        id_cliente: '',
+        cuit_dni: '', // Lo dejamos vacío por defecto en el alta rápida
+        
         nombre: document.getElementById('newNombre').value.trim().toUpperCase(),
         zona: document.getElementById('newZona').value,
         categoria: document.getElementById('newCategoria').value,
