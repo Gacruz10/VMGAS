@@ -19,6 +19,7 @@
       --start: #4CAF50; /* Verde */
       --end: #FF5722;   /* Naranja */
       --error: #ff4444; /* Rojo */
+      --info: #007bff;  /* Azul */
       
       --text-primary: #ffffff;
       --text-muted: rgba(255, 255, 255, 0.6);
@@ -101,6 +102,7 @@
     }
     .btn-start { background: linear-gradient(90deg, var(--start), #43A047); color: #000; }
     .btn-end { background: linear-gradient(90deg, var(--end), #D84315); color: white; }
+    .btn-info { background: linear-gradient(90deg, #17a2b8, #0056b3); color: white; margin-top: 0; margin-bottom: 20px; }
     .btn-disabled { background: #444; color: #888; cursor: not-allowed; filter: grayscale(1); }
     
     .btn-magic {
@@ -151,6 +153,11 @@
     .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
     .loading-text.success-mode { color: var(--start); }
 
+    /* ESTILOS DEL MODAL DE CAUCIONES */
+    .caucion-tab-btn { flex: 1; padding: 12px; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--glass-border); border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .caucion-tab-btn.active { background: var(--info); border-color: var(--info); }
+    .caucion-card { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px; margin-bottom: 10px; border-radius: 10px; }
+    
   </style>
 </head>
 <body>
@@ -174,6 +181,8 @@
         <div id="statusText" class="status-msg">Verificando estado del turno...</div>
     </div>
 
+    <button id="btnCauciones" class="btn-main btn-info" onclick="abrirModalCauciones()">📦 GESTIÓN DE CAUCIONES</button>
+
     <button id="btnMagic" class="btn-magic" style="display:none;" onclick="copiarSistemaAReal()">✨ TODO COINCIDE (COPIAR DATOS)</button>
 
     <div id="stockForm">
@@ -186,6 +195,87 @@
     </div>
 
     <button id="btnAction" class="btn-main btn-disabled" disabled>ESPERANDO...</button>
+  </div>
+
+  <div id="modalCauciones" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; padding: 20px;">
+    <div class="modal-content" style="background:var(--glass); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid var(--glass-border); padding:20px; border-radius:20px; width:100%; max-width:600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="margin:0; color:var(--accent); font-weight:800;">📦 GESTIÓN CAUCIONES</h3>
+        <button onclick="document.getElementById('modalCauciones').style.display='none'" style="background:rgba(255, 68, 68, 0.2); color:var(--error); border:1px solid var(--error); padding:5px 12px; border-radius:8px; cursor:pointer; font-weight:bold;">X</button>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <button id="tabBtnNueva" class="caucion-tab-btn active" onclick="mostrarTabCaucion('NUEVA')">NUEVA CAUCIÓN</button>
+        <button id="tabBtnActivas" class="caucion-tab-btn" onclick="mostrarTabCaucion('ACTIVAS')">COBRAR ACTIVAS</button>
+      </div>
+
+      <div id="tabCaucionNueva" style="display:block;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+          <div>
+            <label style="color:var(--text-primary);">Nombre del Cliente / Referencia:</label>
+            <input type="text" id="cauNombre" placeholder="Ej: Juan Perez" style="text-align:left;">
+          </div>
+          <div>
+            <label style="color:var(--text-primary);">Teléfono (Opcional):</label>
+            <input type="text" id="cauTel" placeholder="Ej: 3804123456" style="text-align:left;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:rgba(255,255,255,0.03); padding:15px; border-radius:12px;">
+          <div>
+            <label style="color:var(--accent);">Env. 10kg</label>
+            <input type="number" id="cauE10" value="0" min="0">
+          </div>
+          <div>
+            <label style="color:var(--accent);">Env. 15kg</label>
+            <input type="number" id="cauE15" value="0" min="0">
+          </div>
+          <div>
+            <label style="color:var(--accent);">Env. 45kg</label>
+            <input type="number" id="cauE45" value="0" min="0">
+          </div>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="color:var(--start); font-size:12px;">DINERO RECIBIDO (GARANTÍA): $</label>
+          <input type="number" id="cauMonto" value="0" min="0" style="font-size:20px; color:var(--start); border-color:var(--start);">
+        </div>
+
+        <button onclick="guardarNuevaCaucion()" style="width:100%; padding:15px; background:linear-gradient(90deg, var(--start), #43A047); color:#000; border:none; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer;">GUARDAR CAUCIÓN</button>
+      </div>
+
+      <div id="tabCaucionActivas" style="display:none;">
+        <div id="listaCaucionesActivas" style="max-height: 350px; overflow-y: auto; padding-right:5px;">
+          <p style="text-align:center; color:var(--text-muted);">Cargando cauciones vivas...</p>
+        </div>
+      </div>
+
+      <div id="formCobroCaucion" style="display:none; background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; margin-top:15px; border:1px solid var(--info);">
+        <h4 id="cobroTitulo" style="margin-top:0; color:var(--info); border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">Devolución</h4>
+        <input type="hidden" id="cobroId">
+        <input type="hidden" id="max10"><input type="hidden" id="max15"><input type="hidden" id="max45">
+        
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">¿Cuántos envases devuelven físicamente?</p>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+          <div><label style="color:white;">10kg (Max: <span id="lblMax10" style="color:var(--accent);"></span>)</label><input type="number" id="devE10" value="0" min="0"></div>
+          <div><label style="color:white;">15kg (Max: <span id="lblMax15" style="color:var(--accent);"></span>)</label><input type="number" id="devE15" value="0" min="0"></div>
+          <div><label style="color:white;">45kg (Max: <span id="lblMax45" style="color:var(--accent);"></span>)</label><input type="number" id="devE45" value="0" min="0"></div>
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <label style="color:var(--end); font-size:12px;">DINERO A DEVOLVER AL CLIENTE: $</label>
+          <input type="number" id="devMonto" value="0" min="0" style="font-size:18px; color:var(--end); border-color:var(--end);">
+          <small style="color:var(--text-muted); display:block; margin-top:5px;">Garantía original: $<span id="lblGarantiaOriginal"></span></small>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <button onclick="procesarCierreCaucion()" style="flex:2; padding:12px; background:linear-gradient(90deg, var(--start), #43A047); color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">CERRAR Y DEVOLVER</button>
+          <button onclick="anularCaucionUI()" style="flex:1; padding:12px; background:rgba(255, 68, 68, 0.2); color:var(--error); border:1px solid var(--error); border-radius:8px; font-weight:bold; cursor:pointer;">ANULAR (Ctrl+Z)</button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -246,14 +336,14 @@
     });
 
     // --- TIMER INVISIBLE (3 MINUTOS) ---
-    let sessionTimeout = 180; // 3 minutos
+    let sessionTimeout = 180; 
 
     function startTimer() {
         setInterval(() => {
             sessionTimeout--;
             if(sessionTimeout <= 0) {
                 showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error');
-                setTimeout(expulsar, 1500); // Adiós con pequeño delay
+                setTimeout(expulsar, 1500); 
             }
         }, 1000);
     }
@@ -262,7 +352,6 @@
         sessionTimeout = 180;
     }
 
-    // Resetear timer con actividad
     ['click', 'mousemove', 'keydown', 'touchstart'].forEach(evt => {
         document.addEventListener(evt, refreshSession);
     });
@@ -275,17 +364,15 @@
     let systemValues = {}; 
 
     async function init() {
-        startTimer(); // Iniciar reloj invisible
+        startTimer(); 
         
         document.body.style.opacity = 1;
         toggleLoader(true, "VERIFICANDO ESTADO DEL TURNO...");
 
         try {
-            // Consulta Estado al Backend
             const r = await fetch(`${SCRIPT_URL}?action=getstockstatus&k=${k}`);
             const d = await r.json();
             
-            // Si el backend dice error de sesión
             if(d.status === 'error' && d.message.includes('Sesión')) {
                 expulsar();
                 return;
@@ -294,7 +381,7 @@
             setupUI(d);
             toggleLoader(false);
         } catch(e) { 
-            expulsar(); // Si falla la red al inicio, mejor salir por seguridad
+            expulsar(); 
         }
     }
 
@@ -307,7 +394,6 @@
         const btn = document.getElementById('btnAction');
         
         if (isClosed) {
-            // MODO APERTURA
             badge.textContent = "TURNO CERRADO";
             badge.className = "status-badge st-closed";
             txt.textContent = "Ingrese el stock físico para INICIAR el turno.";
@@ -317,7 +403,6 @@
             renderGrid(data.sugerido || {}, false); 
 
         } else {
-            // MODO CIERRE (AUDITORÍA)
             badge.textContent = "TURNO ABIERTO";
             badge.className = "status-badge st-open";
             txt.textContent = "Auditoría: El sistema calculó el stock esperado.";
@@ -422,9 +507,9 @@
     function copiarSistemaAReal() {
         if(!confirm("¿Copiar valores del sistema a Real? Úselo solo si ha verificado físicamente.")) return;
         
-        [10,15,45].forEach(k => {
-            document.getElementById(`L${k}`).value = systemValues[`L${k}`];
-            document.getElementById(`V${k}`).value = systemValues[`V${k}`];
+        [10,15,45].forEach(kilo => {
+            document.getElementById(`L${kilo}`).value = systemValues[`L${kilo}`];
+            document.getElementById(`V${kilo}`).value = systemValues[`V${kilo}`];
         });
         validar();
     }
@@ -477,6 +562,214 @@
     }
     
     document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+    // ==========================================
+    // 📦 MÓDULO DE CAUCIONES FRONTEND 📦
+    // ==========================================
+
+    function abrirModalCauciones() {
+      document.getElementById('modalCauciones').style.display = 'flex';
+      mostrarTabCaucion('NUEVA');
+      cargarCaucionesActivas(); 
+    }
+
+    function mostrarTabCaucion(tab) {
+      document.getElementById('tabCaucionNueva').style.display = tab === 'NUEVA' ? 'block' : 'none';
+      document.getElementById('tabCaucionActivas').style.display = tab === 'ACTIVAS' ? 'block' : 'none';
+      document.getElementById('formCobroCaucion').style.display = 'none'; 
+      
+      const btnNueva = document.getElementById('tabBtnNueva');
+      const btnActivas = document.getElementById('tabBtnActivas');
+      
+      if(tab === 'NUEVA') {
+        btnNueva.classList.add('active');
+        btnActivas.classList.remove('active');
+      } else {
+        btnNueva.classList.remove('active');
+        btnActivas.classList.add('active');
+      }
+    }
+
+    async function guardarNuevaCaucion() {
+      const nombre = document.getElementById('cauNombre').value.trim();
+      const tel = document.getElementById('cauTel').value.trim();
+      
+      if (!nombre) {
+        showToast("Debes ingresar un nombre o referencia del cliente.", "error");
+        return;
+      }
+
+      const clienteFinal = tel ? `${nombre} - Tel:${tel}` : nombre;
+
+      const env10 = Number(document.getElementById('cauE10').value) || 0;
+      const env15 = Number(document.getElementById('cauE15').value) || 0;
+      const env45 = Number(document.getElementById('cauE45').value) || 0;
+      const monto = Number(document.getElementById('cauMonto').value) || 0;
+
+      if (env10 === 0 && env15 === 0 && env45 === 0) {
+        showToast("No estás prestando ningún envase.", "error");
+        return;
+      }
+
+      try {
+        toggleLoader(true, "Guardando Caución..."); 
+        
+        const body = new FormData();
+        body.append('action', 'crearcaucion');
+        body.append('k', k);
+        body.append('cliente', clienteFinal);
+        body.append('env10', env10);
+        body.append('env15', env15);
+        body.append('env45', env45);
+        body.append('montoGarantia', monto);
+
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          showToast("Caución guardada con éxito", "success");
+          
+          document.getElementById('cauNombre').value = '';
+          document.getElementById('cauTel').value = '';
+          document.getElementById('cauE10').value = '0';
+          document.getElementById('cauE15').value = '0';
+          document.getElementById('cauE45').value = '0';
+          document.getElementById('cauMonto').value = '0';
+          
+          cargarCaucionesActivas(); 
+          mostrarTabCaucion('ACTIVAS'); 
+        } else {
+          showToast("Error: " + json.message, "error");
+        }
+      } catch(e) {
+        showToast("Falló la conexión.", "error");
+      } finally {
+        toggleLoader(false);
+      }
+    }
+
+    async function cargarCaucionesActivas() {
+      const lista = document.getElementById('listaCaucionesActivas');
+      lista.innerHTML = '<p style="text-align:center; color:var(--accent);">Cargando base de datos...</p>';
+      
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getcauciones&k=${k}`);
+        const json = await res.json();
+        
+        if(json.status === 'success') {
+          if(json.cauciones.length === 0) {
+            lista.innerHTML = '<p style="text-align:center; color:var(--start);">No hay cauciones en la calle. Todo en orden.</p>';
+            return;
+          }
+
+          let html = '';
+          json.cauciones.forEach(c => {
+            html += `
+              <div class="caucion-card">
+                <strong style="color:var(--accent); font-size:15px;">${c.cliente}</strong><br>
+                <div style="font-size:12px; margin-top:5px; color:#ddd;">
+                    Llevó: <b>${c.env10}</b>x10kg | <b>${c.env15}</b>x15kg | <b>${c.env45}</b>x45kg <br>
+                    Garantía Guardada: <span style="color:var(--start); font-weight:bold;">$${c.monto}</span>
+                </div>
+                <button onclick="prepararCobro('${c.id}', ${c.env10}, ${c.env15}, ${c.env45}, ${c.monto})" style="margin-top:10px; width:100%; padding:8px; background:transparent; border:1px solid var(--info); color:var(--info); border-radius:5px; font-weight:bold; cursor:pointer;">DEVOLVER / COBRAR</button>
+              </div>
+            `;
+          });
+          lista.innerHTML = html;
+        }
+      } catch(e) {
+        lista.innerHTML = '<p style="color:var(--error); text-align:center;">Error al cargar datos.</p>';
+      }
+    }
+
+    function prepararCobro(id, e10, e15, e45, monto) {
+      document.getElementById('formCobroCaucion').style.display = 'block';
+      document.getElementById('cobroTitulo').innerText = `Cerrando: ${id}`;
+      document.getElementById('cobroId').value = id;
+      
+      document.getElementById('max10').value = e10; document.getElementById('lblMax10').innerText = e10;
+      document.getElementById('max15').value = e15; document.getElementById('lblMax15').innerText = e15;
+      document.getElementById('max45').value = e45; document.getElementById('lblMax45').innerText = e45;
+      document.getElementById('lblGarantiaOriginal').innerText = monto;
+
+      document.getElementById('devE10').value = e10;
+      document.getElementById('devE15').value = e15;
+      document.getElementById('devE45').value = e45;
+      document.getElementById('devMonto').value = monto;
+      
+      document.getElementById('formCobroCaucion').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function procesarCierreCaucion() {
+      const id = document.getElementById('cobroId').value;
+      const d10 = Number(document.getElementById('devE10').value);
+      const m10 = Number(document.getElementById('max10').value);
+      const d15 = Number(document.getElementById('devE15').value);
+      const m15 = Number(document.getElementById('max15').value);
+      const d45 = Number(document.getElementById('devE45').value);
+      const m45 = Number(document.getElementById('max45').value);
+      const montoDevolver = Number(document.getElementById('devMonto').value);
+
+      if(d10 > m10 || d15 > m15 || d45 > m45) {
+        showToast("Error: El cliente no puede devolver más envases de los prestados.", "error");
+        return;
+      }
+
+      if(confirm("¿Seguro que querés cerrar esta caución y devolver el dinero indicado?")) {
+        try {
+          toggleLoader(true, "Cerrando Caución...");
+          const body = new FormData();
+          body.append('action', 'cerrarcaucion');
+          body.append('k', k);
+          body.append('idCaucion', id);
+          body.append('dev10', d10);
+          body.append('dev15', d15);
+          body.append('dev45', d45);
+          body.append('montoDevuelto', montoDevolver);
+
+          const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+          const json = await res.json();
+
+          if(json.status === 'success') {
+            showToast("Caución cerrada correctamente.", "success");
+            document.getElementById('formCobroCaucion').style.display = 'none';
+            cargarCaucionesActivas(); 
+          } else {
+            showToast("Falla: " + json.message, "error");
+          }
+        } catch(e) {
+          showToast("Error de conexión.", "error");
+        } finally {
+          toggleLoader(false);
+        }
+      }
+    }
+
+    async function anularCaucionUI() {
+      const id = document.getElementById('cobroId').value;
+      if(confirm("ATENCIÓN: Esto anulará la caución asumiendo que el cliente no aceptó la mercadería. ¿Continuar?")) {
+        try {
+          toggleLoader(true, "Anulando...");
+          const body = new FormData();
+          body.append('action', 'anularcaucion');
+          body.append('k', k);
+          body.append('idCaucion', id);
+
+          const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+          const json = await res.json();
+
+          if(json.status === 'success') {
+            showToast("Caución anulada con éxito.", "success");
+            document.getElementById('formCobroCaucion').style.display = 'none';
+            cargarCaucionesActivas();
+          }
+        } catch(e) {
+          showToast("Error de red.", "error");
+        } finally {
+          toggleLoader(false);
+        }
+      }
+    }
 
     init();
   </script>
