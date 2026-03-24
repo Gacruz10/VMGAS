@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría Home Banking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Paleta "Dark Pro" */
+      --bg-base: #0a0a0c;
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-hover: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      
+      --accent: #E2B714; /* Un dorado más sobrio */
+      --start: #10B981;  /* Verde esmeralda moderno */
+      --end: #EF4444;    /* Rojo corporativo */
+      --info: #3B82F6;   /* Azul profesional */
+      
+      --text-primary: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --text-xs: 0.75rem;
+    }
+
+    * { box-sizing: border-box; }
+    
+body {
+      margin: 0; 
+      font-family: 'Inter', sans-serif; 
+      color: var(--text-primary);
+      /* EL MORADITO DE SIEMPRE */
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a;
+      background-attachment: fixed;
+      min-height: 100vh; 
+      padding: 30px 20px 120px; /* Espacio para el panel flotante */
+      opacity: 0; /* Para la seguridad visual inicial */
+      transition: opacity 0.5s ease;
+    }
+
+    .header { 
+      max-width: 900px; margin: 0 auto 30px; 
+      display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    
+    .header h3 { 
+      color: var(--text-primary); font-weight: 800; margin: 0; font-size: 1.5rem; letter-spacing: -0.5px;
+    }
+    
+    .btn-volver {
+        background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-muted);
+        padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        position: absolute; left: 0; transition: all 0.2s;
+    }
+    .btn-volver:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+    .container { max-width: 900px; margin: 0 auto; } /* Más ancho para aprovechar PC */
+
+    /* PESTAÑAS */
+    .tabs { display: flex; gap: 8px; margin-bottom: 25px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 10px; border: 1px solid var(--glass-border); }
+    .tab-btn {
+      flex: 1; padding: 10px; background: transparent; color: var(--text-muted);
+      border: none; border-radius: 6px; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text-primary); }
+    .tab-btn.active { background: var(--surface-hover); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+    /* FILTROS HISTORIAL */
+    #filtrosHistorial {
+      background: var(--surface); backdrop-filter: blur(10px); padding: 20px; 
+      border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 25px;
+      display: none; animation: fadeIn 0.3s;
+    }
+    .date-row { display: flex; gap: 15px; }
+    .date-row div { flex: 1; }
+    .date-row label { display: block; font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; font-weight: 600; }
+    .date-row input { 
+      width: 100%; padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); 
+      border-radius: 6px; color: var(--text-primary); color-scheme: dark; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s;
+    }
+    .date-row input:focus { border-color: var(--info); }
+    
+    .btn-buscar { 
+      width: auto; padding: 10px 24px; background: var(--info); color: white; 
+      border: none; border-radius: 6px; font-weight: 600; font-size: 0.9rem; 
+      margin-top: 15px; cursor: pointer; transition: background 0.2s; display: block; margin-left: auto;
+    }
+    .btn-buscar:hover { background: #2563EB; }
+
+    /* AGRUPACIÓN POR DÍAS */
+    .date-group { margin-bottom: 30px; }
+    .date-title { 
+      font-size: 0.85rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; margin-bottom: 15px;
+    }
+
+    /* TARJETAS */
+    .t-card {
+      background: var(--surface); border: 1px solid var(--glass-border);
+      border-radius: 8px; margin-bottom: 8px; overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .t-card.fade-out { opacity: 0; transform: scale(0.98) translateX(20px); }
+
+    .t-main { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s; }
+    .t-main:hover { background: var(--surface-hover); }
+    
+    .t-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .t-chofer { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+    .t-cliente { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; margin-top: 2px;}
+    
+    /* Input de detalle inyectado en la fila */
+    .t-input-detalle {
+      width: 100%; max-width: 350px; background: rgba(0,0,0,0.4); border: 1px dashed rgba(255,255,255,0.2);
+      color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 0.8rem; font-family: 'Inter', sans-serif;
+      margin-top: 10px; outline: none; display: none; transition: all 0.2s;
+    }
+    .t-input-detalle:focus { border: 1px solid var(--info); background: rgba(0,0,0,0.6); }
+    .t-input-detalle::placeholder { color: rgba(255,255,255,0.3); }
+    
+    .t-input-historial { display: block; border: none; background: transparent; color: var(--info); font-style: normal; font-size: 0.8rem; padding: 0; margin-top: 6px; }
+
+    .t-right { text-align: right; display: flex; align-items: center; gap: 20px; }
+    .t-monto { font-size: 1.1rem; font-weight: 800; color: var(--start); letter-spacing: -0.5px; }
+    
+    /* Checkbox Pro */
+    .custom-checkbox {
+      appearance: none; -webkit-appearance: none;
+      width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px;
+      background-color: transparent; cursor: pointer; position: relative; transition: all 0.2s;
+    }
+    .custom-checkbox:checked { background-color: var(--start); border-color: var(--start); }
+    .custom-checkbox:checked::after {
+      content: ''; position: absolute; left: 6px; top: 2px; width: 4px; height: 10px;
+      border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+    .custom-checkbox:hover { border-color: var(--text-primary); }
+
+    /* ACORDEÓN DE DETALLES */
+    .t-details { 
+      background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); 
+      padding: 15px 20px; font-size: 0.8rem; color: var(--text-muted); display: none; 
+    }
+    .d-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
+    .d-label { color: rgba(255,255,255,0.4); font-size: var(--text-xs); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 3px;}
+    .d-val { font-size: 0.85rem; color: var(--text-primary); font-weight: 500;}
+    
+    .montos-desglose { 
+      background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); 
+      display: flex; gap: 20px; align-items: center;
+    }
+    .m-item { display: flex; flex-direction: column; }
+    .m-item span:first-child { font-size: var(--text-xs); color: rgba(255,255,255,0.4); text-transform: uppercase; }
+    .m-item span:last-child { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+    .m-item.t-verde span:last-child { color: var(--start); }
+    .m-divider { width: 1px; height: 30px; background: var(--glass-border); }
+
+    .firma-box { font-size: 0.75rem; color: rgba(255,255,255,0.3); text-align: right; padding-top: 10px; border-top: 1px solid var(--glass-border); margin-top: 15px;}
+
+    #loader { display: none; text-align: center; padding: 40px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; letter-spacing: 1px; }
+
+    /* TOAST MÁS SUTIL */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 300px; }
+    .toast { 
+      padding: 12px 16px; border-radius: 6px; color: #fff; font-size: 0.85rem; font-weight: 500; 
+      background: #1F2937; border: 1px solid #374151; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+      opacity:0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform:translateY(-10px);
+    }
+    .toast.show { opacity: 1; transform:translateY(0); }
+
+    /* PANEL DE ACCIÓN FLOTANTE (ESTILO DASHBOARD) */
+    .fab-container {
+      position: fixed; bottom: 0; left: 0; width: 100%; 
+      background: rgba(10, 10, 12, 0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--glass-border);
+      padding: 15px 20px; z-index: 1000; display: none; animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    }
+    .fab-content { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    
+    .fab-info { color: var(--text-primary); font-size: 0.9rem; font-weight: 600; }
+    .fab-info span { color: var(--text-muted); font-weight: 400; margin-left: 10px; font-size: 0.8rem;}
+
+    .fab-btn {
+      padding: 12px 24px; border: none; border-radius: 6px;
+      font-weight: 600; font-size: 0.85rem; cursor: pointer; color: white;
+      transition: all 0.2s; letter-spacing: 0.5px;
+    }
+    .fab-aprobar { background: var(--start); }
+    .fab-aprobar:hover { background: #059669; }
+    .fab-revertir { background: transparent; border: 1px solid var(--end); color: var(--end); }
+    .fab-revertir:hover { background: rgba(239, 68, 68, 0.1); }
+    
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="header">
+    <button class="btn-volver" onclick="volver()">← Panel Principal</button>
+    <h3>Auditoría Bancaria</h3>
+  </div>
+
+  <div class="container">
+    
+    <div class="tabs">
+      <button id="tabPendientes" class="tab-btn active" onclick="cambiarTab('PENDIENTES')">Pendientes de Conciliación</button>
+      <button id="tabHistorial" class="tab-btn" onclick="cambiarTab('HISTORIAL')">Historial Auditado</button>
+    </div>
+
+    <div id="filtrosHistorial">
+      <div class="date-row">
+        <div><label>Fecha Inicio</label><input type="date" id="txtStart"></div>
+        <div><label>Fecha Fin</label><input type="date" id="txtEnd"></div>
+      </div>
+      <button class="btn-buscar" onclick="cargarDatos()">Aplicar Filtro</button>
+    </div>
+
+    <div id="loader">Conectando con base de datos...</div>
+    <div id="listaContainer"></div>
+  </div>
+
+  <div class="fab-container" id="fabContainer">
+    <div class="fab-content">
+       <div class="fab-info" id="fabCountText">0 seleccionadas <span>Listas para procesar</span></div>
+       <button class="fab-btn fab-aprobar" id="btnProcesarLote" onclick="procesarLote()">Confirmar Acreditación</button>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    const TIMEOUT_SESION = 180000; // 3 Minutos
+
+    // --- SEGURIDAD: LECTURA Y LIMPIEZA DE TOKEN ---
+    const params = new URLSearchParams(window.location.search);
+    let k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
+
+    function expulsar() {
+        sessionStorage.clear();
+        window.location.replace('index.html');
+    }
+
+    if (!k) {
+        expulsar();
+    } else {
+        sessionStorage.setItem('k', k);
+        // Limpia la URL para que no se vea el token
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        document.body.style.opacity = 1; // Muestra la interfaz si hay token
+    }
+
+    // --- TIMEOUT SILENCIOSO ---
+    let tIdle;
+    function resetTimer() {
+        clearTimeout(tIdle);
+        tIdle = setTimeout(() => {
+            showToast('Inactividad detectada. Sesión cerrada por seguridad.');
+            setTimeout(expulsar, 1500);
+        }, TIMEOUT_SESION);
+    }
+    ['click','mousemove','keydown','touchstart','scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
+    resetTimer();
+
+    // --- LÓGICA DE LA APP ---
+    let currentModo = 'PENDIENTES';
+
+    function volver() { window.location.replace(`inicio.html?k=${k}`); }
+    
+    function showToast(msg) {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = 'toast show'; t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3000);
+    }
+
+    window.onload = () => {
+      const hoy = new Date();
+      const hace7Dias = new Date(); hace7Dias.setDate(hoy.getDate() - 7);
+      document.getElementById('txtEnd').value = hoy.toISOString().split('T')[0];
+      document.getElementById('txtStart').value = hace7Dias.toISOString().split('T')[0];
+      cargarDatos();
+    };
+
+    function cambiarTab(modo) {
+      currentModo = modo;
+      document.getElementById('tabPendientes').classList.toggle('active', modo === 'PENDIENTES');
+      document.getElementById('tabHistorial').classList.toggle('active', modo === 'HISTORIAL');
+      document.getElementById('filtrosHistorial').style.display = modo === 'HISTORIAL' ? 'block' : 'none';
+      
+      document.getElementById('fabContainer').style.display = 'none';
+      cargarDatos();
+    }
+
+    async function cargarDatos() {
+      const start = document.getElementById('txtStart').value;
+      const end = document.getElementById('txtEnd').value;
+      
+      document.getElementById('listaContainer').innerHTML = '';
+      document.getElementById('loader').style.display = 'block';
+
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=gettransferencias&k=${k}&modo=${currentModo}&start=${start}&end=${end}`);
+        const json = await res.json();
+        
+        document.getElementById('loader').style.display = 'none';
+        if (json.status === 'success') renderizar(json.data);
+        else showToast("Error: " + json.message);
+      } catch (e) {
+        document.getElementById('loader').style.display = 'none';
+        showToast("Error de conexión con el servidor.");
+      }
+    }
+
+    function renderizar(data) {
+      const container = document.getElementById('listaContainer');
+      if (data.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--text-muted); font-size:0.9rem;">
+          ${currentModo === 'PENDIENTES' ? 'No hay operaciones pendientes de conciliación en este momento.' : 'No se encontraron registros en el período seleccionado.'}
+        </div>`;
+        return;
+      }
+
+      const grupos = {};
+      data.forEach(t => {
+        if(!grupos[t.fechaCorta]) grupos[t.fechaCorta] = [];
+        grupos[t.fechaCorta].push(t);
+      });
+
+      let html = '';
+      for (const [fecha, transferencias] of Object.entries(grupos)) {
+        html += `<div class="date-group" id="grp-${fecha}">
+                    <div class="date-title">${fecha}</div>`;
+        
+        transferencias.forEach(t => {
+          
+          let inputHTML = '';
+          if (currentModo === 'PENDIENTES') {
+              inputHTML = `<input type="text" class="t-input-detalle" id="input-${t.row}" placeholder="Añadir Nº Op. o referencia (Opcional)..." onclick="event.stopPropagation()">`;
+          } else if (currentModo === 'HISTORIAL' && t.detalleBanco) {
+              inputHTML = `<div class="t-input-detalle t-input-historial">Referencia: ${t.detalleBanco}</div>`;
+          }
+
+          html += `
+            <div class="t-card" id="card-${t.row}">
+              <div class="t-main" onclick="toggleDetalle(${t.row})">
+                <div class="t-info">
+                  <div class="t-chofer">${t.chofer}</div>
+                  <div class="t-cliente">${t.cliente || 'Consumidor Final'}</div>
+                  ${inputHTML}
+                </div>
+                
+                <div class="t-right" onclick="event.stopPropagation()">
+                  <div class="t-monto">$${t.montoT.toLocaleString('es-AR')}</div>
+                  <input type="checkbox" class="custom-checkbox cbx-lote" value="${t.row}" onchange="checkFila(${t.row})">
+                </div>
+              </div>
+
+              <div class="t-details" id="det-${t.row}">
+                <div class="d-grid">
+                  <div><span class="d-label">Tipo Op.</span><span class="d-val">${t.tipoOp}</span></div>
+                  <div><span class="d-label">Hora Reg.</span><span class="d-val">${t.hora} hs</span></div>
+                  <div><span class="d-label">ID Viaje</span><span class="d-val">${t.viaje}</span></div>
+                  <div><span class="d-label">ID Arqueo</span><span class="d-val">${t.arqueo}</span></div>
+                </div>
+
+                <div class="montos-desglose">
+                  <div class="m-item"><span>Efectivo</span><span>$${t.montoE.toLocaleString('es-AR')}</span></div>
+                  <div class="m-divider"></div>
+                  <div class="m-item t-verde"><span>Transferencia</span><span>$${t.montoT.toLocaleString('es-AR')}</span></div>
+                  <div class="m-divider"></div>
+                  <div class="m-item"><span>Total Comp.</span><span>$${t.montoTotal.toLocaleString('es-AR')}</span></div>
+                </div>
+
+                ${t.firma ? `<div class="firma-box">${t.firma}</div>` : ''}
+              </div>
+            </div>`;
+        });
+        html += `</div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function toggleDetalle(row) {
+      const el = document.getElementById(`det-${row}`);
+      const isVisible = el.style.display === 'block';
+      document.querySelectorAll('.t-details').forEach(d => d.style.display = 'none');
+      if(!isVisible) el.style.display = 'block';
+    }
+
+    function checkFila(row) {
+      const cbx = document.querySelector(`.cbx-lote[value="${row}"]`);
+      const input = document.getElementById(`input-${row}`);
+      
+      if (currentModo === 'PENDIENTES' && input) {
+          if (cbx.checked) {
+              input.style.display = 'block';
+              input.focus();
+          } else {
+              input.style.display = 'none';
+          }
+      }
+      actualizarBotonFlotante();
+    }
+
+    function actualizarBotonFlotante() {
+      const marcados = document.querySelectorAll('.cbx-lote:checked');
+      const fabContainer = document.getElementById('fabContainer');
+      const btn = document.getElementById('btnProcesarLote');
+      const textInfo = document.getElementById('fabCountText');
+
+      if (marcados.length > 0) {
+          fabContainer.style.display = 'block';
+          textInfo.innerHTML = `${marcados.length} operación/es <span>seleccionada/s</span>`;
+          
+          if (currentModo === 'PENDIENTES') {
+              btn.className = 'fab-btn fab-aprobar';
+              btn.innerHTML = `Confirmar Acreditación`;
+          } else {
+              btn.className = 'fab-btn fab-revertir';
+              btn.innerHTML = `Deshacer (A Pendientes)`;
+          }
+      } else {
+          fabContainer.style.display = 'none';
+      }
+    }
+
+    async function procesarLote() {
+      const marcados = document.querySelectorAll('.cbx-lote:checked');
+      if (marcados.length === 0) return;
+
+      const accion = currentModo === 'PENDIENTES' ? 'APROBAR' : 'REVERTIR';
+      // Mensaje de confirmación adaptado al nuevo tono profesional
+      const msg = accion === 'APROBAR' 
+          ? `Se registrará la acreditación de ${marcados.length} operación(es). ¿Desea continuar?` 
+          : `Se anulará la conciliación de ${marcados.length} operación(es) y volverán al panel de pendientes. ¿Desea continuar?`;
+      
+      if (!confirm(msg)) return;
+
+      const payload = [];
+      marcados.forEach(cbx => {
+          const row = cbx.value;
+          const inputEl = document.getElementById(`input-${row}`);
+          const detalle = inputEl ? inputEl.value.trim() : '';
+          payload.push({ row: row, detalle: detalle });
+      });
+
+      try {
+        showToast("Procesando transacciones...");
+        document.getElementById('fabContainer').style.display = 'none';
+
+        const body = new FormData();
+        body.append('action', 'verifytransferenciabatch');
+        body.append('k', k);
+        body.append('accion', accion);
+        body.append('rowsData', JSON.stringify(payload));
+
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          marcados.forEach(cbx => {
+              const card = document.getElementById(`card-${cbx.value}`);
+              card.classList.add('fade-out');
+              setTimeout(() => {
+                  card.remove();
+                  document.querySelectorAll('.date-group').forEach(grp => {
+                      if(grp.querySelectorAll('.t-card').length === 0) grp.remove();
+                  });
+                  if(document.querySelectorAll('.t-card').length === 0) {
+                     document.getElementById('listaContainer').innerHTML = `<div style="text-align:center; padding:50px 20px; color:var(--text-muted); font-size:0.9rem;">Lista actualizada. No hay registros pendientes.</div>`;
+                  }
+              }, 300); 
+          });
+          showToast("Procesamiento completado con éxito.");
+        } else {
+          showToast("Error del servidor: " + json.message);
+          actualizarBotonFlotante();
+        }
+      } catch (e) {
+        showToast("Error de conexión. Verifique su red e intente nuevamente.");
+        actualizarBotonFlotante();
+      }
+    }
+  </script>
+</body>
+</html>

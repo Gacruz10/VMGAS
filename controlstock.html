@@ -770,7 +770,158 @@
         }
       }
     }
+// ==========================================
+    // 📦 MÓDULO DE CAUCIONES FRONTEND 📦
+    // ==========================================
 
+    function abrirModalCauciones() {
+      // 1. BLOQUEO: Si el modo es INICIO, significa que el turno está cerrado.
+      if (currentMode === 'INICIO') {
+        showToast("⚠️ Debes ABRIR el turno de stock para gestionar cauciones.", "error");
+        return;
+      }
+
+      document.getElementById('modalCauciones').style.display = 'flex';
+      mostrarTabCaucion('NUEVA');
+      cargarCaucionesActivas(); 
+    }
+
+    // (La función mostrarTabCaucion queda igual, saltamos a guardarNuevaCaucion)
+
+    async function guardarNuevaCaucion() {
+      const nombre = document.getElementById('cauNombre').value.trim();
+      const tel = document.getElementById('cauTel').value.trim();
+      
+      if (!nombre) {
+        showToast("Debes ingresar un nombre o referencia del cliente.", "error");
+        return;
+      }
+
+      const clienteFinal = tel ? `${nombre} - Tel:${tel}` : nombre;
+
+      const env10 = Number(document.getElementById('cauE10').value) || 0;
+      const env15 = Number(document.getElementById('cauE15').value) || 0;
+      const env45 = Number(document.getElementById('cauE45').value) || 0;
+      const monto = Number(document.getElementById('cauMonto').value) || 0;
+
+      if (env10 === 0 && env15 === 0 && env45 === 0) {
+        showToast("No estás prestando ningún envase.", "error");
+        return;
+      }
+
+      try {
+        toggleLoader(true, "Guardando Caución..."); 
+        
+        const body = new FormData();
+        body.append('action', 'crearcaucion');
+        body.append('k', k);
+        body.append('cliente', clienteFinal);
+        body.append('env10', env10);
+        body.append('env15', env15);
+        body.append('env45', env45);
+        body.append('montoGarantia', monto);
+
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          showToast("Caución guardada. Actualizando stock...", "success");
+          
+          // 2. RECARGAR PÁGINA: Actualizamos el stock visual tras crear.
+          setTimeout(() => {
+              window.location.reload();
+          }, 1500);
+
+        } else {
+          showToast("Error: " + json.message, "error");
+        }
+      } catch(e) {
+        showToast("Falló la conexión.", "error");
+      } finally {
+        toggleLoader(false);
+      }
+    }
+
+    // (La función cargarCaucionesActivas y prepararCobro quedan igual)
+
+    async function procesarCierreCaucion() {
+      const id = document.getElementById('cobroId').value;
+      const d10 = Number(document.getElementById('devE10').value);
+      const m10 = Number(document.getElementById('max10').value);
+      const d15 = Number(document.getElementById('devE15').value);
+      const m15 = Number(document.getElementById('max15').value);
+      const d45 = Number(document.getElementById('devE45').value);
+      const m45 = Number(document.getElementById('max45').value);
+      const montoDevolver = Number(document.getElementById('devMonto').value);
+
+      if(d10 > m10 || d15 > m15 || d45 > m45) {
+        showToast("Error: El cliente no puede devolver más envases de los prestados.", "error");
+        return;
+      }
+
+      if(confirm("¿Seguro que querés cerrar esta caución y devolver el dinero indicado?")) {
+        try {
+          toggleLoader(true, "Cerrando Caución...");
+          const body = new FormData();
+          body.append('action', 'cerrarcaucion');
+          body.append('k', k);
+          body.append('idCaucion', id);
+          body.append('dev10', d10);
+          body.append('dev15', d15);
+          body.append('dev45', d45);
+          body.append('montoDevuelto', montoDevolver);
+
+          const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+          const json = await res.json();
+
+          if(json.status === 'success') {
+            showToast("Caución cerrada. Actualizando stock...", "success");
+            
+            // 2. RECARGAR PÁGINA: Actualizamos el stock tras el cierre.
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+
+          } else {
+            showToast("Falla: " + json.message, "error");
+          }
+        } catch(e) {
+          showToast("Error de conexión.", "error");
+        } finally {
+          toggleLoader(false);
+        }
+      }
+    }
+
+    async function anularCaucionUI() {
+      const id = document.getElementById('cobroId').value;
+      if(confirm("ATENCIÓN: Esto anulará la caución asumiendo que el cliente no aceptó la mercadería. ¿Continuar?")) {
+        try {
+          toggleLoader(true, "Anulando...");
+          const body = new FormData();
+          body.append('action', 'anularcaucion');
+          body.append('k', k);
+          body.append('idCaucion', id);
+
+          const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+          const json = await res.json();
+
+          if(json.status === 'success') {
+            showToast("Caución anulada. Actualizando stock...", "success");
+            
+            // 2. RECARGAR PÁGINA: Actualizamos el stock tras anular.
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+
+          }
+        } catch(e) {
+          showToast("Error de red.", "error");
+        } finally {
+          toggleLoader(false);
+        }
+      }
+    }
     init();
   </script>
 </body>

@@ -30,7 +30,13 @@
     }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .header h1 { font-size: 1.2rem; font-weight: 800; color: var(--accent); margin: 0; }
-    .btn-volver { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 600; }
+    
+    .header-buttons { display: flex; gap: 10px; }
+    .btn-volver { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+    .btn-volver:hover { background: rgba(255,255,255,0.2); }
+    .btn-banco { background: rgba(45, 212, 191, 0.15); border: 1px solid var(--ok); color: var(--ok); padding: 10px 15px; border-radius: 12px; cursor: pointer; font-weight: 800; transition: 0.3s; }
+    .btn-banco:hover { background: rgba(45, 212, 191, 0.3); }
+
     .container { max-width: 800px; margin: 0 auto; display: grid; gap: 20px; grid-template-columns: 1fr; }
     @media (min-width: 768px) { .container { grid-template-columns: 1fr 1fr; } .full-width { grid-column: 1 / -1; } }
     .card { background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; transition: border-color 0.3s ease; }
@@ -109,7 +115,10 @@
 
   <div class="header">
     <h1>ARQUEO DE CAJA</h1>
-    <button class="btn-volver" id="btnBack">VOLVER</button>
+    <div class="header-buttons">
+      <button class="btn-banco" id="btnBanco">🏦 VER BANCO</button>
+      <button class="btn-volver" id="btnBack">VOLVER</button>
+    </div>
   </div>
 
   <div class="container hidden" id="mainUI">
@@ -279,6 +288,11 @@ function resetTimer() {
 resetTimer(); // Arranca el contador
 
 document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+
+// NUEVO: Abre transferencias en nueva pestaña para no perder datos del arqueo
+//document.getElementById('btnBanco').onclick = () => window.open(`controltransferencias.html?k=${k}`, '_blank');
+// NUEVO: Abre transferencias remplazando el del arqueo
+document.getElementById('btnBanco').onclick = () => window.location.replace(`controltransferencias.html?k=${k}`);
 
 let sisData = { efectivo: 0, transf: 0, gastos: 0, total: 0 };
 let hayDiferencia = false;
