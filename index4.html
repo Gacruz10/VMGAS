@@ -59,7 +59,7 @@
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(13, 3, 26, 0.95); z-index: 100; display: flex; flex-direction: column;
       justify-content: center; align-items: center; border-radius: 24px;
-      transition: opacity 0.5s ease, visibility 0.5s ease;
+      transition: opacity 0.15s ease, visibility 0.15s ease;
     }
     
     .spinner {
@@ -172,10 +172,36 @@
     .deuda-item.urgente { color: var(--accent); font-weight: bold; font-size: 18px; border-bottom: none; margin-top: 10px; }
     .btn-entendido { background: #ff4444; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 800; width: 100%; cursor: pointer; font-size: 16px; text-transform: uppercase; margin-bottom: 10px;}
     .btn-entendido:hover { background: #ff6666; }
+
+    /* MODAL GPS INICIAL */
+    .modal-gps-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px);
+      z-index: 10005; display: flex; justify-content: center; align-items: center;
+      opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+    }
+    .modal-gps-box {
+      background: #1e053a; border: 2px solid var(--info); border-radius: 20px;
+      padding: 30px 20px; width: 90%; max-width: 350px; text-align: center;
+      box-shadow: 0 20px 50px rgba(33, 150, 243, 0.3);
+      transform: scale(0.9); transition: transform 0.4s ease;
+    }
+    .modal-gps-box h2 { color: var(--info); margin: 0 0 15px 0; font-size: 22px; font-weight: 800;}
+    .modal-gps-box p { color: white; font-size: 14px; margin-bottom: 25px; line-height: 1.5;}
+    .gps-icon { font-size: 45px; margin-bottom: 10px; animation: pulseGlow 2s infinite; display: inline-block; }
     
   </style>
 </head>
 <body>
+
+  <div class="modal-gps-overlay" id="modalGPS">
+      <div class="modal-gps-box" id="modalGPSBox">
+          <div class="gps-icon">📍</div>
+          <h2>ACTIVAR GPS</h2>
+          <p>Para trabajar, necesitamos acceso a tu ubicación. Por favor, tocá <b>"Permitir"</b> en el cartel que aparece en tu pantalla.</p>
+          <div class="spinner" style="margin: 0 auto; width: 30px; height: 30px;"></div>
+      </div>
+  </div>
 
   <div id="toast-container"></div>
 
@@ -362,40 +388,79 @@ function startTimer() {
 // =======================================================
 function obtenerUbicacionFantasma() {
     return new Promise((resolve) => {
-        // 1. Verificamos si el celu soporta GPS
         if (!navigator.geolocation) {
             resolve("SIN_GPS_NO_SOPORTADO");
             return;
         }
 
-        // 2. Ponemos un cronómetro bomba (5 segundos máximo)
         const timeoutGPS = setTimeout(() => {
             resolve("SIN_GPS_TIMEOUT");
         }, 5000);
 
-        // 3. Lanzamos la búsqueda silenciosa
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                clearTimeout(timeoutGPS); // Desactivamos la bomba, lo encontró a tiempo
+                clearTimeout(timeoutGPS); 
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                // Devolvemos el formato exacto para armar el link de Google Maps después
                 resolve(`${lat},${lon}`);
             },
             (error) => {
-                clearTimeout(timeoutGPS); // Desactivamos la bomba, falló por error/denegado
+                clearTimeout(timeoutGPS); 
                 let motivo = "SIN_GPS_DESCONOCIDO";
                 if (error.code === 1) motivo = "SIN_GPS_DENEGADO";
                 if (error.code === 2) motivo = "SIN_GPS_SIN_SEÑAL";
                 resolve(motivo);
             },
             {
-                enableHighAccuracy: false, // 'false' lo hace más rápido porque usa antenas de celular además del satélite
-                timeout: 4500, // Le damos 4.5 segs internos al navegador
+                enableHighAccuracy: false,
+                timeout: 4500, 
                 maximumAge: 0
             }
         );
     });
+}
+
+// =======================================================
+// EL CALENTADOR DE GPS INTELIGENTE
+// =======================================================
+async function calentarGPS() {
+    if (!navigator.geolocation) return;
+
+    try {
+        // Le preguntamos al navegador si el permiso ya fue concedido previamente
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        if (perm.state === 'granted') {
+            // Ya tiene permiso, calentamos en silencio sin molestar visualmente al usuario
+            navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { enableHighAccuracy: false, maximumAge: 0 });
+            return;
+        }
+    } catch(e) { 
+        // Silencio. Si el navegador no soporta API Permissions (iOS viejo), ignoramos y mostramos el cartel igual por las dudas.
+    }
+
+    const overlay = document.getElementById('modalGPS');
+    const box = document.getElementById('modalGPSBox');
+    
+    // Mostramos el cartelazo porque no estamos seguros si tiene permiso o sabemos que no lo tiene
+    overlay.style.opacity = '1';
+    overlay.style.pointerEvents = 'all';
+    box.style.transform = 'scale(1)';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            overlay.style.opacity = '0';
+            box.style.transform = 'scale(0.9)';
+            setTimeout(() => overlay.style.display = 'none', 400);
+            showToast("📍 GPS Activado correctamente.", "success");
+        },
+        (err) => {
+            overlay.style.opacity = '0';
+            box.style.transform = 'scale(0.9)';
+            setTimeout(() => overlay.style.display = 'none', 400);
+            showToast("⚠️ GPS Denegado o sin señal. Se informará en auditoría.", "warning");
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+    );
 }
 
 // Reseteamos el reloj absoluto cada vez que tocan algo
@@ -413,12 +478,11 @@ function refreshSession() { expireTime = Date.now() + 300000; }
     }
 
     function updateLoader(title, sub) { document.getElementById('txtLoading').textContent = title; document.getElementById('txtSubLoading').textContent = sub; }
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
     async function init() {
         try {
             updateLoader("VERIFICANDO SESIÓN", "Comprobando credenciales...");
-            document.body.style.opacity = 1; await sleep(400); 
+            document.body.style.opacity = 1; 
 
             const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k); 
             let d;
@@ -430,7 +494,11 @@ function refreshSession() { expireTime = Date.now() + 300000; }
             } else { d = { nombre: 'MODO OFFLINE' }; }
             
             document.getElementById('welcomeMessage').textContent = `Usuario: ${d.nombre ? d.nombre.toUpperCase() : 'USUARIO'}`;
-            startTimer(); actualizarIndicadorOffline(); await cargarDatos(); 
+            startTimer(); 
+            actualizarIndicadorOffline(); 
+
+            calentarGPS(); 
+            await cargarDatos(); 
         } catch (e) { window.location.replace('index.html'); }
     }
 
@@ -447,7 +515,7 @@ function refreshSession() { expireTime = Date.now() + 300000; }
             const dDatos = await rDatos.json(); clientesData = dDatos.clientes; preciosData = dDatos.precios;
             deudasData = dDatos.deudas || {}; 
 
-            updateLoader("CONFIGURANDO", "Procesando interfaz de usuario..."); await sleep(300);
+            updateLoader("CONFIGURANDO", "Procesando interfaz de usuario...");
 
             const selZona = document.getElementById('zona'); selZona.innerHTML = '<option value="">Zona...</option>';
             zonasActivas.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; selZona.appendChild(opt); });
@@ -458,7 +526,7 @@ function refreshSession() { expireTime = Date.now() + 300000; }
 
     function cerrarLoader() {
         const overlay = document.getElementById('loadingOverlay'); overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.visibility = 'hidden'; overlay.style.display = 'none'; document.getElementById('formContainer').classList.remove('is-loading'); }, 500);
+        setTimeout(() => { overlay.style.visibility = 'hidden'; overlay.style.display = 'none'; document.getElementById('formContainer').classList.remove('is-loading'); }, 150);
     }
 
     function checkVisibilidadCascada() {
