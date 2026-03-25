@@ -357,6 +357,47 @@ function startTimer() {
     }, 1000);
 }
 
+// =======================================================
+// MOTOR DE GPS FANTASMA (Tolerante a fallos)
+// =======================================================
+function obtenerUbicacionFantasma() {
+    return new Promise((resolve) => {
+        // 1. Verificamos si el celu soporta GPS
+        if (!navigator.geolocation) {
+            resolve("SIN_GPS_NO_SOPORTADO");
+            return;
+        }
+
+        // 2. Ponemos un cronómetro bomba (5 segundos máximo)
+        const timeoutGPS = setTimeout(() => {
+            resolve("SIN_GPS_TIMEOUT");
+        }, 5000);
+
+        // 3. Lanzamos la búsqueda silenciosa
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                clearTimeout(timeoutGPS); // Desactivamos la bomba, lo encontró a tiempo
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                // Devolvemos el formato exacto para armar el link de Google Maps después
+                resolve(`${lat},${lon}`);
+            },
+            (error) => {
+                clearTimeout(timeoutGPS); // Desactivamos la bomba, falló por error/denegado
+                let motivo = "SIN_GPS_DESCONOCIDO";
+                if (error.code === 1) motivo = "SIN_GPS_DENEGADO";
+                if (error.code === 2) motivo = "SIN_GPS_SIN_SEÑAL";
+                resolve(motivo);
+            },
+            {
+                enableHighAccuracy: false, // 'false' lo hace más rápido porque usa antenas de celular además del satélite
+                timeout: 4500, // Le damos 4.5 segs internos al navegador
+                maximumAge: 0
+            }
+        );
+    });
+}
+
 // Reseteamos el reloj absoluto cada vez que tocan algo
 function refreshSession() { expireTime = Date.now() + 300000; }
 ['click', 'mousemove', 'keydown', 'touchstart'].forEach(evt => document.addEventListener(evt, refreshSession));
@@ -796,8 +837,18 @@ function parseM(id) {
     async function guardar() {
         const btn = document.getElementById('btnGuardar'); const pinContainer = document.getElementById('globalPinContainer'); const pinInput = document.getElementById('globalPinInput'); let pinParaEnviar = "";
         if (pinContainer.style.display !== 'none') { const val = pinInput.value.trim(); if (val.length < 4) { showToast("⚠️ FALTA AUTORIZACIÓN: Ingrese el PIN de 4 dígitos.", "error"); pinInput.focus(); return; } pinParaEnviar = val; }
-        btn.disabled = true; btn.textContent = "PROCESANDO...";
         
+        btn.disabled = true; 
+        btn.textContent = "UBICANDO Y GUARDANDO...";
+
+        // DISPARAMOS EL GPS FANTASMA (Espera máximo 5 segundos)
+        const ubicacionActual = await obtenerUbicacionFantasma();
+
+        // AUDITORÍA AL CHOFER: Si falló, le avisamos para que no se haga el vivo
+        if (ubicacionActual.includes("SIN_GPS")) {
+            showToast("⚠️ Venta guardada SIN UBICACIÓN GPS. Revisá tu señal.", "warning");
+        }
+
         const cat = obtenerCat(); const esNuevo = document.getElementById('nuevoCliente').checked; const esGasto = document.getElementById('declaracionGastos').checked; const pfx = { 'SUBDISTRIBUIDOR': 'VS', 'COMERCIO': 'VC', 'ROT. Y PAN.': 'VRP', 'USUARIO (PUBLICO)': 'VU' }[cat];
         let nombreC = esNuevo ? document.getElementById('nombreCliente').value : (clienteSeleccionado ? clienteSeleccionado.nombre : ''); if (!nombreC && esGasto) nombreC = 'GASTO'; 
 
@@ -822,7 +873,10 @@ function parseM(id) {
             [`${pfx}45`]: Math.max(0, parseInt(document.getElementById('cantidadGarrafa3').value) || 0), [`${pfx}45$`]: parseM('precioGarrafa3') * (parseInt(document.getElementById('cantidadGarrafa3').value) || 0),
             
             ID_CLIENTE: idClienteSeleccionado,
-            cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : ''
+            cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : '',
+            
+            // EL GPS VIAJA ACÁ
+            UBICACION: ubicacionActual 
         };
 
         const modoEnv = document.getElementById('modoEnvase').value;
