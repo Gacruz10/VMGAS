@@ -33,7 +33,6 @@
     .header { text-align: center; margin-bottom: 20px; position: relative; }
     .welcome-message { color: var(--accent); font-size: 18px; font-weight: 700; text-transform: uppercase; }
 
-    /* ESTILO AÑADIDO PARA EL CRONÓMETRO */
     .timer-display {
       position: absolute;
       right: 0;
@@ -126,7 +125,6 @@
     .large-col { flex: 0.6; }
     .btn-volver { background: transparent; border: 1px solid var(--glass-border); color: white; padding: 10px; border-radius: 10px; margin-bottom: 20px; cursor: pointer; }
 
-    /* CAJA DE INFORMACIÓN DEL CLIENTE */
     .client-info-box { 
         display: none; flex-wrap: wrap; justify-content: center; gap: 8px; 
         background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 15px; 
@@ -152,7 +150,6 @@
     .toast.warning { background: #ff9800; color: #000; }
     .toast.info { background: var(--info); }
 
-    /* MODAL DEUDAS PENDIENTES */
     .modal-deudas-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -173,7 +170,6 @@
     .btn-entendido { background: #ff4444; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 800; width: 100%; cursor: pointer; font-size: 16px; text-transform: uppercase; margin-bottom: 10px;}
     .btn-entendido:hover { background: #ff6666; }
 
-    /* MODAL GPS INICIAL */
     .modal-gps-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px);
@@ -384,7 +380,7 @@ function startTimer() {
 }
 
 // =======================================================
-// MOTOR DE GPS FANTASMA (Tolerante a fallos)
+// MOTOR DE GPS FANTASMA MEJORADO (Alta Precisión + Tolerancia)
 // =======================================================
 function obtenerUbicacionFantasma() {
     return new Promise((resolve) => {
@@ -393,9 +389,10 @@ function obtenerUbicacionFantasma() {
             return;
         }
 
+        // Le damos hasta 15 segundos al celular para que despierte la antena
         const timeoutGPS = setTimeout(() => {
-            resolve("SIN_GPS_TIMEOUT");
-        }, 5000);
+            resolve("SIN_GPS_TIMEOUT_FORZADO");
+        }, 15000);
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -409,39 +406,36 @@ function obtenerUbicacionFantasma() {
                 let motivo = "SIN_GPS_DESCONOCIDO";
                 if (error.code === 1) motivo = "SIN_GPS_DENEGADO";
                 if (error.code === 2) motivo = "SIN_GPS_SIN_SEÑAL";
+                if (error.code === 3) motivo = "SIN_GPS_TIMEOUT_API"; // Capturamos si la API de Android abortó por falta de tiempo
                 resolve(motivo);
             },
             {
-                enableHighAccuracy: false,
-                timeout: 4500, 
-                maximumAge: 0
+                enableHighAccuracy: true, // TRUE: Obliga a Android a usar el chip GPS y no solo el Wi-Fi
+                timeout: 10000,           // 10 segundos internos del navegador
+                maximumAge: 30000         // Recicla una posición que haya sido tomada en los últimos 30 segundos
             }
         );
     });
 }
 
 // =======================================================
-// EL CALENTADOR DE GPS INTELIGENTE
+// EL CALENTADOR DE GPS INTELIGENTE MEJORADO
 // =======================================================
 async function calentarGPS() {
     if (!navigator.geolocation) return;
 
     try {
-        // Le preguntamos al navegador si el permiso ya fue concedido previamente
         const perm = await navigator.permissions.query({ name: 'geolocation' });
         if (perm.state === 'granted') {
-            // Ya tiene permiso, calentamos en silencio sin molestar visualmente al usuario
-            navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { enableHighAccuracy: false, maximumAge: 0 });
+            // Ya tiene permiso, calentamos en silencio pidiendo Alta Precisión
+            navigator.geolocation.getCurrentPosition(()=>{}, ()=>{}, { enableHighAccuracy: true, maximumAge: 30000 });
             return;
         }
-    } catch(e) { 
-        // Silencio. Si el navegador no soporta API Permissions (iOS viejo), ignoramos y mostramos el cartel igual por las dudas.
-    }
+    } catch(e) { }
 
     const overlay = document.getElementById('modalGPS');
     const box = document.getElementById('modalGPSBox');
     
-    // Mostramos el cartelazo porque no estamos seguros si tiene permiso o sabemos que no lo tiene
     overlay.style.opacity = '1';
     overlay.style.pointerEvents = 'all';
     box.style.transform = 'scale(1)';
@@ -459,7 +453,7 @@ async function calentarGPS() {
             setTimeout(() => overlay.style.display = 'none', 400);
             showToast("⚠️ GPS Denegado o sin señal. Se informará en auditoría.", "warning");
         },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
     );
 }
 
@@ -617,13 +611,11 @@ function refreshSession() { expireTime = Date.now() + 300000; }
         actualizarTotales();
     }
     
-// 2. EL PARSEADOR TODOTERRENO (A prueba de comas, puntos y spans)
 function parseM(id) { 
     const el = document.getElementById(id);
     if (!el) return 0;
     const v = el.value !== undefined ? el.value : el.textContent; 
     if (!v) return 0;
-    // Volamos signos $, espacios y los PUNTOS de los miles. Cambiamos coma por punto decimal.
     const clean = v.toString().replace(/[\$\s\.]/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
     return parseFloat(clean) || 0; 
 }
@@ -721,7 +713,6 @@ function parseM(id) {
         const z = this.value; const sel = document.getElementById('cliente'); sel.innerHTML = '<option value="">Seleccione...</option>';
         clientesData.filter(c => c.zona === z).forEach(c => { const opt = document.createElement('option'); opt.value = JSON.stringify(c); opt.textContent = c.nombre; sel.appendChild(opt); });
         
-        // RESET COMPLETO AL CAMBIAR DE ZONA
         document.getElementById('clientInfoBox').style.display = 'none'; 
         document.getElementById('pagoDeudaContainer').style.display = 'none';
         document.getElementById('pagoDeuda').checked = false;
@@ -731,7 +722,6 @@ function parseM(id) {
     };
 
     document.getElementById('cliente').onchange = function() {
-        // RESET DE CAJAS POR SI ELIGE LA OPCION VACIA
         if(!this.value) { 
             document.getElementById('clientInfoBox').style.display = 'none'; 
             document.getElementById('pagoDeudaContainer').style.display = 'none';
@@ -750,14 +740,11 @@ function parseM(id) {
         if (clienteSeleccionado.telefono) html += `<div class="client-info-tag">📞 ${clienteSeleccionado.telefono}</div>`;
         if (clienteSeleccionado.cuit_dni) html += `<div class="client-info-tag">🪪 ${clienteSeleccionado.cuit_dni}</div>`;
 
-        // LECTURA DE DATOS A PRUEBA DE FALLOS
         const deudaCliente = deudasData[idClienteSeleccionado] || deudasData[clienteSeleccionado.nombre] || {};
         
         let dEnv10 = parseInt(deudaCliente.env10) || 0;
         let dEnv15 = parseInt(deudaCliente.env15) || 0;
         let dEnv45 = parseInt(deudaCliente.env45) || 0;
-        
-        // Acá limpiamos si viene con signo pesos o formato raro desde Sheets
         let dPlata = parseFloat(deudaCliente.plata?.toString().replace(/\D/g, '')) || 0; 
 
         let tieneComodato = (dEnv10 > 0 || dEnv15 > 0 || dEnv45 > 0);
@@ -772,20 +759,17 @@ function parseM(id) {
         document.getElementById('tipoClienteSpan').textContent = clienteSeleccionado.categoria; 
         document.getElementById('tipoClienteDisplay').style.display = 'block'; 
 
-        // --- SISTEMA DINÁMICO DE COBRO/DEVOLUCIÓN ---
         const containerPago = document.getElementById('pagoDeudaContainer');
         const inputDinero = document.getElementById('pagoDeudaDinero');
         const row10 = document.getElementById('rowDev10');
         const row15 = document.getElementById('rowDev15');
         const row45 = document.getElementById('rowDev45');
         
-        // Cerramos y desmarcamos siempre que se cambia de cliente
         document.getElementById('pagoDeuda').checked = false;
         document.getElementById('sectionPagoDeuda').style.display = 'none';
 
         if (tieneComodato || tieneConsignacion) {
-            containerPago.style.display = 'flex'; // Mostramos el botón padre
-            
+            containerPago.style.display = 'flex'; 
             if (tieneConsignacion) {
                 inputDinero.style.display = 'block';
                 inputDinero.value = dPlata.toLocaleString('es-AR');
@@ -793,24 +777,19 @@ function parseM(id) {
                 inputDinero.style.display = 'none';
                 inputDinero.value = '';
             }
-
             row10.style.display = dEnv10 > 0 ? 'flex' : 'none';
             document.getElementById('dev10').value = dEnv10;
-
             row15.style.display = dEnv15 > 0 ? 'flex' : 'none';
             document.getElementById('dev15').value = dEnv15;
-
             row45.style.display = dEnv45 > 0 ? 'flex' : 'none';
             document.getElementById('dev45').value = dEnv45;
         } else {
-            containerPago.style.display = 'none'; // Ni siquiera le mostramos la opción si está al día
+            containerPago.style.display = 'none'; 
         }
-        // -------------------------------------------
 
         checkVisibilidadCascada(); actualizarPreciosAutomaticos();
 
         if (tieneConsignacion) {
-            // Le pasamos el objeto limpio a la función del Modal
             mostrarModalDeudas({ env10: dEnv10, env15: dEnv15, env45: dEnv45, plata: dPlata });
         }
     };
@@ -909,12 +888,11 @@ function parseM(id) {
         btn.disabled = true; 
         btn.textContent = "UBICANDO Y GUARDANDO...";
 
-        // DISPARAMOS EL GPS FANTASMA (Espera máximo 5 segundos)
+        // DISPARAMOS EL GPS FANTASMA MEJORADO
         const ubicacionActual = await obtenerUbicacionFantasma();
 
-        // AUDITORÍA AL CHOFER: Si falló, le avisamos para que no se haga el vivo
         if (ubicacionActual.includes("SIN_GPS")) {
-            showToast("⚠️ Venta guardada SIN UBICACIÓN GPS. Revisá tu señal.", "warning");
+            showToast("⚠️ Venta guardada SIN UBICACIÓN GPS. Motivo: " + ubicacionActual, "warning");
         }
 
         const cat = obtenerCat(); const esNuevo = document.getElementById('nuevoCliente').checked; const esGasto = document.getElementById('declaracionGastos').checked; const pfx = { 'SUBDISTRIBUIDOR': 'VS', 'COMERCIO': 'VC', 'ROT. Y PAN.': 'VRP', 'USUARIO (PUBLICO)': 'VU' }[cat];
@@ -942,8 +920,6 @@ function parseM(id) {
             
             ID_CLIENTE: idClienteSeleccionado,
             cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : '',
-            
-            // EL GPS VIAJA ACÁ
             UBICACION: ubicacionActual 
         };
 
