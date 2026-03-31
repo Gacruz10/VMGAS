@@ -12,6 +12,7 @@
       --accent: #FFD700; 
       --ok: #2dd4bf; 
       --error: #ff4444; 
+      --compra: #a855f7;
       --text-primary: #ffffff;
       --text-muted: rgba(255, 255, 255, 0.5);
       --card-bg: rgba(255, 255, 255, 0.05);
@@ -27,7 +28,7 @@
       min-height: 100vh; padding: 20px; opacity: 0; transition: opacity 0.5s ease;
     }
     .header { text-align: center; margin-bottom: 25px; position: relative; }
-    .header h3 { color: var(--accent); font-weight: 800; margin: 0; font-size: 22px; text-transform: uppercase; }
+    .header h3 { color: var(--accent); font-weight: 800; margin: 0; font-size: 22px; text-transform: uppercase; transition: color 0.3s; }
     
     .btn-volver {
         background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white;
@@ -35,89 +36,73 @@
         font-weight: bold;
     }
 
-    .container {
-      max-width: 600px; margin: 0 auto; background: var(--glass); 
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border);
-    }
+    .mode-switch-container { display: flex; justify-content: center; margin-bottom: 20px; }
+    .mode-switch { background: rgba(0,0,0,0.4); border-radius: 20px; padding: 4px; display: flex; border: 1px solid var(--glass-border); width: 80%; max-width: 400px; }
+    .mode-btn { flex: 1; text-align: center; padding: 10px; border-radius: 16px; cursor: pointer; font-weight: 800; font-size: 12px; transition: all 0.3s; color: var(--text-muted); }
+    .mode-btn.active.reparto { background: var(--accent); color: #000; box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
+    .mode-btn.active.compra { background: var(--compra); color: #fff; box-shadow: 0 4px 15px rgba(168,85,247,0.3); }
+
+    .container { max-width: 600px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border); }
     .tabs { display: flex; gap: 8px; margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
-    .tab {
-      flex: 1; padding: 10px; text-align: center; border-radius: 10px;
-      color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px;
-      transition: all 0.3s ease;
-    }
+    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; }
     .tab.active { background: rgba(255,255,255,0.1); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .section { display: none; animation: slideIn 0.3s ease; }
     .section.active { display: block; }
     @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-    select {
-        width: 100%; padding: 14px; background: #1a1a1a; color: white; border: 1px solid var(--glass-border);
-        border-radius: 12px; font-size: 16px; font-weight: 600; outline: none; margin-bottom: 20px;
-    }
-
+    select { width: 100%; padding: 14px; background: #1a1a1a; color: white; border: 1px solid var(--glass-border); border-radius: 12px; font-size: 16px; font-weight: 600; outline: none; margin-bottom: 20px; }
     option.ocupado { background-color: #3f0e0e; color: #ff8888; font-style: italic; }
 
     .trip-list { display: grid; gap: 12px; }
-    .trip-card {
-        background: var(--card-bg); border: 1px solid var(--glass-border);
-        padding: 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s;
-        display: flex; justify-content: space-between; align-items: center;
-    }
+    .trip-card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
     .trip-card:hover { transform: translateY(-2px); border-color: var(--accent); }
     .trip-info h4 { margin: 0 0 5px 0; font-size: 16px; color: white; }
     .trip-info span { font-size: 12px; color: var(--text-muted); display: block; }
     .trip-detail { font-size: 11px; color: var(--accent); font-weight: bold; margin-top: 6px; background:rgba(255, 215, 0, 0.1); padding:4px 8px; border-radius:6px; display:inline-block;}
-    
+    .trip-card.compra-mode { border-color: var(--compra); }
+    .trip-card.compra-mode .trip-detail { color: var(--compra); background: rgba(168,85,247,0.1); }
     .trip-card.alert { border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05); }
 
     .grid-inputs { display: grid; gap: 8px; margin-top: 15px; }
-    .row-input { 
-      display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; 
-      background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px;
-    }
-    .label-kilo { font-weight: 900; color: var(--accent); text-align: center; font-size: 14px; }
-    .input-wrapper { position: relative; }
-    .input-wrapper label { position: absolute; top: -6px; left: 6px; font-size: 8px; background: #333; padding: 0 4px; color: #aaa; border-radius: 4px; }
+    .row-input { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; transition: background 0.3s; }
+    .label-kilo { font-weight: 900; color: var(--accent); text-align: center; font-size: 14px; transition: color 0.3s;}
     
-    input[type="number"] {
-      width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-      border-radius: 8px; color: white; text-align: center; font-weight: 700; outline: none; font-size: 16px;
-    }
+    .input-disabled { opacity: 0.5; filter: grayscale(100%); }
+    .highlight-envase { background: rgba(255,68,68,0.15) !important; border-color: var(--error) !important; }
+    .highlight-lleno { background: rgba(45,212,191,0.15) !important; border-color: var(--ok) !important; }
+
+    .input-wrapper { position: relative; transition: all 0.3s; }
+    .input-wrapper label { position: absolute; top: -6px; left: 6px; font-size: 8px; background: #333; padding: 0 4px; color: #aaa; border-radius: 4px; z-index: 10; transition: background 0.3s;}
+    input[type="number"], input[type="text"] { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; text-align: center; font-weight: 700; outline: none; font-size: 16px; transition: all 0.3s; }
+    input[type="text"] { text-align: left; font-weight: normal; }
 
     .diff-box { margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 12px; font-size: 13px; min-height: 20px;}
     .diff-item { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);}
     .diff-alert { color: var(--error); font-weight: bold; }
     .diff-ok { color: var(--ok); font-weight: bold; }
 
-    textarea { 
-        width: 100%; height: 80px; 
-        background: rgba(0,0,0,0.3); 
-        border-radius: 8px; color: white; 
-        padding: 10px; resize: none; margin-top: 10px; 
-        font-family: 'Inter', sans-serif;
-        border: 1px solid var(--glass-border);
-        transition: all 0.3s ease;
-    }
-    
+    textarea { width: 100%; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; color: white; padding: 10px; resize: none; margin-top: 10px; font-family: 'Inter', sans-serif; border: 1px solid var(--glass-border); transition: all 0.3s ease; }
     .tx-novedad { border: 1px solid var(--accent) !important; }
     .tx-novedad::placeholder { color: rgba(255, 215, 0, 0.7); }
-
     .tx-obligatorio { border: 2px solid var(--error) !important; background: rgba(255, 68, 68, 0.1); }
     .tx-obligatorio::placeholder { color: rgba(255, 68, 68, 0.8); font-weight: 800; text-transform: uppercase; }
 
-    .btn-main {
-      width: 100%; padding: 16px; margin-top: 20px; border: none; border-radius: 12px;
-      font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.2s;
-    }
+    .btn-main { width: 100%; padding: 16px; margin-top: 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.2s; }
     .btn-salida { background: var(--accent); color: #000; }
     .btn-llegada { background: var(--ok); color: #000; }
+    .btn-salida-compra { background: var(--error); color: white; }
+    .btn-llegada-compra { background: var(--ok); color: #000; }
     .btn-retro { background: #a855f7; color: white; font-size: 12px; padding: 12px; margin-top: 10px;}
     
     .retro-section { border: 1px dashed #a855f7; padding: 15px; border-radius: 12px; margin-top: 20px; display: none; }
+    
+    .audit-box { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--error); padding: 12px; border-radius: 8px; margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+    .audit-box p { color: var(--error); font-size: 11px; margin: 0; font-weight: 800; text-align: center; text-transform: uppercase;}
+    .audit-box label { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: white; cursor: pointer; font-weight: 600; line-height: 1.4;}
+    .audit-box input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--error); cursor: pointer; }
+
     .hidden { display: none; }
 
-    /* --- SISTEMA DE TOASTS --- */
     #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
     .toast.show { opacity: 1; transform: translateY(0); }
@@ -125,27 +110,12 @@
     .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
     .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
 
-    /* --- ANIMACIÓN DE CARGA (OVERLAY) --- */
-    .loading-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column;
-      justify-content: center; align-items: center; 
-      opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .loading-overlay.active { opacity: 1; visibility: visible; }
-    
-    .spinner {
-      width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
-      border-left-color: var(--accent); border-radius: 50%;
-      animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
-      margin-bottom: 20px; transition: all 0.3s ease;
-    }
+    .spinner { width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite; margin-bottom: 20px; transition: all 0.3s ease; }
     .spinner.success-mode { border-left-color: var(--ok); }
-    
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
-
     .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
     .loading-text.success-mode { color: var(--ok); }
   </style>
@@ -161,8 +131,16 @@
 
   <div class="header">
     <button class="btn-volver" id="btnBack">⬅ VOLVER</button>
-    <h3>CONTROL DE CARGA</h3>
+    <h3 id="mainTitle">CONTROL DE CARGA</h3>
   </div>
+
+  <div class="mode-switch-container">
+    <div class="mode-switch">
+        <div class="mode-btn active reparto" id="btnModeReparto" onclick="setMode('REPARTO')">🚚 REPARTO</div>
+        <div class="mode-btn compra" id="btnModeCompra" onclick="setMode('COMPRA')">🏭 COMPRA PLANTA</div>
+    </div>
+  </div>
+
   <div class="container">
     <div id="mainContent" class="hidden">
       
@@ -172,7 +150,7 @@
       </div>
 
       <div id="viewSalida" class="section active">
-        <label style="font-size:11px; color:var(--accent); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER</label>
+        <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER / TRANSPORTE</label>
         <select id="selChofer"><option value="">Cargando...</option></select>
         
         <div class="grid-inputs" id="gridSalida"></div>
@@ -183,12 +161,22 @@
         </div>
 
         <button class="btn-main btn-salida" id="btnRegistrarSalida">REGISTRAR SALIDA</button>
-        <div style="text-align:center; margin-top:15px;"><small style="color:#a855f7; cursor:pointer; text-decoration:underline;" onclick="toggleRetro()">Opción Retroactiva</small></div>
+        <div style="text-align:center; margin-top:15px;" id="linkRetro"><small style="color:#a855f7; cursor:pointer; text-decoration:underline;" onclick="toggleRetro()">Ingreso Excepcional (Retroactivo)</small></div>
         
         <div id="retroContainer" class="retro-section">
-            <div style="text-align:center; color:#a855f7; font-weight:800; margin-bottom:10px;">MODO RETROACTIVO</div>
-            <div id="gridRetro"></div> <div id="retroDiffBox" class="diff-box"></div>
-            <textarea id="retroMotivoTxt" class="tx-obligatorio" placeholder="Motivo de diferencia..."></textarea>
+            <div style="text-align:center; color:#a855f7; font-weight:800; margin-bottom:10px;">CARGA RETROACTIVA MANUAL</div>
+            <div id="gridRetro"></div> 
+            <div id="retroDiffBox" class="diff-box"></div>
+            <textarea id="retroMotivoTxt" class="tx-obligatorio" placeholder="Motivo de la diferencia / justificación obligatoria..."></textarea>
+            
+            <div class="audit-box">
+                <p>⚠️ Alerta de Auditoría</p>
+                <label>
+                    <input type="checkbox" id="chkRetroAudit">
+                    Declaro bajo juramento que los datos ingresados son verídicos, asumiendo la responsabilidad por no haber registrado el viaje en el momento correspondiente.
+                </label>
+            </div>
+
             <button class="btn-main btn-retro" id="btnRegistrarRetro">GUARDAR RETROACTIVO</button>
         </div>
       </div>
@@ -207,6 +195,8 @@
               <div style="text-align:center; color:#aaa;">Ingrese la carga para calcular...</div>
           </div>
           
+          <input type="text" id="txtRemitoCompra" class="tx-obligatorio hidden" placeholder="Nº DE REMITO (OBLIGATORIO)..." style="margin-top: 10px; font-family: 'Inter', sans-serif;">
+          
           <textarea id="txtMotivo" class="tx-novedad" placeholder="Novedades... (Opcional)"></textarea>
           
           <button class="btn-main btn-llegada" id="btnFinalizar">FINALIZAR VIAJE ✅</button>
@@ -216,13 +206,16 @@
   </div>
 
 <script>
-// --- CONFIGURACIÓN ---
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
 
 const params = new URLSearchParams(window.location.search);
 let k = params.get('k') || params.get('token');
 
-// Funciones visuales (Toast y Loader)
+let modoActual = 'REPARTO';
+let viajesPendientes = [];
+let viajeSeleccionado = null;
+let hayDiferenciaLlegada = false;
+
 function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -239,86 +232,40 @@ function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
     const spinner = document.getElementById('loaderSpinner');
     
     loaderText.textContent = text;
-    
-    if (isSuccess) {
-        spinner.classList.add('success-mode');
-        loaderText.classList.add('success-mode');
-    } else {
-        spinner.classList.remove('success-mode');
-        loaderText.classList.remove('success-mode');
-    }
-
-    if (show) overlay.classList.add('active');
-    else overlay.classList.remove('active');
+    if (isSuccess) { spinner.classList.add('success-mode'); loaderText.classList.add('success-mode'); } 
+    else { spinner.classList.remove('success-mode'); loaderText.classList.remove('success-mode'); }
+    if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-// Al inicio no validamos visualmente, solo guardamos el parámetro si existe
-if (k) {
-    sessionStorage.setItem('k', k);
-    window.history.replaceState({}, document.title, window.location.pathname);
-} else {
-    k = sessionStorage.getItem('k');
-}
+if (k) { sessionStorage.setItem('k', k); window.history.replaceState({}, document.title, window.location.pathname); } 
+else { k = sessionStorage.getItem('k'); }
 
-// Función de Expulsión Inmediata
-function logout() {
-    sessionStorage.removeItem('k');
-    window.location.replace('index.html');
-}
-
+function logout() { sessionStorage.removeItem('k'); window.location.replace('index.html'); }
 if (!k) logout();
 
 document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
 
-// --- TIMER 3 MIN ---
-let sessionTime = 180; 
-let timerInterval;
-
+let sessionTime = 180; let timerInterval;
 function startSessionTimer() {
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         sessionTime--;
-        if (sessionTime <= 0) {
-            showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error');
-            setTimeout(logout, 1500); // Kick
-        }
+        if (sessionTime <= 0) { showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error'); setTimeout(logout, 1500); }
     }, 1000);
 }
-
 function refreshSession() { sessionTime = 180; }
-
-['click','mousemove','keydown','touchstart'].forEach(ev => 
-    document.addEventListener(ev, refreshSession)
-);
-
-// --- APP LOGIC ---
-
-let viajesPendientes = [];
-let viajeSeleccionado = null;
-let hayDiferenciaLlegada = false;
+['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, refreshSession));
 
 async function init() {
     document.body.style.opacity = 1;
     toggleLoader(true, "VALIDANDO SESIÓN...");
 
-    // 1. 🔥 VALIDACIÓN BLOQUEANTE SERVIDOR
     try {
-        const fd = new FormData();
-        fd.append('action', 'verificarsesion');
-        fd.append('k', k);
-        const r = await fetch(API, { method: 'POST', body: fd });
-        const d = await r.json();
-        
-        if (d.status !== 'success') {
-            logout(); 
-            return;
-        }
-    } catch(e) {
-        logout(); 
-        return;
-    }
+        const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
+        const r = await fetch(API, { method: 'POST', body: fd }); const d = await r.json();
+        if (d.status !== 'success') { logout(); return; }
+    } catch(e) { logout(); return; }
 
-    // 2. Interfaz
     toggleLoader(true, "CARGANDO DATOS...");
     startSessionTimer();
 
@@ -326,22 +273,16 @@ async function init() {
     renderGrid('gridLlegada', 'L');
     document.getElementById('gridRetro').innerHTML = renderRetroInputs();
 
-    // 3. Cargar datos
     await Promise.all([loadDrivers(), loadTrips()]);
+    syncDropdownConViajesActivos(); 
     
     toggleLoader(false);
     document.getElementById('mainContent').classList.remove('hidden');
     
-    // Listeners
-    document.querySelectorAll('.calc-S').forEach(i => i.addEventListener('input', () => {
-        const t = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
-        document.getElementById('totalSalidaDisplay').textContent = t;
-    }));
-
+    setupCalc('S', updateSalidaTotal);
     setupCalc('L', calcLlegadaDiff);
     setupCalc('R', calcRetroDiff);
     
-    // Listener Bloqueo Chofer
     document.getElementById('selChofer').addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption.dataset.ocupado === "true") {
@@ -350,14 +291,51 @@ async function init() {
              this.value = ""; 
         }
     });
+
+    setMode('REPARTO');
+}
+
+function setMode(modo) {
+    modoActual = modo;
+    const btnReparto = document.getElementById('btnModeReparto');
+    const btnCompra = document.getElementById('btnModeCompra');
+    const title = document.getElementById('mainTitle');
+    const btnSalida = document.getElementById('btnRegistrarSalida');
+
+    if(document.getElementById('viewLlegadaForm').classList.contains('active')) { cancelLlegada(); }
+
+    document.querySelectorAll('input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
+    updateSalidaTotal();
+
+    if (modo === 'REPARTO') {
+        btnReparto.classList.add('active'); btnCompra.classList.remove('active');
+        title.style.color = "var(--accent)"; document.getElementById('totalSalidaDisplay').style.color = "var(--accent)";
+        ['10','15','45'].forEach(kg => {
+            document.getElementById(`S_wrap_V${kg}`).classList.add('input-disabled');
+            document.getElementById(`SL${kg}`).classList.add('highlight-lleno');
+        });
+        btnSalida.className = "btn-main btn-salida"; btnSalida.innerHTML = "REGISTRAR SALIDA A REPARTO";
+        document.getElementById('linkRetro').style.display = "block"; document.getElementById('retroContainer').style.display = "none";
+    } else {
+        btnCompra.classList.add('active'); btnReparto.classList.remove('active');
+        title.style.color = "var(--compra)"; document.getElementById('totalSalidaDisplay').style.color = "var(--compra)";
+        ['10','15','45'].forEach(kg => {
+            document.getElementById(`S_wrap_L${kg}`).classList.add('input-disabled');
+            document.getElementById(`SV${kg}`).classList.add('highlight-envase');
+        });
+        btnSalida.className = "btn-main btn-salida-compra"; btnSalida.innerHTML = "REGISTRAR SALIDA A PLANTA (VACÍOS)";
+        document.getElementById('linkRetro').style.display = "none"; document.getElementById('retroContainer').style.display = "none";
+    }
+
+    if(document.getElementById('viewLlegadaList').classList.contains('active')) { loadTrips(); }
 }
 
 function renderGrid(id, pre) {
     const html = [10, 15, 45].map(kg => `
         <div class="row-input">
             <div class="label-kilo">${kg}</div>
-            <div class="input-wrapper"><label>LLENOS</label><input type="number" id="${pre}L${kg}" class="calc-${pre}" placeholder="0"></div>
-            <div class="input-wrapper"><label>VACÍOS</label><input type="number" id="${pre}V${kg}" class="calc-${pre}" placeholder="0"></div>
+            <div class="input-wrapper" id="${pre}_wrap_L${kg}"><label>LLENOS</label><input type="number" id="${pre}L${kg}" class="calc-${pre}" placeholder="0"></div>
+            <div class="input-wrapper" id="${pre}_wrap_V${kg}"><label>VACÍOS</label><input type="number" id="${pre}V${kg}" class="calc-${pre}" placeholder="0"></div>
         </div>
     `).join('');
     document.getElementById(id).innerHTML = html;
@@ -369,13 +347,13 @@ function renderRetroInputs() {
             <div style="text-align:center; font-size:10px; color:var(--accent); font-weight:bold; margin-bottom:5px;">${kg} KG</div>
             <div class="row-input" style="background:rgba(255,215,0,0.05)">
                 <div style="font-size:9px; color:#aaa;">SALIO</div>
-                <input type="number" id="SL${kg}" class="calc-R" placeholder="Llenos">
-                <input type="number" id="SV${kg}" class="calc-R" placeholder="Vacíos">
+                <input type="number" id="R_SL${kg}" class="calc-R" placeholder="Llenos">
+                <input type="number" id="R_SV${kg}" class="calc-R" placeholder="Vacíos">
             </div>
             <div class="row-input" style="background:rgba(45,212,191,0.05)">
                 <div style="font-size:9px; color:#aaa;">VOLVIO</div>
-                <input type="number" id="RL${kg}" class="calc-R" placeholder="Llenos">
-                <input type="number" id="RV${kg}" class="calc-R" placeholder="Vacíos">
+                <input type="number" id="R_RL${kg}" class="calc-R" placeholder="Llenos">
+                <input type="number" id="R_RV${kg}" class="calc-R" placeholder="Vacíos">
             </div>
         </div>
     `).join('');
@@ -396,11 +374,7 @@ async function loadDrivers() {
         try {
            const r2 = await fetch(`${API}?action=getdrivers`);
            const d2 = await r2.json();
-           if(d2.drivers) {
-               d2.drivers.forEach(x => { 
-                   if(x.enRuta) enRutaSet.add(String(x.nombre).toUpperCase().trim());
-               });
-           }
+           if(d2.drivers) { d2.drivers.forEach(x => { if(x.enRuta) enRutaSet.add(String(x.nombre).toUpperCase().trim()); }); }
         } catch(e) {}
 
         if (lista.length > 0) {
@@ -411,16 +385,8 @@ async function loadDrivers() {
                 const estaOcupado = enRutaSet.has(idUpper);
 
                 const o = document.createElement('option');
-                o.value = idReal; 
-                
-                if(estaOcupado) {
-                    o.text = `⛔ ${nombreMostrar} (En Ruta)`;
-                    o.className = "ocupado";
-                    o.dataset.ocupado = "true"; 
-                } else {
-                    o.text = nombreMostrar;
-                    o.dataset.ocupado = "false";
-                }
+                o.value = idReal; o.text = nombreMostrar;
+                o.dataset.backendOcupado = estaOcupado ? "true" : "false";
                 sel.add(o);
             });
         }
@@ -428,6 +394,10 @@ async function loadDrivers() {
 }
 
 async function loadTrips() {
+    const list = document.getElementById('listViajes');
+    const colorCarga = modoActual === 'COMPRA' ? 'var(--compra)' : 'var(--accent)';
+    list.innerHTML = `<div style="text-align:center; padding:40px 20px;"><div class="spinner" style="width:40px; height:40px; margin: 0 auto 15px auto; border-left-color: ${colorCarga};"></div><div style="color: ${colorCarga}; font-weight:800; font-size:12px; letter-spacing:2px;">RASTREANDO RADARES...</div></div>`;
+
     try {
         const r = await fetch(`${API}?action=getpendingtrips&k=${k}`);
         const d = await r.json();
@@ -435,245 +405,207 @@ async function loadTrips() {
 
         viajesPendientes = d.trips || [];
         renderTripList();
+        syncDropdownConViajesActivos(); 
         refreshSession();
-    } catch(e){}
+    } catch(e){ list.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">⚠️ Error de conexión. Intentá otra vez.</div>`; }
+}
+
+function syncDropdownConViajesActivos() {
+    const sel = document.getElementById('selChofer');
+    if (!sel || !viajesPendientes) return;
+
+    const choferesEnCalle = viajesPendientes.map(v => String(v.chofer).toUpperCase().trim());
+
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) return; 
+        
+        const optText = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '').toUpperCase().trim();
+        const optVal = String(opt.value).toUpperCase().trim();
+        const enRuta = choferesEnCalle.includes(optText) || choferesEnCalle.includes(optVal) || opt.dataset.backendOcupado === "true";
+        
+        if (enRuta) {
+            if (!opt.text.includes('⛔')) { opt.text = `⛔ ${opt.text} (En Ruta)`; }
+            opt.className = "ocupado"; opt.dataset.ocupado = "true";
+        } else {
+            opt.text = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '');
+            opt.className = ""; opt.dataset.ocupado = "false";
+        }
+    });
 }
 
 function renderTripList() {
     const list = document.getElementById('listViajes');
     list.innerHTML = '';
-    if(!viajesPendientes.length) return list.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">Sin camiones en ruta.</div>';
+    const viajesFiltrados = viajesPendientes.filter(v => v.tipoViaje === modoActual);
+    if(!viajesFiltrados.length) return list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa; font-weight:bold;">No hay camiones de ${modoActual} pendientes en la ruta.</div>`;
 
-    viajesPendientes.forEach(v => {
-        const card = document.createElement('div');
-        card.className = `trip-card ${v.isLate ? 'alert' : ''}`;
-        card.onclick = () => selectTrip(v);
-        card.innerHTML = `
-            <div class="trip-info">
-                <h4>${v.chofer}</h4>
-                <span>${v.fechaSalida} - ${v.horaSalida}</span>
-                <div class="trip-detail">${v.cargaLabel}</div>
-            </div>
-            <div style="font-size:20px;">${v.isLate ? '⚠️' : '🚚'}</div>
-        `;
+    viajesFiltrados.forEach(v => {
+        const isCompra = v.tipoViaje === 'COMPRA';
+        const cardClass = `trip-card ${v.isLate ? 'alert' : ''} ${isCompra ? 'compra-mode' : ''}`;
+        const card = document.createElement('div'); card.className = cardClass; card.onclick = () => selectTrip(v);
+        card.innerHTML = `<div class="trip-info"><h4>${v.chofer} ${isCompra ? '🏭' : '🚚'}</h4><span>${v.fechaSalida} - ${v.horaSalida}</span><div class="trip-detail">${v.cargaLabel}</div></div><div style="font-size:20px;">${v.isLate ? '⚠️' : '⬅️'}</div>`;
         list.appendChild(card);
     });
 }
 
 function selectTrip(trip) {
     viajeSeleccionado = trip;
-    document.getElementById('viewLlegadaList').classList.remove('active');
-    document.getElementById('viewLlegadaForm').classList.add('active');
+    document.getElementById('viewLlegadaList').classList.remove('active'); document.getElementById('viewLlegadaForm').classList.add('active');
     
-    const v = trip.ventasDetalle || { 10: {gas:0, env:0}, 15: {gas:0, env:0}, 45: {gas:0, env:0} };
-    const totalVentas = (v[10].gas + v[10].env) + (v[15].gas + v[15].env) + (v[45].gas + v[45].env);
-
-    document.getElementById('lblChoferLlegada').innerHTML = 
-        `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Vendió: ${totalVentas})</span>`;
-    
+    const isCompra = trip.tipoViaje === 'COMPRA';
     const s = trip.sDetails;
+    const txtRemito = document.getElementById('txtRemitoCompra');
 
-    document.getElementById('LL10').value = Math.max(0, s.l10 - (v[10].gas + v[10].env));
-    document.getElementById('LV10').value = s.v10 + v[10].gas;
-    document.getElementById('LL15').value = Math.max(0, s.l15 - (v[15].gas + v[15].env));
-    document.getElementById('LV15').value = s.v15 + v[15].gas;
-    document.getElementById('LL45').value = Math.max(0, s.l45 - (v[45].gas + v[45].env));
-    document.getElementById('LV45').value = s.v45 + v[45].gas;
+    document.querySelectorAll('#viewLlegadaForm input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
 
+    if (isCompra) {
+        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--compra); margin-left:10px;">(Volviendo de Planta)</span>`;
+        document.getElementById('btnFinalizar').className = "btn-main btn-llegada-compra"; document.getElementById('btnFinalizar').innerHTML = "CONFIRMAR INGRESO DE COMPRA ✅";
+        
+        // Mostrar campo de remito
+        txtRemito.classList.remove('hidden');
+        txtRemito.value = '';
+
+        ['10','15','45'].forEach(kg => {
+            document.getElementById(`L_wrap_V${kg}`).classList.add('input-disabled');
+            document.getElementById(`LL${kg}`).value = s[`v${kg}`]; document.getElementById(`LL${kg}`).classList.add('highlight-lleno');
+        });
+    } else {
+        const v = trip.ventasDetalle || { 10: {gas:0, env:0}, 15: {gas:0, env:0}, 45: {gas:0, env:0} };
+        const totalVentas = (v[10].gas + v[10].env) + (v[15].gas + v[15].env) + (v[45].gas + v[45].env);
+        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Vendió: ${totalVentas})</span>`;
+        document.getElementById('btnFinalizar').className = "btn-main btn-llegada"; document.getElementById('btnFinalizar').innerHTML = "FINALIZAR VIAJE ✅";
+        
+        // Ocultar campo de remito
+        txtRemito.classList.add('hidden');
+        txtRemito.value = '';
+
+        ['10','15','45'].forEach(kg => {
+            document.getElementById(`LL${kg}`).value = Math.max(0, s[`l${kg}`] - (v[kg].gas + v[kg].env));
+            document.getElementById(`LV${kg}`).value = s[`v${kg}`] + v[kg].gas;
+        });
+    }
     calcLlegadaDiff(); 
 }
 
-function cancelLlegada() {
-    viajeSeleccionado = null;
-    document.getElementById('viewLlegadaForm').classList.remove('active');
-    document.getElementById('viewLlegadaList').classList.add('active');
-}
-
+function cancelLlegada() { viajeSeleccionado = null; document.getElementById('viewLlegadaForm').classList.remove('active'); document.getElementById('viewLlegadaList').classList.add('active'); }
 function val(id) { return Number(document.getElementById(id).value) || 0; }
+function updateSalidaTotal() { document.getElementById('totalSalidaDisplay').textContent = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45'); }
 
 function calcLlegadaDiff() {
     if(!viajeSeleccionado) return;
-    const s = viajeSeleccionado.sDetails; 
-    const v = viajeSeleccionado.ventasDetalle;
-
-    const eLL10 = Math.max(0, s.l10 - (v[10].gas + v[10].env));
-    const eLV10 = s.v10 + v[10].gas;
-    const eLL15 = Math.max(0, s.l15 - (v[15].gas + v[15].env));
-    const eLV15 = s.v15 + v[15].gas;
-    const eLL45 = Math.max(0, s.l45 - (v[45].gas + v[45].env));
-    const eLV45 = s.v45 + v[45].gas;
-
-    let diff = 0;
-    diff += Math.abs(val('LL10') - eLL10);
-    diff += Math.abs(val('LV10') - eLV10);
-    diff += Math.abs(val('LL15') - eLL15);
-    diff += Math.abs(val('LV15') - eLV15);
-    diff += Math.abs(val('LL45') - eLL45);
-    diff += Math.abs(val('LV45') - eLV45);
-    
-    hayDiferenciaLlegada = diff > 0;
-    
-    const txt = document.getElementById('txtMotivo');
-    const box = document.getElementById('llegadaDiffBox');
-    
-    if (hayDiferenciaLlegada) {
-        txt.className = "tx-obligatorio";
-        txt.placeholder = "⚠️ MOTIVO DE LA DIFERENCIA (OBLIGATORIO)...";
-        box.innerHTML = '<div style="text-align:center; color:var(--error); font-weight:bold;">⚠️ HAY DIFERENCIAS EN LA CARGA</div>';
-    } else {
-        txt.className = "tx-novedad";
-        txt.placeholder = "Novedades... (Opcional)";
-        box.innerHTML = '<div style="text-align:center; color:var(--ok); font-weight:bold;">✅ CARGA COINCIDE CON VENTAS</div>';
+    const s = viajeSeleccionado.sDetails; const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA'; let diff = 0;
+    if (isCompra) { diff += Math.abs(val('LL10') - s.v10); diff += Math.abs(val('LL15') - s.v15); diff += Math.abs(val('LL45') - s.v45); } 
+    else {
+        const v = viajeSeleccionado.ventasDetalle;
+        diff += Math.abs(val('LL10') - Math.max(0, s.l10 - (v[10].gas + v[10].env))); diff += Math.abs(val('LV10') - (s.v10 + v[10].gas));
+        diff += Math.abs(val('LL15') - Math.max(0, s.l15 - (v[15].gas + v[15].env))); diff += Math.abs(val('LV15') - (s.v15 + v[15].gas));
+        diff += Math.abs(val('LL45') - Math.max(0, s.l45 - (v[45].gas + v[45].env))); diff += Math.abs(val('LV45') - (s.v45 + v[45].gas));
     }
+    hayDiferenciaLlegada = diff > 0;
+    const txt = document.getElementById('txtMotivo'); const box = document.getElementById('llegadaDiffBox');
+    if (hayDiferenciaLlegada) { txt.className = "tx-obligatorio"; txt.placeholder = "⚠️ MOTIVO DE LA DIFERENCIA (OBLIGATORIO)..."; box.innerHTML = `<div style="text-align:center; color:var(--error); font-weight:bold;">⚠️ NO COINCIDE. DIFERENCIA: ${diff}</div>`; } 
+    else { txt.className = "tx-novedad"; txt.placeholder = "Novedades... (Opcional)"; box.innerHTML = '<div style="text-align:center; color:var(--ok); font-weight:bold;">✅ CARGA COINCIDE PERFECTO</div>'; }
 }
 
 function calcRetroDiff() {
-    const d10 = (val('SL10')+val('SV10')) - (val('RL10')+val('RV10'));
-    const d15 = (val('SL15')+val('SV15')) - (val('RL15')+val('RV15'));
-    const d45 = (val('SL45')+val('SV45')) - (val('RL45')+val('RV45'));
-
-    let html = '';
-    let hasDiff = false;
-    const row = (kg, diff) => {
-        if(diff === 0) return '';
-        hasDiff = true;
-        const msg = diff > 0 ? `Faltan ${diff}` : `Sobran ${Math.abs(diff)}`;
-        return `<div class="diff-item"><span>${kg}kg</span><span class="diff-alert">${msg}</span></div>`;
-    };
-
+    const d10 = (val('R_SL10')+val('R_SV10')) - (val('R_RL10')+val('R_RV10'));
+    const d15 = (val('R_SL15')+val('R_SV15')) - (val('R_RL15')+val('R_RV15'));
+    const d45 = (val('R_SL45')+val('R_SV45')) - (val('R_RL45')+val('R_RV45'));
+    let html = ''; let hasDiff = false;
+    const row = (kg, diff) => { if(diff === 0) return ''; hasDiff = true; const msg = diff > 0 ? `Faltan ${diff}` : `Sobran ${Math.abs(diff)}`; return `<div class="diff-item"><span>${kg}kg</span><span class="diff-alert">${msg}</span></div>`; };
     html += row(10, d10); html += row(15, d15); html += row(45, d45);
-    const totalInput = val('SL10')+val('SL15')+val('SL45');
+    const totalInput = val('R_SL10')+val('R_SL15')+val('R_SL45');
     if(!hasDiff && totalInput > 0) html = '<div style="text-align:center; color:var(--ok); font-weight:bold;">✅ COINCIDE</div>';
     document.getElementById('retroDiffBox').innerHTML = html;
     
     const txtRetro = document.getElementById('retroMotivoTxt');
-    if(hasDiff) {
-        txtRetro.className = "tx-obligatorio";
-        txtRetro.style.display = 'block';
-    } else {
-        txtRetro.className = "tx-novedad";
-        txtRetro.style.display = 'none';
-    }
+    if(hasDiff) { txtRetro.className = "tx-obligatorio"; txtRetro.style.display = 'block'; } 
+    else { txtRetro.className = "tx-novedad"; txtRetro.style.display = 'none'; }
 }
 
-function setupCalc(cls, fn) {
-    document.querySelectorAll(`.calc-${cls}`).forEach(i => i.addEventListener('input', fn));
-}
-
-function toggleRetro() {
-    const el = document.getElementById('retroContainer');
-    el.style.display = el.style.display === 'block' ? 'none' : 'block';
-}
+function setupCalc(cls, fn) { document.querySelectorAll(`.calc-${cls}`).forEach(i => i.addEventListener('input', fn)); }
+function toggleRetro() { const el = document.getElementById('retroContainer'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; }
 
 function switchTab(t) {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
-    if(t === 'salida') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.getElementById('viewSalida').classList.add('active');
-    } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
-        document.getElementById('viewLlegadaList').classList.add('active');
-        loadTrips();
-    }
+    if(t === 'salida') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('viewSalida').classList.add('active'); } 
+    else { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('viewLlegadaList').classList.add('active'); loadTrips(); }
 }
 
 async function enviar(payload) {
-    if(!confirm('¿Confirmar operación?')) return;
+    if(!confirm(`¿Confirmar operación de ${modoActual}?`)) return;
     document.querySelectorAll('button').forEach(b => {b.disabled=true;});
     
     toggleLoader(true, "GUARDANDO DATOS...");
     
-    const fd = new FormData();
-    fd.append('action', 'savetransporte');
-    fd.append('k', k);
-    for(let key in payload) fd.append(key, payload[key]);
+    const fd = new FormData(); fd.append('action', 'savetransporte'); fd.append('k', k);
+    for(let key in payload) { fd.append(key, payload[key]); }
     
     try {
-        const r = await fetch(API, {method:'POST', body:fd});
-        const j = await r.json();
-        
+        const r = await fetch(API, {method:'POST', body:fd}); const j = await r.json();
         if(j.status === 'success') { 
-            toggleLoader(true, "¡GUARDADO!", true);
-            setTimeout(() => {
-                // Redirección al Inicio tras guardar
-                window.location.replace(`inicio.html?k=${k}`); 
-            }, 1000);
-        } else {
-            if(j.message.includes('Sesión')) logout();
-            throw new Error(j.message);
-        }
-    } catch(e) { 
-        toggleLoader(false);
-        showToast('Error: ' + e.message, 'error'); 
-        document.querySelectorAll('button').forEach(b => {b.disabled=false;});
-    }
+            toggleLoader(true, "¡GUARDADO!", true); window.location.replace(`inicio.html?k=${k}`); 
+        } else { if(j.message.includes('Sesión')) logout(); throw new Error(j.message); }
+    } catch(e) { toggleLoader(false); showToast('Error: ' + e.message, 'error'); document.querySelectorAll('button').forEach(b => {b.disabled=false;}); }
 }
 
 document.getElementById('btnRegistrarSalida').onclick = () => {
-    const sel = document.getElementById('selChofer');
-    const c = sel.value;
+    const sel = document.getElementById('selChofer'); const c = sel.value;
     const total = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
-    
     if(!c) return showToast('Selecciona chofer', 'error');
+    if (sel.options[sel.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Chofer en ruta.", 'error');
     
-    const optionSelected = sel.options[sel.selectedIndex];
-    if (optionSelected.dataset.ocupado === "true") {
-        return showToast("⛔ ERROR: Chofer en ruta.", 'error');
-    }
+    const cStr = String(c).toUpperCase().trim();
+    const estaEnRuta = viajesPendientes.some(v => String(v.chofer).toUpperCase().trim() === cStr);
+    if (estaEnRuta) return showToast("⛔ ERROR: Este chofer ya tiene un viaje activo en la calle.", 'error');
 
     if(total === 0) return showToast('La carga está vacía', 'error');
 
-    enviar({
-        modo: 'SALIDA', chofer: c, totalSalida: total,
-        L10: val('SL10'), V10: val('SV10'),
-        L15: val('SL15'), V15: val('SV15'),
-        L45: val('SL45'), V45: val('SV45')
-    });
+    enviar({ modo: 'SALIDA', tipoViaje: typeof modoActual !== 'undefined' ? modoActual : 'REPARTO', chofer: c, totalSalida: total, L10: val('SL10'), V10: val('SV10'), L15: val('SL15'), V15: val('SV15'), L45: val('SL45'), V45: val('SV45') });
 };
 
 document.getElementById('btnFinalizar').onclick = () => {
+    const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA';
     const motivo = document.getElementById('txtMotivo').value.trim();
+    const remito = document.getElementById('txtRemitoCompra').value.trim();
     
-    if (hayDiferenciaLlegada && !motivo) {
-        showToast("⚠️ Faltan explicar las diferencias detectadas", "error");
-        return;
-    }
+    if (isCompra && !remito) return showToast("⚠️ Debes ingresar el Nº de Remito que entregó la Planta", "error");
+    if (hayDiferenciaLlegada && !motivo) return showToast("⚠️ Faltan explicar las diferencias detectadas", "error");
     
     const totalLleg = val('LL10')+val('LV10')+val('LL15')+val('LV15')+val('LL45')+val('LV45');
     
-    enviar({
-        modo: 'LLEGADA', idViaje: viajeSeleccionado.idViaje, 
+    enviar({ 
+        modo: 'LLEGADA', 
+        idViaje: viajeSeleccionado.idViaje, 
+        tipoViaje: viajeSeleccionado.tipoViaje || 'REPARTO', 
         totalLlegada: totalLleg, 
-        motivo: motivo,
-        L10: val('LL10'), V10: val('LV10'),
-        L15: val('LL15'), V15: val('LV15'),
-        L45: val('LL45'), V45: val('LV45')
+        motivo: motivo, 
+        remitoPlanta: remito, // Mandamos el remito al backend
+        L10: val('LL10'), V10: val('LV10'), L15: val('LL15'), V15: val('LV15'), L45: val('LL45'), V45: val('LV45') 
     });
 };
 
 document.getElementById('btnRegistrarRetro').onclick = () => {
     const c = document.getElementById('selChofer').value;
-    const motivo = document.getElementById('retroMotivoTxt').value;
-    const isDiff = document.getElementById('retroMotivoTxt').classList.contains('tx-obligatorio');
+    const motivo = document.getElementById('retroMotivoTxt').value.trim();
+    const chkAuditoria = document.getElementById('chkRetroAudit').checked;
     
     if(!c) return showToast('Selecciona chofer arriba', 'error');
+    if(!chkAuditoria) return showToast('⚠️ Debes aceptar la Declaración Jurada de Auditoría para continuar.', 'error');
+    if(!motivo) return showToast('⚠️ El motivo de la carga retroactiva es obligatorio.', 'error');
     
-    const totSal = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
-    const totLleg = val('RL10')+val('RV10')+val('RL15')+val('RV15')+val('RL45')+val('RV45');
+    const totSal = val('R_SL10')+val('R_SV10')+val('R_SL15')+val('R_SV15')+val('R_SL45')+val('R_SV45');
+    const totLleg = val('R_RL10')+val('R_RV10')+val('R_RL15')+val('R_RV15')+val('R_RL45')+val('R_RV45');
     
     if(totSal === 0) return showToast('Salida vacía', 'error');
-    if(isDiff && !motivo) return showToast('Falta motivo obligatorio', 'error');
 
     enviar({
-        modo: 'RETROACTIVO', chofer: c, motivo: motivo,
+        modo: 'RETROACTIVO', tipoViaje: 'REPARTO', chofer: c, motivo: motivo, alertaAuditoria: true,
         totalSalida: totSal, totalLlegada: totLleg, diferencia: totSal - totLleg,
-        SL10: val('SL10'), SV10: val('SV10'),
-        SL15: val('SL15'), SV15: val('SV15'),
-        SL45: val('SL45'), SV45: val('SV45'),
-        RL10: val('RL10'), RV10: val('RV10'),
-        RL15: val('RL15'), RV15: val('RV15'),
-        RL45: val('RL45'), RV45: val('RV45')
+        SL10: val('R_SL10'), SV10: val('R_SV10'), SL15: val('R_SL15'), SV15: val('R_SV15'), SL45: val('R_SL45'), SV45: val('R_SV45'),
+        RL10: val('R_RL10'), RV10: val('R_RV10'), RL15: val('R_RL15'), RV15: val('R_RV15'), RL45: val('R_RL45'), RV45: val('R_RV45')
     });
 };
 

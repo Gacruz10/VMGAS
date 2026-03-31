@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Remitos y Pagos a Planta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glass: rgba(0, 0, 0, 0.6); --glass-border: rgba(255, 255, 255, 0.1);
+      --accent: #FFD700; --ok: #2dd4bf; --error: #ff4444; --compra: #a855f7;
+      --text-primary: #ffffff; --text-muted: rgba(255, 255, 255, 0.5); --card-bg: rgba(255, 255, 255, 0.05);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%), radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%), radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%), radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a; background-attachment: fixed; min-height: 100vh; padding: 20px;
+    }
+    .header { text-align: center; margin-bottom: 25px; position: relative; }
+    .header h3 { color: var(--compra); font-weight: 800; margin: 0; font-size: 20px; text-transform: uppercase; }
+    .btn-volver { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; position: absolute; left: 0; top: 0; font-weight: bold; }
+    
+    .container { max-width: 650px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border); }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
+    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; }
+    .tab.active { background: var(--compra); color: white; box-shadow: 0 4px 12px rgba(168,85,247,0.3); }
+
+    .trip-list { display: grid; gap: 12px; }
+    .trip-card { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; transition: all 0.2s; }
+    .trip-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border-left: 4px solid var(--compra);}
+    .trip-header:hover { background: rgba(168,85,247,0.1); }
+    .trip-title h4 { margin: 0 0 4px 0; font-size: 16px; color: white; }
+    .badge-remito { font-size: 11px; background: rgba(168,85,247,0.2); color: #fff; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--compra); font-weight: bold; display: inline-block;}
+    .trip-date { font-size: 11px; color: #aaa; margin-top: 5px;}
+    .icon-expand { transition: transform 0.3s ease; font-size: 20px; color: var(--compra);}
+    .expanded .icon-expand { transform: rotate(180deg); }
+
+    .trip-body { display: none; padding: 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); animation: slideDown 0.3s ease;}
+    .expanded .trip-body { display: block; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* FILTROS DE FECHA PARA HISTORIAL */
+    .filters-box { display: flex; gap: 10px; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--glass-border); align-items: center;}
+    .filters-box input[type="date"] { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; outline: none; font-family: 'Inter'; font-size: 12px; color-scheme: dark;}
+    .btn-search { background: var(--compra); border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+    .btn-search:hover { filter: brightness(1.2); }
+    .mes-separador { background: rgba(168,85,247,0.2); color: var(--compra); text-align: center; padding: 8px; border-radius: 8px; font-weight: 800; font-size: 12px; letter-spacing: 1px; margin-top: 10px; text-transform: uppercase; border: 1px dashed var(--compra); }
+
+    /* CAJA MATEMÁTICA EN DOS COLUMNAS */
+    .resumen-gas-container { display: flex; gap: 12px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+    .gas-col { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+    .gas-divider { width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px; }
+    .gas-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #ccc; }
+    .kg-rojo { background: rgba(255,68,68,0.15); color: #ff4444; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255,68,68,0.3); font-weight: 800; font-size: 11px;}
+    .kg-verde { background: rgba(45,212,191,0.15); color: #2dd4bf; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(45,212,191,0.3); font-weight: 800; font-size: 11px;}
+
+    /* ESTRUCTURA COMPACTA DE INPUTS */
+    .compact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .input-group { margin-bottom: 0; }
+    .input-group label { display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+    input[type="text"], input[type="number"] { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
+    input[type="text"]:focus, input[type="number"]:focus { border-color: var(--compra); background: rgba(168,85,247,0.05); }
+
+    .precios-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;}
+    
+    /* BLOQUE FINAL (BOTON + TOTAL) */
+    .action-row { display: flex; gap: 10px; align-items: stretch; margin-top: 5px; }
+    .total-box { flex: 1; text-align: center; padding: 10px; background: rgba(45,212,191,0.1); border: 1px dashed var(--ok); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; }
+    .total-box span { display: block; font-size: 10px; color: var(--ok); font-weight: 800; }
+    .total-box h2 { margin: 2px 0 0 0; color: white; font-size: 20px; }
+    .btn-main { flex: 1; padding: 0; border: none; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.2s; background: var(--ok); color: #000; text-transform: uppercase;}
+    .btn-main:hover { box-shadow: 0 0 15px rgba(45,212,191,0.4); }
+    .btn-update { background: #3b82f6; color: white; }
+    .btn-update:hover { box-shadow: 0 0 15px rgba(59,130,246,0.4); }
+
+    /* AUDITORÍA TAGS */
+    .audit-box { display: flex; flex-direction: column; gap: 4px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .audit-tag { font-size: 10px; color: #888; display: flex; align-items: center; gap: 5px; }
+    .audit-tag b { color: #bbb; }
+
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px;}
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: rgba(255, 68, 68, 0.9); }
+    .toast.success { background: rgba(45, 212, 191, 0.9); }
+
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; backdrop-filter: blur(10px); }
+    .loading-overlay.active { opacity: 1; visibility: visible; }
+    .spinner { width: 50px; height: 50px; border: 4px solid rgba(168,85,247, 0.1); border-left-color: var(--compra); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div style="color:var(--compra); font-weight:800; letter-spacing:2px; font-size:12px;" id="loaderText">CARGANDO REMITOS...</div></div>
+
+  <div class="header">
+    <button class="btn-volver" id="btnBack">⬅ VOLVER</button>
+    <h3>CONTROL DE REMITOS</h3>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('pendientes')" id="tabPendientes">PENDIENTES</div>
+        <div class="tab" onclick="switchTab('historial')" id="tabHistorial">HISTORIAL</div>
+    </div>
+
+    <div id="listaPendientes" class="trip-list"></div>
+
+    <div id="wrapperHistorial" style="display: none;">
+        <div class="filters-box">
+            <input type="date" id="dateStart">
+            <input type="date" id="dateEnd">
+            <button class="btn-search" onclick="buscarHistorial()">🔍</button>
+        </div>
+        <div id="listaHistorial" class="trip-list"></div>
+    </div>
+
+  </div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+
+// ==========================================
+// 1. VALIDACIÓN PRELIMINAR Y SEGURIDAD
+// ==========================================
+const params = new URLSearchParams(window.location.search);
+let k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
+
+function expulsar() {
+    sessionStorage.clear();
+    window.location.replace('index.html');
+}
+
+if (!k) {
+    expulsar();
+} else {
+    sessionStorage.setItem('k', k);
+    if (window.history.replaceState) { window.history.replaceState({}, document.title, window.location.pathname); }
+}
+
+document.getElementById('btnBack').onclick = () => window.location.replace(`arqueo.html?k=${k}`);
+
+const TIMEOUT_SESION = 180000; 
+let tIdle;
+function resetTimer() {
+    clearTimeout(tIdle);
+    tIdle = setTimeout(() => {
+        showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error');
+        setTimeout(expulsar, 1500);
+    }, TIMEOUT_SESION);
+}
+['click','mousemove','keydown','touchstart','scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
+resetTimer(); 
+
+// ==========================================
+// 2. CONFIGURACIÓN DE FECHAS (MES ACTUAL POR DEFECTO)
+// ==========================================
+function setFechasDefault() {
+    const hoy = new Date();
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    document.getElementById('dateStart').value = primerDia.toISOString().split('T')[0];
+    document.getElementById('dateEnd').value = hoy.toISOString().split('T')[0];
+}
+setFechasDefault();
+
+// ==========================================
+// 3. LÓGICA DE LA PÁGINA
+// ==========================================
+let datosCompras = { pendientes: [], historial: [] };
+
+function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
+    container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+function toggleLoader(show, text = 'CARGANDO...') {
+    document.getElementById('loaderText').textContent = text;
+    if (show) document.getElementById('loadingOverlay').classList.add('active'); else document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+function switchTab(tab) {
+    document.getElementById('tabPendientes').classList.remove('active');
+    document.getElementById('tabHistorial').classList.remove('active');
+    document.getElementById('listaPendientes').style.display = 'none';
+    document.getElementById('wrapperHistorial').style.display = 'none';
+
+    if(tab === 'pendientes') {
+        document.getElementById('tabPendientes').classList.add('active');
+        document.getElementById('listaPendientes').style.display = 'grid';
+    } else {
+        document.getElementById('tabHistorial').classList.add('active');
+        document.getElementById('wrapperHistorial').style.display = 'block';
+    }
+}
+
+async function fetchRemitos(start = '', end = '') {
+    toggleLoader(true, "BUSCANDO REMITOS...");
+    try {
+        const r = await fetch(`${API}?action=getcomprasauditar&k=${k}&start=${start}&end=${end}`);
+        const d = await r.json();
+        if(d.status === 'success') {
+            datosCompras = d.compras;
+            renderPendientes();
+            renderHistorial();
+        } else {
+            showToast(d.message, 'error');
+        }
+    } catch(e) { 
+        showToast('Error de conexión o lectura', 'error'); 
+        console.error(e);
+    }
+    toggleLoader(false);
+}
+
+// Carga Inicial
+fetchRemitos(document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
+
+function buscarHistorial() {
+    const s = document.getElementById('dateStart').value;
+    const e = document.getElementById('dateEnd').value;
+    fetchRemitos(s, e);
+}
+
+function toggleCard(id) {
+    const card = document.getElementById(`card-${id}`);
+    card.classList.toggle('expanded');
+}
+
+function calcularTotal(idViaje, isHistorial = false) {
+    const arrayTarget = isHistorial ? datosCompras.historial : datosCompras.pendientes;
+    const compra = arrayTarget.find(x => x.idViaje === idViaje);
+    if(!compra) return;
+    
+    const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
+    const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
+    const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
+
+    const total = (p10 * compra.ll10) + (p15 * compra.ll15) + (p45 * compra.ll45);
+    document.getElementById(`lblTotal-${idViaje}`).textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+}
+
+async function procesarPago(idViaje, actionName) {
+    const factura = document.getElementById(`fac-${idViaje}`).value.trim();
+    const comprobante = document.getElementById(`comp-${idViaje}`).value.trim();
+    const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
+    const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
+    const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
+
+    if(!factura) return showToast('⚠️ Falta ingresar el N° de Factura', 'error');
+    if(!comprobante) return showToast('⚠️ Falta comprobante/método', 'error');
+    if(p10 === 0 && p15 === 0 && p45 === 0) return showToast('⚠️ Ingrese precio de costo', 'error');
+
+    if(!confirm('¿Confirmar esta operación?')) return;
+
+    toggleLoader(true, "GUARDANDO...");
+    const fd = new FormData();
+    fd.append('action', actionName); // 'conciliarcompra' o 'modificarcompra'
+    fd.append('k', k);
+    fd.append('idViaje', idViaje);
+    fd.append('factura', factura);
+    fd.append('comprobante', comprobante);
+    fd.append('precio10', p10); fd.append('precio15', p15); fd.append('precio45', p45);
+
+    try {
+        const r = await fetch(API, {method:'POST', body:fd}); const j = await r.json();
+        if(j.status === 'success') { 
+            showToast("¡Guardado correctamente!", "success");
+            // Recargamos manteniendo el filtro
+            buscarHistorial();
+        } else { throw new Error(j.message); }
+    } catch(e) { toggleLoader(false); showToast('Error: ' + e.message, 'error'); }
+}
+
+function renderPendientes() {
+    const list = document.getElementById('listaPendientes');
+    list.innerHTML = '';
+    if(datosCompras.pendientes.length === 0) return list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa;">No hay remitos pendientes. ¡Todo al día! 🎉</div>`;
+
+    // Rescatamos el ÚLTIMO precio para autocompletar
+    let lastP10 = '', lastP15 = '', lastP45 = '';
+    if (datosCompras.historial.length > 0) {
+        // Ordenamos temporalmente para agarrar el más nuevo real
+        const tempSort = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
+        lastP10 = tempSort[0].p10 || '';
+        lastP15 = tempSort[0].p15 || '';
+        lastP45 = tempSort[0].p45 || '';
+    }
+
+    datosCompras.pendientes.forEach(c => {
+        const kg10 = c.ll10 * 10; const kg15 = c.ll15 * 15; const kg45 = c.ll45 * 45;
+        const totalButano = kg10 + kg15; const totalPropano = kg45;
+
+        const card = document.createElement('div'); 
+        card.className = 'trip-card'; card.id = `card-${c.idViaje}`;
+        card.innerHTML = `
+            <div class="trip-header" onclick="toggleCard('${c.idViaje}')">
+                <div class="trip-title">
+                    <h4>${c.chofer}</h4>
+                    <div class="badge-remito">Remito: ${c.remito || 'S/N'}</div>
+                    <div class="trip-date">${c.fecha} - ${c.horaLlegada}</div>
+                </div>
+                <div class="icon-expand">▼</div>
+            </div>
+            <div class="trip-body">
+                <div class="resumen-gas-container">
+                    <div class="gas-col">
+                        <div class="gas-row"><span>10kg (${c.ll10}u):</span><span class="kg-rojo">${kg10} kg</span></div>
+                        <div class="gas-row"><span>15kg (${c.ll15}u):</span><span class="kg-rojo">${kg15} kg</span></div>
+                        <div class="gas-row"><span>45kg (${c.ll45}u):</span><span class="kg-rojo">${kg45} kg</span></div>
+                    </div>
+                    <div class="gas-divider"></div>
+                    <div class="gas-col" style="justify-content: center;">
+                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde">${totalButano} kg</span></div>
+                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde">${totalPropano} kg</span></div>
+                    </div>
+                </div>
+
+                <div class="compact-row">
+                    <div class="input-group"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" placeholder="0001-1234"></div>
+                    <div class="input-group"><label>Comprobante / Método</label><input type="text" id="comp-${c.idViaje}" placeholder="Transf #987"></div>
+                </div>
+
+                <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario (Sugerido Últ. Compra)</label>
+                <div class="precios-row">
+                    <input type="number" id="p10-${c.idViaje}" placeholder="10 Kg" value="${lastP10}" oninput="calcularTotal('${c.idViaje}')">
+                    <input type="number" id="p15-${c.idViaje}" placeholder="15 Kg" value="${lastP15}" oninput="calcularTotal('${c.idViaje}')">
+                    <input type="number" id="p45-${c.idViaje}" placeholder="45 Kg" value="${lastP45}" oninput="calcularTotal('${c.idViaje}')">
+                </div>
+
+                <div class="action-row">
+                    <div class="total-box"><span>TOTAL A PAGAR</span><h2 id="lblTotal-${c.idViaje}">$ 0.00</h2></div>
+                    <button class="btn-main" onclick="procesarPago('${c.idViaje}', 'conciliarcompra')">✅ CONCILIAR</button>
+                </div>
+            </div>
+        `;
+        list.appendChild(card);
+        if (lastP10 || lastP15 || lastP45) calcularTotal(c.idViaje);
+    });
+}
+
+function renderHistorial() {
+    const list = document.getElementById('listaHistorial');
+    list.innerHTML = '';
+    
+    if(datosCompras.historial.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa;">No se encontraron remitos en este rango de fechas.</div>`;
+        return;
+    }
+
+    // Ordenar de más nuevo a más viejo
+    const sorted = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
+    
+    // Nombres de los meses en español para los separadores
+    const mesesNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+    let mesActualRenderizado = '';
+
+    sorted.forEach(c => {
+        // Agrupación por Mes/Año
+        const d = new Date(c.tsLlegada);
+        const mesTag = `${mesesNombres[d.getMonth()]} ${d.getFullYear()}`;
+        
+        if (mesTag !== mesActualRenderizado) {
+            const separador = document.createElement('div');
+            separador.className = 'mes-separador';
+            separador.textContent = mesTag;
+            list.appendChild(separador);
+            mesActualRenderizado = mesTag;
+        }
+
+        const kg10 = c.ll10 * 10; const kg15 = c.ll15 * 15; const kg45 = c.ll45 * 45;
+        const totalButano = kg10 + kg15; const totalPropano = kg45;
+
+        // Tags de auditoría
+        let tagsHTML = `<div class="audit-box">
+            <div class="audit-tag">🚚 <b>Viaje Planta:</b> ${c.fecha} - ${c.horaLlegada}</div>
+            <div class="audit-tag">✅ <b>Conciliado:</b> ${c.fConc || 'S/D'} por ${c.uConc || 'S/D'}</div>`;
+        if (c.fMod) {
+            tagsHTML += `<div class="audit-tag">✏️ <b>Modificado:</b> ${c.fMod} por ${c.uMod}</div>`;
+        }
+        tagsHTML += `</div>`;
+
+        const card = document.createElement('div'); 
+        card.className = 'trip-card'; card.id = `card-${c.idViaje}`;
+        card.innerHTML = `
+            <div class="trip-header" onclick="toggleCard('${c.idViaje}')">
+                <div class="trip-title">
+                    <h4>${c.chofer}</h4>
+                    <div style="font-size:11px; color:#ccc;">Remito: ${c.remito || 'S/N'} | Factura: ${c.factura}</div>
+                    <div class="badge-ok" style="margin-top: 5px;">Comprobante: ${c.comprobante}</div>
+                </div>
+                <div class="icon-expand">▼</div>
+            </div>
+            <div class="trip-body">
+                <div class="resumen-gas-container">
+                    <div class="gas-col">
+                        <div class="gas-row"><span>10kg (${c.ll10}u):</span><span class="kg-rojo">${kg10} kg</span></div>
+                        <div class="gas-row"><span>15kg (${c.ll15}u):</span><span class="kg-rojo">${kg15} kg</span></div>
+                        <div class="gas-row"><span>45kg (${c.ll45}u):</span><span class="kg-rojo">${kg45} kg</span></div>
+                    </div>
+                    <div class="gas-divider"></div>
+                    <div class="gas-col" style="justify-content: center;">
+                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde">${totalButano} kg</span></div>
+                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde">${totalPropano} kg</span></div>
+                    </div>
+                </div>
+
+                <div class="compact-row">
+                    <div class="input-group"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" value="${c.factura}"></div>
+                    <div class="input-group"><label>Comprobante / Método</label><input type="text" id="comp-${c.idViaje}" value="${c.comprobante}"></div>
+                </div>
+
+                <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario ($)</label>
+                <div class="precios-row">
+                    <input type="number" id="p10-${c.idViaje}" value="${c.p10}" oninput="calcularTotal('${c.idViaje}', true)">
+                    <input type="number" id="p15-${c.idViaje}" value="${c.p15}" oninput="calcularTotal('${c.idViaje}', true)">
+                    <input type="number" id="p45-${c.idViaje}" value="${c.p45}" oninput="calcularTotal('${c.idViaje}', true)">
+                </div>
+
+                <div class="action-row">
+                    <div class="total-box" style="background: rgba(59,130,246,0.1); border-color: #3b82f6;">
+                        <span style="color: #3b82f6;">TOTAL PAGADO</span>
+                        <h2 id="lblTotal-${c.idViaje}">$ 0.00</h2>
+                    </div>
+                    <button class="btn-main btn-update" onclick="procesarPago('${c.idViaje}', 'modificarcompra')">✏️ ACTUALIZAR DATOS</button>
+                </div>
+                
+                ${tagsHTML}
+            </div>
+        `;
+        list.appendChild(card);
+        calcularTotal(c.idViaje, true);
+    });
+}
+
+</script>
+</body>
+</html>
