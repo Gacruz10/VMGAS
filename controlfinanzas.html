@@ -15,221 +15,175 @@
   :root {
     --bg-dark: #050510;
     --accent: #FFD700; 
-    --accent-edit: #ff9100; /* Naranja para edición */
+    --accent-edit: #ff9100;
     --accent-glow: rgba(255, 215, 0, 0.3);
+    --compra: #a855f7;
     --text-main: #ffffff;
     --text-sec: #a0a0b0;
     --success: #056e03;
+    --success-light: #2dd4bf;
     --danger: #ff4757;
     --glass-border: rgba(255, 255, 255, 0.08);
     --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%);
   }
 
-  /* ESTILOS DE MODO EDICIÓN */
   body.edit-mode { --accent: var(--accent-edit); }
-  body.edit-mode .fab { background: var(--accent-edit); transform: rotate(45deg); }
-
+  body.edit-mode .fab-add { background: var(--accent-edit); transform: rotate(45deg); }
   * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
 
   body {
     margin: 0; 
-    font-family: 'Outfit', sans-serif;
-    color: var(--text-main);
+    font-family: 'Outfit', sans-serif; color: var(--text-main);
     background-color: var(--bg-dark);
     background-image: 
         radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15) 0%, transparent 40%),
         radial-gradient(circle at 85% 30%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
-    background-attachment: fixed;
-    min-height: 100vh;
-    font-size: 13px;
-    padding-bottom: 90px;
-    opacity: 0; transition: opacity 0.6s ease;
+    background-attachment: fixed; min-height: 100vh; font-size: 13px;
+    padding-bottom: 90px; opacity: 0; transition: opacity 0.6s ease;
   }
 
-  /* --- HEADER --- */
+  /* --- HEADER PRINCIPAL --- */
   .fixed-header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(5, 5, 16, 0.95);
+      position: sticky; top: 0; z-index: 200; background: rgba(5, 5, 16, 0.95);
       backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-      border-bottom: 1px solid var(--glass-border);
-      padding: 8px 15px;
+      border-bottom: 1px solid var(--glass-border); padding: 8px 15px;
       box-shadow: 0 4px 30px rgba(0,0,0,0.3);
   }
-
-  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; max-width: 1000px; margin-inline: auto; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; max-width: 1000px; margin-inline: auto; }
   
   .page-title { 
-      font-size: 1rem; 
-      background: linear-gradient(to right, #fff, var(--accent)); 
+      font-size: 1rem; background: linear-gradient(to right, #fff, var(--accent)); 
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0; 
   }
 
-  .btn-action {
-    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-sec);
-    padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 11px; font-weight: 600;
-    display: flex; align-items: center; gap: 4px;
-  }
+  .btn-action { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--text-sec); padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
   .btn-action:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: var(--text-sec); }
-  
+
   .export-wrapper { position: relative; }
-  .btn-export {
-    background: rgba(255, 215, 0, 0.1); border: 1px solid var(--accent); color: var(--accent);
-    padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 11px;
-  }
+  .btn-export { background: rgba(255, 215, 0, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 11px; }
   .btn-export:hover { background: var(--accent); color: #000; box-shadow: 0 0 10px var(--accent-glow); }
-  
-  .dropdown-menu {
-      display: none; position: absolute; right: 0; top: 110%;
-      background: #151525; border: 1px solid var(--glass-border);
-      border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      z-index: 1000; min-width: 160px; overflow: hidden;
-  }
+  .dropdown-menu { display: none; position: absolute; right: 0; top: 110%; background: #151525; border: 1px solid var(--glass-border); border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 1000; min-width: 160px; overflow: hidden; }
   .dropdown-menu.show { display: block; }
   .dropdown-item { padding: 10px 12px; color: var(--text-sec); cursor: pointer; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
   .dropdown-item:hover { background: rgba(255, 215, 0, 0.1); color: var(--accent); }
   
-  /* FILTERS */
-  .filter-panel {
-      display: flex; gap: 8px; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.02); padding: 4px; border-radius: 10px;
-      border: 1px solid var(--glass-border); margin-bottom: 8px;
-      max-width: 500px; margin-inline: auto; height: 32px;
-  }
-  .date-group { position: relative; flex: 1; }
-  .date-group input {
-    width: 100%; background: transparent; border: none;
-    color: white; padding: 4px 4px 4px 24px; font-family: inherit; font-size: 12px; 
-    cursor: pointer; font-weight: 500; height: 100%;
-  }
-  .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 10px; }
-  .btn-load {
-      background: var(--accent); color: #000; border: none; padding: 0 15px; height: 24px;
-      border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 10px;
+  /* ESTRUCTURA VERTICAL SCROLL */
+  .scroll-content { padding: 15px; max-width: 1000px; margin: 0 auto; }
+  
+  .bloque-seccion {
+    position: relative;
+    width: 100%;
+    margin-bottom: 50px; 
   }
 
+  .caja-fechas-pegajosa {
+    position: sticky;
+    top: 48px; 
+    z-index: 100; 
+    background-color: rgba(5, 5, 16, 0.90); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 10px 15px;
+    border-bottom: 2px solid var(--glass-border);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    margin-bottom: 15px;
+    margin-left: -15px;
+    margin-right: -15px;
+  }
+
+  .section-title { margin: 0 0 8px 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* FILTERS */
+  .filter-panel { display: flex; gap: 8px; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); padding: 4px; border-radius: 10px; border: 1px solid var(--glass-border); max-width: 500px; margin-inline: auto; height: 32px; }
+  .date-group { position: relative; flex: 1; }
+  .date-group input { width: 100%; background: transparent; border: none; color: white; padding: 4px 4px 4px 24px; font-family: inherit; font-size: 12px;  cursor: pointer; font-weight: 500; height: 100%; }
+  .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--text-sec); font-size: 10px; }
+  .btn-load { background: var(--glass-border); color: #fff; border: 1px solid var(--text-sec); padding: 0 15px; height: 24px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 10px; transition: 0.2s;}
+  .btn-load:active { transform: scale(0.95); }
+
   /* DASHBOARD */
-  .dashboard { 
-      display: flex; gap: 8px; justify-content: center; 
-      margin-bottom: 8px; flex-wrap: wrap; 
-      max-width: 800px; margin-inline: auto;
-  }
-  .card {
-      flex: 1; min-width: 120px;
-      background: var(--card-gradient);
-      border: 1px solid var(--glass-border);
-      padding: 6px 10px; border-radius: 10px;
-      text-align: center; position: relative; overflow: hidden;
-  }
+  .dashboard { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; max-width: 800px; margin-inline: auto; }
+  .card { flex: 1; min-width: 120px; background: var(--card-gradient); border: 1px solid var(--glass-border); padding: 6px 10px; border-radius: 10px; text-align: center; position: relative; overflow: hidden; }
   .card label { font-size: 9px; color: var(--text-sec); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px; font-weight: 600; }
   .card .value { font-size: 1.1em; font-weight: 700; color: #fff; }
   .card.active-selection { border-color: var(--accent); background: rgba(255, 215, 0, 0.05); }
-  .pos { color: var(--success) !important; }
+  .card.active-audit-sel { border-color: var(--compra); background: rgba(168, 85, 247, 0.05); }
+  .pos { color: var(--success-light) !important; }
   .neg { color: var(--danger) !important; }
 
   /* VIEW CONTROLS */
-  .view-controls { 
-      display: flex; gap: 2px; justify-content: center; 
-      background: rgba(0,0,0,0.3); padding: 2px; border-radius: 8px; 
-      width: fit-content; margin: 0 auto; 
-      border: 1px solid var(--glass-border); 
-  }
-  .btn-view { 
-      background: transparent; border: none; color: var(--text-sec); 
-      padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; 
-  }
+  .view-controls { display: flex; gap: 2px; justify-content: center; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 8px; width: fit-content; margin: 0 auto 12px auto; border: 1px solid var(--glass-border); }
+  .btn-view { background: transparent; border: none; color: var(--text-sec); padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; }
   .btn-view.active { background: rgba(255,255,255,0.1); color: #fff; }
 
-  /* --- TREE VIEW ESTILIZADO --- */
-  .scroll-content { padding: 15px; max-width: 1000px; margin: 0 auto; }
-  
-  /* NIVEL 1 */
-  details.l1-details {
-      background: #000000; 
-      border: 1px solid var(--glass-border);
-      border-right: 4px solid var(--accent); 
-      border-radius: 8px;
-      margin-bottom: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      overflow: hidden;
-      transition: border-color 0.3s;
-  }
-  details.l1-details > summary { 
-      padding: 12px 15px; 
-      font-size: 14px; 
-      color: var(--accent); 
-      display: flex; justify-content: space-between; align-items: center; 
-  }
+  /* TREE VIEW CAJA */
+  .tree-container { content-visibility: auto; contain-intrinsic-size: 1000px; } 
+  details.l1-details { background: #000000; border: 1px solid var(--glass-border); border-right: 4px solid var(--accent); border-radius: 8px; margin-bottom: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); overflow: hidden; transition: border-color 0.3s; }
+  details.l1-details > summary { padding: 12px 15px; font-size: 14px; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
   .l1-name { font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #fff; }
-
-  /* NIVEL 2 */
   .l2-container { padding: 0 0 0 0; }
-  
-  details.l2-details { 
-      background: #1a1a1a; 
-      border-top: 1px solid rgba(255,255,255,0.1); 
-      border-right: 4px solid #444; 
-      margin: 0;
-      border-radius: 0;
-  }
-  details.l2-details > summary { 
-      padding: 10px 15px 10px 30px; 
-      font-size: 13px; 
-      color: #fff;
-      display: flex; justify-content: space-between; align-items: center;
-  }
+  details.l2-details { background: #1a1a1a; border-top: 1px solid rgba(255,255,255,0.1); border-right: 4px solid #444; margin: 0; border-radius: 0; }
+  details.l2-details > summary { padding: 10px 15px 10px 30px; font-size: 13px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
   .l2-name { color: #fff; font-weight: 600; }
-
-  /* NIVEL 3 (DETALLES) */
   .table-responsive { background: #e0e0e0; }
   table { width: 100%; border-collapse: collapse; }
   tr { border-bottom: 1px solid #ccc; cursor: pointer; } 
   tr:last-child { border-bottom: none; }
-  
   td { padding: 8px 15px; color: #000; font-size: 12px; font-weight: 500; }
   .col-desc { color: #333; }
   .col-monto { font-weight: 700; font-family: monospace; color: #000; }
-  
-  /* Checkboxes */
   .table-responsive input[type="checkbox"] { border-color: #555; }
-  .table-responsive input[type="checkbox"]:checked::after { color: #000; }
 
-  /* FAB */
-  .fab { width: 45px; height: 45px; font-size: 24px; bottom: 20px; right: 20px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 15px var(--accent-glow); cursor: pointer; z-index: 200; transition: 0.3s; }
+  /* AUDITORIA VIEW (ACCORDEON) */
+  #audit-root { content-visibility: auto; contain-intrinsic-size: 1000px; } 
+  .audit-section-title { font-size: 12px; font-weight: 800; color: var(--text-sec); text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;}
+  .audit-card { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; transition: 0.2s; }
+  .audit-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 4px solid var(--glass-border); background: rgba(0,0,0,0.2); }
+  .audit-header:hover { background: rgba(255,255,255,0.05); }
+  .audit-header.venta { border-left-color: var(--success-light); }
+  .audit-header.compra { border-left-color: var(--compra); }
+  .audit-body { display: none; padding: 15px; background: rgba(0,0,0,0.4); border-top: 1px solid var(--glass-border); }
+  .audit-card.open .audit-body { display: block; }
+  .audit-card.open .audit-header { background: rgba(255,255,255,0.05); }
   
-  /* MODAL DARK GLASS */
-  #modal, #pinModal { 
-      backdrop-filter: blur(15px); 
-      -webkit-backdrop-filter: blur(15px); 
-      background: rgba(0,0,0,0.6); 
-      display: none; 
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      z-index: 300; 
-      align-items: center; justify-content: center;
+  /* NUEVO SISTEMA FLEX PARA DETALLE DE VENTAS */
+  .audit-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .audit-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; transition: background 0.2s; }
+  .audit-row:hover { background: rgba(255,255,255,0.05); }
+  .audit-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .audit-client-name { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+  .audit-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px; white-space: nowrap; }
+  .audit-payments { font-size: 10px; color: var(--text-sec); font-family: monospace; white-space: nowrap; margin: 0 15px; }
+  .audit-amount { font-weight: 700; text-align: right; white-space: nowrap; }
+  
+  /* Checkboxes de auditoria */
+  .audit-check { transform: scale(1.2); margin-right: 10px; cursor: pointer; accent-color: var(--compra); }
+
+  /* Ajuste responsivo real para Android/Celulares */
+  @media (max-width: 600px) {
+      .audit-row { flex-wrap: wrap; }
+      .audit-info { width: 100%; margin-bottom: 6px; flex: none; }
+      .audit-payments { margin: 0; flex: 1; text-align: left; }
+      .audit-amount { width: auto; }
   }
-  .modal-content { 
-      background: rgba(10, 10, 20, 0.9); 
-      border: 1px solid rgba(255,255,255,0.1); 
-      border-radius: 20px; 
-      padding: 25px; 
-      width: 90%; max-width: 380px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-      text-align: center;
-      border-top: 4px solid var(--accent);
-  }
+
+  /* FAB & MODALS */
+  .fab-add { width: 45px; height: 45px; font-size: 24px; bottom: 20px; right: 20px; background: var(--accent); color: #000; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 15px var(--accent-glow); cursor: pointer; z-index: 200; transition: 0.3s; }
+  .fab-scroll { width: 35px; height: 35px; font-size: 16px; bottom: 75px; right: 25px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: #fff; border-radius: 50%; display: grid; place-items: center; position: fixed; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer; z-index: 200; transition: 0.3s; }
+  .fab-scroll:hover { background: rgba(255,255,255,0.2); }
+  
+  #modal, #pinModal { backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); background: rgba(0,0,0,0.6); display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 300; align-items: center; justify-content: center; }
+  .modal-content { background: rgba(10, 10, 20, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 25px; width: 90%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); text-align: center; border-top: 4px solid var(--accent); }
   .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 10px; }
   .form-control:focus { border-color: var(--accent); }
-  
   .btn-save { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 5px; transition: 0.3s; }
   .btn-save:hover { box-shadow: 0 0 15px var(--accent-glow); }
   .btn-cancel { width: 100%; background: transparent; border: 1px solid var(--glass-border); color: #fff; padding: 10px; margin-top: 10px; cursor: pointer; border-radius: 8px; }
   .btn-delete { width: 100%; background: rgba(255, 71, 87, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 10px; margin-top: 15px; cursor: pointer; border-radius: 8px; font-weight: 700; display: none; }
-
-  /* Pin Input */
   .pin-wrapper { display: none; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; animation: slideDown 0.3s; }
   @keyframes slideDown { from {opacity: 0; transform: translateY(-10px);} to {opacity: 1; transform: translateY(0);} }
-
-  /* Auditoría Visual */
   .audit-diff { font-size: 11px; margin-top: -5px; margin-bottom: 10px; color: var(--text-sec); display: none; }
 
 </style>
@@ -243,7 +197,6 @@
        
        <div style="display:flex; gap:10px">
            <button class="btn-action" onclick="openPinModal()">🔑</button>
-           
            <div class="export-wrapper">
                <button class="btn-export" onclick="toggleExportMenu()">Exportar ▼</button>
                <div id="export-menu" class="dropdown-menu">
@@ -253,36 +206,76 @@
            </div>
        </div>
     </div>
-
-      <div class="filter-panel">
-          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-start" placeholder="Desde"></div>
-          <div style="color:var(--text-sec); font-size:10px">➜</div>
-          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-end" placeholder="Hasta"></div>
-          <button class="btn-load" onclick="cargarDatos()">IR</button>
-      </div>
-
-      <div class="dashboard" id="dashboard-panel">
-          <div class="card"><label id="lbl-in">INGRESOS</label><div class="value pos" id="dash-in">...</div></div>
-          <div class="card"><label id="lbl-out">GASTOS</label><div class="value neg" id="dash-out">...</div></div>
-          <div class="card"><label id="lbl-total">BALANCE</label><div class="value" id="dash-total">...</div></div>
-      </div>
-
-      <div class="view-controls">
-          <button class="btn-view" onclick="setTreeView('L1')">Cuentas</button>
-          <button class="btn-view" onclick="setTreeView('L2')">Subcuentas</button>
-          <button class="btn-view" onclick="setTreeView('ALL')">Detalle</button>
-      </div>
   </div>
 
   <div class="scroll-content">
-      <div id="tree-root" class="tree-container">
-          <div style="padding:40px; text-align:center; color:var(--text-sec); font-size:12px;">
-              <div style="margin-bottom:5px; font-size:16px;">⚡</div>Cargando...
+      
+      <div class="bloque-seccion" id="seccion-finanzas">
+          
+          <div class="caja-fechas-pegajosa">
+              <h3 class="section-title" style="color: var(--accent);">📊 Caja Diaria</h3>
+              <div class="filter-panel">
+                  <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-start-fin" placeholder="Desde"></div>
+                  <div style="color:var(--text-sec); font-size:10px">➜</div>
+                  <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-end-fin" placeholder="Hasta"></div>
+                  <button class="btn-load" onclick="cargarDatos()" style="background: var(--accent); color: #000;">IR</button>
+              </div>
           </div>
+
+          <div class="dashboard" id="dashboard-panel">
+              <div class="card"><label id="lbl-in">INGRESOS</label><div class="value pos" id="dash-in">...</div></div>
+              <div class="card"><label id="lbl-out">GASTOS</label><div class="value neg" id="dash-out">...</div></div>
+              <div class="card"><label id="lbl-total">BALANCE</label><div class="value" id="dash-total">...</div></div>
+          </div>
+
+          <div class="view-controls" id="view-controls">
+              <button class="btn-view" onclick="setTreeView('L1')">Cuentas</button>
+              <button class="btn-view" onclick="setTreeView('L2')">Subcuentas</button>
+              <button class="btn-view" onclick="setTreeView('ALL')">Detalle</button>
+          </div>
+
+          <div id="view-caja">
+              <div id="tree-root" class="tree-container">
+                  <div style="padding:40px; text-align:center; color:var(--text-sec); font-size:12px;">
+                      <div style="margin-bottom:5px; font-size:16px;">⚡</div>Cargando Caja...
+                  </div>
+              </div>
+          </div>
+
       </div>
+
+      <div class="bloque-seccion" id="seccion-auditoria">
+          
+          <div class="caja-fechas-pegajosa">
+              <h3 class="section-title" style="color: var(--compra);">🔍 Auditoría y Remitos</h3>
+              <div class="filter-panel">
+                  <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-start-aud" placeholder="Desde"></div>
+                  <div style="color:var(--text-sec); font-size:10px">➜</div>
+                  <div class="date-group"><span class="date-icon">📅</span><input type="text" id="filter-end-aud" placeholder="Hasta"></div>
+                  <button class="btn-load" onclick="cargarAuditoria()" style="background: var(--compra); color: #fff;">IR</button>
+              </div>
+          </div>
+
+          <div class="dashboard" id="dashboard-audit" style="margin-bottom: 20px;">
+              <div class="card"><label id="lbl-audit-in">TOTAL ARQUEOS</label><div class="value pos" id="dash-audit-in">...</div></div>
+              <div class="card"><label id="lbl-audit-out">PAGOS PLANTA</label><div class="value neg" id="dash-audit-out">...</div></div>
+              <div class="card"><label id="lbl-audit-total">DIFERENCIA</label><div class="value" id="dash-audit-total">...</div></div>
+          </div>
+
+          <div id="view-audit">
+              <div id="audit-root">
+                   <div style="padding:40px; text-align:center; color:var(--text-sec); font-size:12px;">
+                      <div style="margin-bottom:5px; font-size:16px;">⚡</div>Cargando Auditoría...
+                  </div>
+              </div>
+          </div>
+
+      </div>
+
   </div>
 
-  <button class="fab" onclick="openModal('create')">+</button>
+  <button class="fab-scroll" onclick="scrollToSection('seccion-auditoria')" title="Ir a Auditoría">⬇</button>
+  <button class="fab-add" id="fab-btn" onclick="openModal('create')">+</button>
 
   <div id="modal">
     <div class="modal-content">
@@ -349,6 +342,7 @@
 
     var globalData = {};
     var currentSummary = {}; 
+    var currentAuditSummary = { arqueos: 0, pagos: 0, total: 0 }; // NUEVO ESTADO GLOBAL AUDITORIA
     var currentEditMode = false;
     var deleteRequested = false;
 
@@ -359,19 +353,45 @@
             const d = await r.json();
             if(d.status !== 'success') throw new Error();
             document.body.style.opacity = 1;
+            
+            // Lógica Inteligente de Fechas
             const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-            flatpickr("#filter-start", { defaultDate: firstDay, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
-            flatpickr("#filter-end", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            const dayOfWeek = today.getDay(); 
+            let startDay = new Date(today);
+            if (dayOfWeek === 1) { 
+                startDay.setDate(today.getDate() - 7);
+            } else {
+                const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                startDay.setDate(today.getDate() - offset);
+            }
+            
+            const startStr = startDay.toISOString().split('T')[0];
+            const endStr = today.toISOString().split('T')[0];
+
+            // Instanciar flatpickr en las cajas independientes
+            flatpickr("#filter-start-fin", { defaultDate: startStr, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            flatpickr("#filter-end-fin", { defaultDate: endStr, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            
+            flatpickr("#filter-start-aud", { defaultDate: startStr, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            flatpickr("#filter-end-aud", { defaultDate: endStr, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+
             flatpickr("#modal-fecha", { defaultDate: today, dateFormat: "Y-m-d", locale: "es", theme: "dark" });
+            
+            // Cargar todo en simultáneo al abrir la página
             cargarDatos();
+            cargarAuditoria();
         } catch(e) { window.location.replace('index.html'); }
     }
 
+    function scrollToSection(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+    // =====================================
+    // CAJA DIARIA
+    // =====================================
     function cargarDatos() {
-       const start = document.getElementById('filter-start').value;
-       const end = document.getElementById('filter-end').value;
-       document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Actualizando...</div>';
+       const start = document.getElementById('filter-start-fin').value;
+       const end = document.getElementById('filter-end-fin').value;
+       document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Actualizando Caja...</div>';
        
        fetch(`${API_URL}?action=getfinancetree&k=${k}&start=${start}&end=${end}`)
        .then(r => r.json())
@@ -384,10 +404,193 @@
            setTreeView('L1');
        })
        .catch(e => {
-           document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error de conexión.</div>';
+           document.getElementById('tree-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error de conexión en Finanzas.</div>';
        });
     }
 
+    // =====================================
+    // AUDITORÍA
+    // =====================================
+    function cargarAuditoria() {
+       const start = document.getElementById('filter-start-aud').value;
+       const end = document.getElementById('filter-end-aud').value;
+       
+       const d1 = new Date(start);
+       const d2 = new Date(end);
+       const diffDays = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24));
+       
+       if (diffDays > 15) {
+           if (!confirm("⚠️ ¡Epa! Estás pidiendo más de 15 días. Esto puede tardar unos segundos extra en cruzar todos los arqueos y remitos. ¿Seguimos igual?")) {
+               return; 
+           }
+       }
+
+       document.getElementById('audit-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)"><div>⚡</div>Cruzando Ventas y Compras...</div>';
+       
+       fetch(`${API_URL}?action=getauditoriafinanzas&k=${k}&start=${start}&end=${end}`)
+       .then(r => r.json())
+       .then(data => {
+           renderAuditoria(data.compras, data.ventas);
+       })
+       .catch(e => {
+           document.getElementById('audit-root').innerHTML = '<div style="color:var(--danger); text-align:center; padding:20px;">Error al cargar auditoría.</div>';
+       });
+    }
+
+    function renderAuditoria(compras, ventas) {
+        let html = '';
+        let totArqueos = 0;
+        let totPagos = 0;
+
+        // Sumatoria base para el dashboard de Auditoria
+        ventas.forEach(v => totArqueos += v.totalNeto);
+        compras.forEach(c => totPagos += c.montoTotal);
+        currentAuditSummary.arqueos = totArqueos;
+        currentAuditSummary.pagos = totPagos;
+        currentAuditSummary.total = totArqueos - totPagos;
+        
+        // Pinta el dashboard al cargar
+        updateDashboardAudit(totArqueos, totPagos, currentAuditSummary.total, false);
+
+        html += `<div class="audit-section-title">Ingresos Operativos (Ventas y Gastos del Arqueo)</div>`;
+        if(ventas.length === 0) {
+            html += `<div style="text-align:center; color:#555; font-size:11px; margin-bottom:15px;">Sin arqueos en este rango</div>`;
+        } else {
+            ventas.forEach(v => {
+                let infoGastos = v.totalGastos > 0 ? ` | Gastos: <b style="color:var(--danger)">$ ${formatMoney(v.totalGastos)}</b>` : '';
+
+                html += `
+                <div class="audit-card" onclick="this.classList.toggle('open')">
+                  <div class="audit-header venta">
+                    <div style="display:flex; align-items:center;">
+                      <input type="checkbox" class="audit-check audit-check-venta" value="${v.totalNeto}" onchange="calcAuditSelection()" onclick="event.stopPropagation()">
+                      <div>
+                        <div style="font-weight:800; color:#fff;">ARQUEO: ${v.chofer}</div>
+                        <div style="font-size:11px; color:var(--text-sec)">${v.fecha} | ID: ${v.idArqueo}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="color:var(--success-light); font-weight:800;">$ ${formatMoney(v.totalNeto)}</div>
+                      <div style="font-size:10px; color:var(--text-sec)">▼</div>
+                    </div>
+                  </div>
+                  <div class="audit-body">
+                     <div style="font-size:11px; color:#ccc; margin-bottom:10px;">
+                        Efectivo: <b style="color:#fff">$ ${formatMoney(v.totalE)}</b> | 
+                        Transf: <b style="color:#fff">$ ${formatMoney(v.totalT)}</b>
+                        ${infoGastos}
+                     </div>
+                     <div class="audit-list">
+                       ${v.operaciones.map(op => {
+                           let iconoGps = (op.ubicacion && op.ubicacion.startsWith('http')) 
+                               ? `<a href="${op.ubicacion}" target="_blank" onclick="event.stopPropagation()" style="text-decoration:none; font-size:14px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));" title="Ver ubicación en GPS">📍</a>` 
+                               : `<span style="opacity:0.3; font-size:12px;" title="Sin señal de GPS guardada">🚫</span>`;
+                               
+                           let colorMonto = op.isGasto ? 'var(--danger)' : 'var(--success-light)';
+                           let signo = op.isGasto ? '-' : '';
+                           let colorBadge = op.isGasto ? 'var(--danger)' : 'var(--accent)';
+                           let borderBadge = op.isGasto ? 'rgba(255,71,87,0.3)' : 'rgba(255,215,0,0.3)';
+                           
+                           let txtPagos = [];
+                           if (op.montoE > 0) txtPagos.push(`E:$${formatMoney(op.montoE)}`);
+                           if (op.montoT > 0) txtPagos.push(`T:$${formatMoney(op.montoT)}`);
+                           let htmlPagos = txtPagos.length > 0 
+                               ? `<div class="audit-payments">[ ${txtPagos.join(' | ')} ]</div>` 
+                               : `<div class="audit-payments"></div>`;
+
+                           return `
+                           <div class="audit-row">
+                               <div class="audit-info">
+                                   <span class="audit-client-name" title="${op.cliente}">${op.cliente}</span>
+                                   <span class="audit-badge" style="color:${colorBadge}; border:1px solid ${borderBadge};">${op.tipo}</span>
+                                   ${iconoGps}
+                               </div>
+                               ${htmlPagos}
+                               <div class="audit-amount" style="color:${colorMonto};">
+                                   ${signo}$ ${formatMoney(op.monto)}
+                               </div>
+                           </div>`;
+                       }).join('')}
+                     </div>
+                  </div>
+                </div>`;
+            });
+        }
+
+        html += `<div class="audit-section-title" style="margin-top:25px;">Pagos a Planta (Compras Conciliadas)</div>`;
+        if(compras.length === 0) {
+            html += `<div style="text-align:center; color:#555; font-size:11px;">Sin compras conciliadas en este rango</div>`;
+        } else {
+            compras.forEach(c => {
+                html += `
+                <div class="audit-card" onclick="this.classList.toggle('open')">
+                  <div class="audit-header compra">
+                    <div style="display:flex; align-items:center;">
+                      <input type="checkbox" class="audit-check audit-check-compra" value="${c.montoTotal}" onchange="calcAuditSelection()" onclick="event.stopPropagation()">
+                      <div>
+                        <div style="font-weight:800; color:#fff;">COMPRA: ${c.chofer}</div>
+                        <div style="font-size:11px; color:var(--text-sec)">${c.fecha} | Factura: ${c.factura}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="color:var(--compra); font-weight:800;">$ ${formatMoney(c.montoTotal)}</div>
+                      <div style="font-size:10px; color:var(--text-sec)">▼</div>
+                    </div>
+                  </div>
+                  <div class="audit-body">
+                     <div style="font-size:11px; color:#ccc; margin-bottom:5px;">Remito Planta: <b style="color:#fff">${c.remito || 'S/D'}</b> | Comprobante Pago: <b style="color:#fff">${c.comprobante}</b></div>
+                     <div style="font-size:11px; color:var(--compra); background:rgba(168,85,247,0.1); padding:8px; border-radius:6px; font-weight:600; border:1px dashed var(--compra);">
+                       📦 ${c.detalleStr}
+                     </div>
+                  </div>
+                </div>`;
+            });
+        }
+        document.getElementById('audit-root').innerHTML = html;
+    }
+
+    // ACTUALIZADOR DEL DASHBOARD DE AUDITORIA
+    function updateDashboardAudit(ingresos, gastos, total, isSelectionMode) {
+       document.getElementById('dash-audit-in').innerText = formatMoney(ingresos);
+       document.getElementById('dash-audit-out').innerText = formatMoney(gastos);
+       document.getElementById('dash-audit-total').innerText = formatMoney(total);
+       document.getElementById('dash-audit-total').style.color = total >= 0 ? 'var(--success-light)' : 'var(--danger)';
+       
+       const container = document.getElementById('dashboard-audit');
+       const cards = container.querySelectorAll('.card');
+       if (isSelectionMode) { 
+           cards.forEach(c => c.classList.add('active-audit-sel')); 
+           document.getElementById('lbl-audit-in').innerText = "ARQUEOS (SEL)"; 
+           document.getElementById('lbl-audit-out').innerText = "PAGOS (SEL)"; 
+           document.getElementById('lbl-audit-total').innerText = "DIFERENCIA (SEL)"; 
+       } else { 
+           cards.forEach(c => c.classList.remove('active-audit-sel')); 
+           document.getElementById('lbl-audit-in').innerText = "TOTAL ARQUEOS"; 
+           document.getElementById('lbl-audit-out').innerText = "PAGOS PLANTA"; 
+           document.getElementById('lbl-audit-total').innerText = "DIFERENCIA"; 
+       }
+    }
+
+    // CALCULADORA DE SELECCION PARA AUDITORIA
+    function calcAuditSelection() {
+       const checksVentas = document.querySelectorAll('.audit-check-venta:checked');
+       const checksCompras = document.querySelectorAll('.audit-check-compra:checked');
+
+       if (checksVentas.length === 0 && checksCompras.length === 0) {
+           updateDashboardAudit(currentAuditSummary.arqueos, currentAuditSummary.pagos, currentAuditSummary.total, false);
+           return;
+       }
+
+       let selArqueos = 0, selPagos = 0;
+       checksVentas.forEach(c => selArqueos += parseFloat(c.value));
+       checksCompras.forEach(c => selPagos += parseFloat(c.value));
+
+       updateDashboardAudit(selArqueos, selPagos, selArqueos - selPagos, true);
+    }
+
+    // =====================================
+    // RENDERS Y HELPERS FINANZAS
+    // =====================================
     function renderTree(tree) {
        let html = '';
        if (Object.keys(tree).length === 0) { document.getElementById('tree-root').innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-sec)">Sin registros.</div>'; return; }
@@ -403,8 +606,7 @@
            html += `<div class="l2-container"><details class="l2-details"> <summary><div style="display:flex; align-items:center;"><input type="checkbox" class="parent-check" onchange="toggleChildren(this)"><span class="l2-name">${l2}</span></div><span data-original="${l2TotalStr}" style="font-size:0.9em; opacity:0.9; font-family:'Outfit', monospace">${l2TotalStr}</span></summary><div class="table-responsive"><table>`;
            
            sub.items.forEach(item => {
-             // Escapamos comillas para evitar errores en el HTML inline
-             let safeDet = item.detalle.replace(/"/g, '&quot;');
+             let safeDet = item.detalle.replace(/"/g, '"');
              html += `<tr ondblclick="openModal('edit', '${item.id}', '${item.fecha}', '${l1}', '${l2}', '${safeDet}', '${item.monto}')">
                <td width="30" style="text-align:center"><input type="checkbox" class="item-check" value="${item.monto}" onchange="calcSelection()"></td>
                <td width="70" style="color:#000; font-weight:600">${item.fecha}</td>
@@ -412,7 +614,6 @@
                <td class="col-monto ${item.monto < 0 ? 'neg' : 'pos'}">${formatMoney(item.monto)}</td>
              </tr>`;
            });
-           
            html += `</table></div></details></div>`;
          } 
          html += `</details>`;
@@ -420,7 +621,6 @@
        document.getElementById('tree-root').innerHTML = html;
     }
 
-    // --- MODAL Y EDICIÓN ---
     function openModal(mode, id, fecha, l1, l2, det, monto) {
         const m = document.getElementById('modal');
         const title = document.getElementById('modal-title');
@@ -440,14 +640,12 @@
             document.querySelector('.modal-content').style.borderColor = 'var(--glass-border)';
             flatpickr("#modal-fecha", { defaultDate: new Date(), dateFormat: "Y-m-d", locale: "es", theme: "dark" });
         } else {
-            // MODO EDICIÓN SOMBRA
             currentEditMode = true;
             document.body.classList.add('edit-mode');
             
             document.getElementById('edit-id').value = id;
             document.getElementById('orig-amount').value = monto;
             
-            // Re-convertir fecha para el datepicker si viene como DD/MM/YYYY
             let dateObj = new Date();
             if(fecha && fecha.includes('/')) {
                 const parts = fecha.split('/');
@@ -479,16 +677,15 @@
             let d = newVal - oldVal;
             diff.style.display = 'block';
             diff.innerText = `Diferencia: ${d > 0 ? '+' : ''}${formatMoney(d)}`;
-            diff.style.color = d > 0 ? 'var(--success)' : 'var(--danger)';
+            diff.style.color = d > 0 ? 'var(--success-light)' : 'var(--danger)';
         } else {
             diff.style.display = 'none';
         }
     }
 
     function handleMainAction() {
-        if (!currentEditMode) {
-            enviarDatos();
-        } else {
+        if (!currentEditMode) { enviarDatos(); } 
+        else {
             document.getElementById('pin-area').style.display = 'block';
             document.getElementById('btn-main').style.display = 'none';
             document.getElementById('btn-del').style.display = 'none';
@@ -508,8 +705,7 @@
 
     function enviarDatos() {
         const btn = document.getElementById('btn-main');
-        btn.innerText = "Guardando...";
-        btn.disabled = true;
+        btn.innerText = "Guardando..."; btn.disabled = true;
         
         const payload = { 
             fecha: document.getElementById('modal-fecha').value, 
@@ -527,12 +723,9 @@
         fetch(API_URL, { method: "POST", body: fd })
         .then(r => r.json())
         .then(d => { 
-             if(d.status === 'success') {
-                closeModal(); 
-                cargarDatos(); 
-             } else { alert("Error: " + JSON.stringify(d)); }
-             btn.innerText = "GUARDAR";
-             btn.disabled = false;
+             if(d.status === 'success') { closeModal(); cargarDatos(); } 
+             else { alert("Error: " + JSON.stringify(d)); }
+             btn.innerText = "GUARDAR"; btn.disabled = false;
         });
     }
 
@@ -550,20 +743,16 @@
         };
 
         const fd = new FormData();
-        fd.append('action', 'modify');
-        fd.append('k', k);
-        fd.append('type', type);
-        fd.append('id', id);
-        fd.append('pin', pin);
-        fd.append('data', JSON.stringify(payload));
+        fd.append('action', 'modify'); fd.append('k', k);
+        fd.append('type', type); fd.append('id', id);
+        fd.append('pin', pin); fd.append('data', JSON.stringify(payload));
 
         fetch(API_URL, { method: "POST", body: fd })
         .then(r => r.json())
         .then(d => {
             if(d.status === 'success') {
                 alert(deleteRequested ? "Registro eliminado" : "Registro actualizado");
-                closeModal();
-                cargarDatos();
+                closeModal(); cargarDatos();
             } else {
                 alert("ERROR: " + d.message);
                 document.getElementById('auth-pin').value = '';
@@ -578,10 +767,7 @@
         if(newP.length < 4) { alert("El nuevo PIN debe tener 4 dígitos"); return; }
         
         const fd = new FormData();
-        fd.append('action', 'changepin');
-        fd.append('k', k);
-        fd.append('oldPin', oldP);
-        fd.append('newPin', newP);
+        fd.append('action', 'changepin'); fd.append('k', k); fd.append('oldPin', oldP); fd.append('newPin', newP);
         
         fetch(API_URL, { method: "POST", body: fd })
         .then(r => r.json())
@@ -595,7 +781,6 @@
         document.getElementById('modal').style.display = 'none'; 
         document.getElementById('btn-main').style.display = 'block';
         document.body.classList.remove('edit-mode');
-        // Reset textos PIN
         document.querySelector('#pin-area label').innerText = "🔒 PIN DE AUTORIZACIÓN";
         document.querySelector('#pin-area button').innerText = "CONFIRMAR CAMBIO";
         document.querySelector('#pin-area button').style.background = "var(--accent-edit)";
@@ -619,8 +804,8 @@
        document.getElementById('dash-in').innerText = formatMoney(ingresos);
        document.getElementById('dash-out').innerText = formatMoney(gastos);
        document.getElementById('dash-total').innerText = formatMoney(total);
-       document.getElementById('dash-total').style.color = total >= 0 ? 'var(--success)' : 'var(--danger)';
-       const cards = document.querySelectorAll('.card');
+       document.getElementById('dash-total').style.color = total >= 0 ? 'var(--success-light)' : 'var(--danger)';
+       const cards = document.getElementById('dashboard-panel').querySelectorAll('.card');
        if (isSelectionMode) { cards.forEach(c => c.classList.add('active-selection')); document.getElementById('lbl-in').innerText = "INGRESOS (SEL)"; document.getElementById('lbl-out').innerText = "GASTOS (SEL)"; document.getElementById('lbl-total').innerText = "BALANCE (SEL)"; } 
        else { cards.forEach(c => c.classList.remove('active-selection')); document.getElementById('lbl-in').innerText = "INGRESOS"; document.getElementById('lbl-out').innerText = "GASTOS"; document.getElementById('lbl-total').innerText = "BALANCE"; }
     }
@@ -664,13 +849,12 @@
     function setupDatalists(options) { const dl1 = document.getElementById('list_l1'); dl1.innerHTML = ''; for(let key in options) { let op = document.createElement('option'); op.value = key; dl1.appendChild(op); } }
     function updateDatalistL2() { const val1 = document.getElementById('input_l1').value; const dl2 = document.getElementById('list_l2'); dl2.innerHTML = ''; document.getElementById('input_l2').value = ''; if(globalData.options && globalData.options[val1]) { globalData.options[val1].forEach(sub => { let op = document.createElement('option'); op.value = sub; dl2.appendChild(op); }); } }
     
-    function formatMoney(n) { return '$ ' + parseFloat(n).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); }
+    function formatMoney(n) { return parseFloat(n).toLocaleString('es-AR'); }
     
     function toggleExportMenu() { const menu = document.getElementById('export-menu'); if (menu.style.display === 'block') menu.style.display = 'none'; else menu.style.display = 'block'; }
     window.onclick = function(event) { if (!event.target.matches('.btn-export')) { const menu = document.getElementById('export-menu'); if (menu && menu.style.display === 'block') { menu.style.display = 'none'; } } }
     document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
 
-    // PDF EXPORT (Mismo código que antes)
     function exportarPDF(modo) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
