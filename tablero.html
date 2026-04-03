@@ -443,7 +443,7 @@
         document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
         document.getElementById('view-' + tabId).classList.add('active');
         activeTabId = tabId;
-        if(tabId === 'operativa' && heatMapObj) { setTimeout(() => heatMapObj.invalidateSize(), 200); }
+        if(tabId === 'operativa' && heatMapObj) { setTimeout(() => { heatMapObj.invalidateSize(); }, 300); }
         loadActiveTabData();
     }
 
@@ -461,17 +461,26 @@
         heatLayer = L.heatLayer(puntos, {radius: 20, blur: 15, maxZoom: 14}).addTo(heatMapObj);
     }
 
+    // MODIFICACION AQUI: Cambiamos el fetch GET por un FormData POST
     function loadActiveTabData() {
         const start = document.getElementById('dash-start').value;
         const end = document.getElementById('dash-end').value;
 
-        fetch(`${API_URL}?action=gettablerodata&k=${k}&start=${start}&end=${end}&view=${activeTabId}`)
+        const fd = new FormData();
+        fd.append('action', 'gettablerodata');
+        fd.append('k', k);
+        fd.append('start', start);
+        fd.append('end', end);
+        fd.append('view', activeTabId);
+
+        fetch(API_URL, { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
             if(data.status === 'success') { renderData(activeTabId, data.payload); }
-            else { throw new Error("Endpoint no preparado"); }
+            else { throw new Error("Endpoint rebotó la conexión o sesión inválida"); }
         })
         .catch(e => {
+            console.error(e);
             renderData(activeTabId, getDummyData(activeTabId));
         });
     }
@@ -520,8 +529,15 @@
             renderChart('mix', 'doughnut', data.graficoMix, { plugins: { legend:{display:false}, datalabels: { color: '#000', font: {weight: 'bold', size: 10}, formatter: (v) => v + ' u.' } } });
             renderChart('gases', 'pie', data.graficoGases, { plugins: { legend:{display:false}, datalabels: { color: '#fff', font: {weight: 'bold', size: 10}, formatter: (v) => formatMCompact(v) + ' kg' } } });
 
-            // NUEVO GRAFICO: EFECTIVIDAD
-            renderChart('efectividad', 'bar', data.graficoEfectividad, { 
+            const dataEfectividad = {
+                labels: ['Volumen General'],
+                datasets: [
+                    { label: 'Cargados en Planta', data: [data.graficoEfectividad.llevados || 0], backgroundColor: 'rgba(59, 130, 246, 0.3)', borderRadius: 4 },
+                    { label: 'Bajados en Calle', data: [data.graficoEfectividad.vendidos || 0], backgroundColor: '#3b82f6', borderRadius: 4 }
+                ]
+            };
+
+            renderChart('efectividad', 'bar', dataEfectividad, { 
                 indexAxis: 'y', 
                 plugins: { 
                     legend: {display: true, labels:{color:'#a0a0b0'}}, 
@@ -532,7 +548,6 @@
             renderChart('choferes', 'bar', data.graficoChoferes, { indexAxis: 'y', plugins: { legend: {display:false}, datalabels: { color: '#000', anchor: 'end', align: 'left', formatter: (v) => "$" + formatM(v), font: { weight: 'bold', size: 11 } } } }); 
             renderChart('zonas', 'bar', data.graficoZonas, { indexAxis: 'y', plugins: { legend: {display:false}, datalabels: { color: '#fff', anchor: 'end', align: 'end', formatter: (v, ctx) => `[${ctx.dataset.unidades[ctx.dataIndex]} unid]  $${formatM(v)}`, font: { size: 10 } } }, layout: { padding: {right: 100} } });
 
-            // LOGICA DE MAPA REAL
             if (data.mapaCalor && data.mapaCalor.length > 0) {
                 if(heatLayer) heatMapObj.removeLayer(heatLayer);
                 heatLayer = L.heatLayer(data.mapaCalor, {radius: 20, blur: 15, maxZoom: 14}).addTo(heatMapObj);
@@ -561,9 +576,16 @@
                 document.getElementById(domId).innerHTML = arr.length ? arr.map(htmlFn).join('') : `<div style="text-align:center; color:var(--success); padding:20px 0;">${emptyMsg} ✔️</div>`;
             };
 
-            // NUEVO: Lista de Envases Secuestrados
             renderList('list-secuestrados', data.secuestrados, s => `
-                <div class="list-row"><div><b style="color:#fff">${s.cliente}</b> <br><span style="color:var(--text-sec); font-size:9px;">Últ. Movimiento: ${s.fecha} (Hace ${s.dias} días)</span></div><div style="text-align:right; color:var(--danger); font-family:monospace; font-weight:700;">${s.envases}</div></div>`, 'Genial! No hay comodatos estancados');
+                <div class="list-row">
+                    <div>
+                        <b style="color:#fff">${s.cliente}</b> <br>
+                        <span style="color:var(--text-sec); font-size:9px;">Retiene: ${s.detalle} (Hace ${s.dias} días)</span>
+                    </div>
+                    <div style="text-align:right; color:var(--danger); font-family:monospace; font-weight:700;">
+                        ${s.envases} unid.
+                    </div>
+                </div>`, '¡Genial! No hay comodatos estancados');
 
             renderList('list-adeudados', data.adeudados, d => `
                 <div class="list-row"><div><b style="color:#fff">${d.cliente}</b> <br><span style="color:var(--text-sec); font-size:9px;">${d.fecha}</span></div><div style="text-align:right; color:var(--danger); font-family:monospace; font-weight:700;">-$${formatM(d.monto)}</div></div>`, 'Todo cobrado al día');
@@ -640,11 +662,8 @@
                     datasets: [{ data: [9500, 5850], backgroundColor: ['#a855f7', '#ff9100'], borderWidth: 0 }]
                 },
                 graficoEfectividad: {
-                    labels: ['Gaston', 'Jose Vicente', 'Admin'],
-                    datasets: [
-                        { label: 'Cargados (Planta)', data: [150, 100, 40], backgroundColor: 'rgba(59, 130, 246, 0.3)', borderRadius: 4 },
-                        { label: 'Vendidos', data: [135, 98, 40], backgroundColor: '#3b82f6', borderRadius: 4 }
-                    ]
+                    llevados: 150,
+                    vendidos: 135
                 },
                 graficoChoferes: {
                     labels: ['Gaston', 'Jose Vicente', 'Admin'],
@@ -668,8 +687,8 @@
                     consignacion: { '10kg': 15, '15kg': 0, '45kg': 2 }
                 },
                 secuestrados: [
-                    { cliente: 'Panadería La Riojana', fecha: '15/01/2026', dias: 76, envases: '2x45kg' },
-                    { cliente: 'Despensa Don Carlos', fecha: '02/02/2026', dias: 58, envases: '5x10kg' }
+                    { cliente: 'Panadería La Riojana', detalle: '2x45kg', dias: 76, envases: '2' },
+                    { cliente: 'Despensa Don Carlos', detalle: '5x10kg', dias: 58, envases: '5' }
                 ],
                 adeudados: [
                     { cliente: 'Despensa Don Carlos', fecha: '25/03/2026', monto: 150000 },
