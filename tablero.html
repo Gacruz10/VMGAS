@@ -43,6 +43,27 @@
     padding-bottom: 50px; opacity: 0; transition: opacity 0.6s ease;
   }
 
+  /* --- LOADING NEÓN --- */
+  .neon-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border: 3px solid transparent;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite, neon-glow 1.5s ease-in-out infinite alternate;
+    z-index: 9999;
+  }
+
+  @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+  @keyframes neon-glow {
+    from { box-shadow: 0 0 10px var(--accent), inset 0 0 10px var(--accent); }
+    to { box-shadow: 0 0 25px var(--accent), inset 0 0 20px var(--accent); }
+  }
+
   /* --- HEADER Y TABS --- */
   .fixed-header {
       position: sticky; top: 0; z-index: 200; background: rgba(5, 5, 16, 0.95);
@@ -75,10 +96,12 @@
   .date-group input { width: 100%; background: transparent; border: none; color: white; padding: 6px 6px 6px 24px; font-family: inherit; font-size: 12px; cursor: pointer; font-weight: 600; text-align: center; }
   .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 12px; }
 
-  /* --- GRILLA Y CARDS --- */
-  .view-section { display: none; padding: 0 15px; max-width: 1200px; margin: 0 auto; animation: fadeIn 0.4s ease; }
+  /* --- GRILLA Y CARDS (Con transiciones en lugar de animación directa) --- */
+  .view-section { 
+      display: none; opacity: 0; padding: 0 15px; max-width: 1200px; margin: 0 auto; 
+      transition: opacity 0.3s ease-in-out; 
+  }
   .view-section.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
   .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
   .grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
@@ -130,6 +153,8 @@
 </head>
 <body>
 
+  <div id="loader" class="neon-loader"></div>
+
   <div class="fixed-header">
     <div class="header-top">
        <button class="btn-action" id="btnVolver">❮ Volver</button>
@@ -152,13 +177,13 @@
       </div>
       
       <div class="date-filters">
-          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-start" onchange="loadActiveTabData()"></div>
+          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-start" onchange="invalidateCacheAndReload()"></div>
           <div style="color:var(--text-sec); font-size:10px; font-weight:bold;">➜</div>
-          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-end" onchange="loadActiveTabData()"></div>
+          <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-end" onchange="invalidateCacheAndReload()"></div>
       </div>
   </div>
 
-  <div id="view-finanzas" class="view-section active">
+  <div id="view-finanzas" class="view-section active" style="opacity: 1;">
       <div class="grid-kpi">
           <div class="card">
               <div class="card-title">Ingresos Totales</div>
@@ -387,6 +412,9 @@
     let heatMapObj = null;
     let heatLayer = null;
 
+    // --- EL CEREBRO DE CACHÉ Y CARGA FANTASMA ---
+    let dataCache = { finanzas: false, operativa: false, riesgo: false };
+
     async function init() {
         try {
             const fd = new FormData(); fd.append('action','verificarsesion'); fd.append('k',k);
@@ -395,7 +423,6 @@
             if(d.status !== 'success') throw new Error("Fallo de sesión en backend");
             
             setupEntorno();
-
         } catch(e) { 
             console.error(e);
             alert("⚠️ ALERTA: Tu código 'codigo.gs' rechazó el token o tiró error en 'verificarsesion'. Te voy a dejar entrar IGUAL con datos falsos (BYPASS) para que sigas viendo el diseño.");
@@ -417,7 +444,9 @@
         Chart.defaults.plugins.tooltip.titleColor = '#FFD700';
         
         initMap();
-        loadActiveTabData();
+        
+        // Arrancamos el saque inicial
+        invalidateCacheAndReload();
     }
 
     document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
@@ -429,22 +458,64 @@
         const fpStart = document.getElementById('dash-start')._flatpickr;
         const fpEnd = document.getElementById('dash-end')._flatpickr;
         const today = new Date();
-        const fmt = d => d.toISOString().split('T')[0];
 
         if(modo === 'hoy') { fpStart.setDate(today); fpEnd.setDate(today); } 
         else if(modo === '7d') { const past = new Date(); past.setDate(today.getDate() - 6); fpStart.setDate(past); fpEnd.setDate(today); } 
         else if(modo === 'mes') { const firstDay = new Date(today.getFullYear(), today.getMonth(), 1); fpStart.setDate(firstDay); fpEnd.setDate(today); }
-        loadActiveTabData();
+        
+        // Si cambian rápido de fecha, invalido y recargo
+        invalidateCacheAndReload();
     }
 
     function switchTab(tabId, btnElement) {
+        if (activeTabId === tabId) return; // Evita recargar si tocás el mismo botón
+
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btnElement.classList.add('active');
-        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        document.getElementById('view-' + tabId).classList.add('active');
-        activeTabId = tabId;
-        if(tabId === 'operativa' && heatMapObj) { setTimeout(() => { heatMapObj.invalidateSize(); }, 300); }
-        loadActiveTabData();
+        
+        const secciones = document.querySelectorAll('.view-section');
+        
+        // 1. Desvanece la vieja
+        secciones.forEach(sec => {
+            sec.style.opacity = 0;
+            setTimeout(() => {
+                sec.classList.remove('active');
+                sec.style.display = 'none';
+            }, 300); 
+        });
+
+        // 2. Muestra la nueva
+        setTimeout(() => {
+            const activa = document.getElementById('view-' + tabId);
+            activa.style.display = 'block';
+            setTimeout(() => {
+                activa.classList.add('active');
+                activa.style.opacity = 1;
+                activeTabId = tabId;
+                
+                // Forzamos un resize de gráficos para que no se achicharren por el "display:none"
+                resizeChartsForView(tabId);
+                
+                // Si justo entraste y no cargó aún, mostramos el loader
+                if (!dataCache[tabId]) {
+                    document.getElementById('loader').style.display = 'block';
+                }
+            }, 50);
+        }, 300);
+    }
+
+    function resizeChartsForView(view) {
+        if (view === 'operativa') {
+            if (heatMapObj) heatMapObj.invalidateSize();
+            if (chartInst.mix) chartInst.mix.resize();
+            if (chartInst.gases) chartInst.gases.resize();
+            if (chartInst.efectividad) chartInst.efectividad.resize();
+            if (chartInst.choferes) chartInst.choferes.resize();
+            if (chartInst.zonas) chartInst.zonas.resize();
+        } else if (view === 'finanzas') {
+            if (chartInst.evolucion) chartInst.evolucion.resize();
+            if (chartInst.gastos) chartInst.gastos.resize();
+        }
     }
 
     function initMap() {
@@ -461,8 +532,15 @@
         heatLayer = L.heatLayer(puntos, {radius: 20, blur: 15, maxZoom: 14}).addTo(heatMapObj);
     }
 
-    // MODIFICACION AQUI: Cambiamos el fetch GET por un FormData POST
-    function loadActiveTabData() {
+    // --- NUEVO FLUJO DE DATOS ---
+    function invalidateCacheAndReload() {
+        dataCache = { finanzas: false, operativa: false, riesgo: false };
+        fetchTabData(activeTabId, false);
+    }
+
+    function fetchTabData(viewId, isBackground = false) {
+        if (!isBackground) { document.getElementById('loader').style.display = 'block'; }
+
         const start = document.getElementById('dash-start').value;
         const end = document.getElementById('dash-end').value;
 
@@ -471,17 +549,32 @@
         fd.append('k', k);
         fd.append('start', start);
         fd.append('end', end);
-        fd.append('view', activeTabId);
+        fd.append('view', viewId);
 
         fetch(API_URL, { method: 'POST', body: fd })
         .then(r => r.json())
         .then(data => {
-            if(data.status === 'success') { renderData(activeTabId, data.payload); }
-            else { throw new Error("Endpoint rebotó la conexión o sesión inválida"); }
+            if(data.status === 'success') { renderData(viewId, data.payload); }
+            else { throw new Error("Endpoint rebotó la conexión"); }
+            dataCache[viewId] = true;
         })
         .catch(e => {
             console.error(e);
-            renderData(activeTabId, getDummyData(activeTabId));
+            renderData(viewId, getDummyData(viewId));
+            dataCache[viewId] = true;
+        })
+        .finally(() => {
+            if (!isBackground) {
+                document.getElementById('loader').style.display = 'none';
+                // Dispara al fantasma para que cargue el resto en silencio
+                triggerLazyLoad();
+            }
+        });
+    }
+
+    function triggerLazyLoad() {
+        ['finanzas', 'operativa', 'riesgo'].forEach(view => {
+            if (!dataCache[view]) { fetchTabData(view, true); }
         });
     }
 
@@ -673,7 +766,7 @@
                     labels: ['Zona Centro', 'Zona Sur', 'Zona Este', 'Subdistrib.'],
                     datasets: [{ label: 'Facturado ($)', data: [2500000, 1800000, 3200000, 1500000], unidades: [250, 180, 320, 150], backgroundColor: '#a855f7', borderRadius: 4 }]
                 },
-                mapaCalor: [] // Dejo esto vacio para que por defecto lance la simulacion del dummy
+                mapaCalor: []
             };
         } else if(view === 'riesgo') {
             return {
