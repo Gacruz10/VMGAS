@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recepción de Envases - Planta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d031a;
+      --glass: rgba(0, 0, 0, 0.5);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --input-bg: rgba(0, 0, 0, 0.4);
+      --text: #ffffff;
+      --accent: #4CAF50; 
+      --accent-hover: #45a049;
+      --warn: #FFD700;
+      --error: #ff4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif; color: var(--text);
+      background: radial-gradient(at 0% 0%, #0a1910 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #112a18 0%, transparent 50%);
+      background-color: var(--bg); background-attachment: fixed; min-height: 100vh; padding: 20px;
+    }
+
+    .header { text-align: center; margin-bottom: 20px; position: relative; }
+    .timer-display { position: absolute; right: 0; top: 0; font-size: 14px; color: var(--accent); background: var(--glass); padding: 6px 12px; border-radius: 12px; border: 1px solid var(--accent); font-family: 'JetBrains Mono'; }
+    .user-tag { color: var(--warn); font-size: 14px; font-weight: 700; text-transform: uppercase; }
+    
+    .btn-volver { position: absolute; left: 0; top: 0; background: transparent; border: 1px solid var(--glass-border); color: white; padding: 6px 12px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .btn-volver:hover { background: rgba(255,255,255,0.1); }
+
+    .container { max-width: 500px; margin: 0 auto; }
+    .card { background: var(--glass); backdrop-filter: blur(15px); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 10px 30px rgba(0,255,0,0.05); }
+
+    .form-group { margin-bottom: 15px; position: relative; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+    input[type="text"], input[type="number"] { width: 100%; height: 50px; padding: 0 15px; border: 1px solid var(--glass-border); border-radius: 12px; font-size: 16px; background: var(--input-bg); color: white; outline: none; transition: border-color 0.2s; }
+    input:focus { border-color: var(--accent); }
+
+    /* ESTILOS DEL "OMNIBOX" (Autocomplete) */
+    .autocomplete-items {
+      position: absolute; border: 1px solid var(--accent); border-radius: 12px;
+      border-top: none; z-index: 99; top: 100%; left: 0; right: 0;
+      background: #112a18; max-height: 200px; overflow-y: auto;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+    }
+    .autocomplete-items div {
+      padding: 12px 15px; cursor: pointer; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .autocomplete-items div:hover { background-color: var(--accent); color: #000; font-weight: bold; }
+
+    .saldo-panel { display: none; background: rgba(76, 175, 80, 0.05); border: 1px dashed var(--accent); border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 20px; animation: fadeIn 0.3s ease; }
+    .saldo-panel h3 { color: var(--accent); margin-bottom: 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+    .saldo-grid { display: flex; justify-content: center; gap: 15px; }
+    .saldo-item { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px; flex: 1; }
+    .saldo-item span { display: block; font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 4px; }
+    .saldo-item strong { font-family: 'JetBrains Mono'; font-size: 18px; }
+    .val-pos { color: var(--accent); }
+    .val-neg { color: var(--error); }
+
+    .form-operacion { display: none; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .garrafa-row { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 12px; border: 1px solid transparent; transition: border 0.2s; }
+    .garrafa-row:focus-within { border-color: var(--accent); background: rgba(76, 175, 80, 0.05); }
+    .garrafa-row label { flex: 1; margin: 0; font-size: 15px; font-weight: 700; color: white; }
+    .garrafa-row input { width: 90px; text-align: center; font-size: 20px; font-weight: bold; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); color: var(--accent); }
+
+    .btn-submit { width: 100%; height: 60px; background: var(--accent); color: #000; border: none; border-radius: 15px; font-size: 16px; font-weight: 800; cursor: pointer; margin-top: 15px; text-transform: uppercase; transition: background 0.2s; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); }
+    .btn-submit:hover { background: var(--accent-hover); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+    .loader { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; color: var(--accent); font-weight: bold; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(76, 175, 80, 0.2); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 15px 20px; border-radius: 8px; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--accent); color: #000; } 
+    .toast.error { background: var(--error); } 
+  </style>
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <div class="header container">
+    <button class="btn-volver" onclick="window.location.replace(`inicio.html?k=${k}`)">⬅ VOLVER</button>
+    <div id="timerDisplay" class="timer-display">05:00</div>
+    <div class="user-tag" id="welcomeMessage">CARGANDO...</div>
+    <h1 style="margin-top: 15px; font-size: 22px; color: var(--accent);">RECEPCIÓN DE ENVASES</h1>
+    <p style="font-size: 12px; color: #aaa; margin-top: 5px;">Acreditación de vacíos en Planta</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div id="loaderData" class="loader">
+        <div class="spinner"></div>
+        <span>Sincronizando Base de Datos...</span>
+      </div>
+      
+      <div id="uiPrincipal" style="display: none;">
+        
+        <div class="form-group">
+          <label>Buscar Cliente</label>
+          <input type="text" id="buscadorCliente" placeholder="Escribí el nombre del cliente..." autocomplete="off">
+          <div id="listaClientes" class="autocomplete-items" style="display: none;"></div>
+        </div>
+
+        <div id="saldoPanel" class="saldo-panel">
+          <h3>Saldo actual del cliente</h3>
+          <div class="saldo-grid">
+            <div class="saldo-item"><span>10 KG</span><strong id="bal10">0</strong></div>
+            <div class="saldo-item"><span>15 KG</span><strong id="bal15">0</strong></div>
+            <div class="saldo-item"><span>45 KG</span><strong id="bal45">0</strong></div>
+          </div>
+        </div>
+
+        <div id="formOperacion" class="form-operacion">
+          <label style="color: var(--accent); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">CANTIDAD RECIBIDA</label>
+          
+          <div class="garrafa-row">
+            <label>Garrafa 10kg</label>
+            <input type="number" id="cant10" value="0" min="0" onfocus="this.select()">
+          </div>
+          <div class="garrafa-row">
+            <label>Garrafa 15kg</label>
+            <input type="number" id="cant15" value="0" min="0" onfocus="this.select()">
+          </div>
+          <div class="garrafa-row">
+            <label>Cilindro 45kg</label>
+            <input type="number" id="cant45" value="0" min="0" onfocus="this.select()">
+          </div>
+
+          <div class="form-group" style="margin-top:20px;">
+            <label>Observaciones (Opcional)</label>
+            <input type="text" id="notaOp" placeholder="Ej: Trajo el chofer, envases sucios...">
+          </div>
+
+          <button id="btnGuardar" class="btn-submit" onclick="guardarIngreso()">📥 REGISTRAR INGRESO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get('k') || params.get('token'); 
+
+    if (!k) window.location.replace('index.html');
+
+    let clientesFlotantes = []; 
+    let clienteActual = null;
+
+    // Cronómetro
+    let expireTime = Date.now() + 300000;
+    setInterval(() => {
+        const timeLeft = Math.floor((expireTime - Date.now()) / 1000);
+        if (timeLeft <= 0) window.location.replace('index.html');
+        document.getElementById('timerDisplay').textContent = `${Math.floor(timeLeft / 60).toString().padStart(2, '0')}:${(timeLeft % 60).toString().padStart(2, '0')}`;
+    }, 1000);
+    ['click', 'keydown', 'touchstart'].forEach(evt => document.addEventListener(evt, () => expireTime = Date.now() + 300000));
+
+    function showToast(msg, type = 'info') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; c.appendChild(t);
+        setTimeout(() => t.classList.add('show'), 10);
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+    }
+
+    async function init() {
+        try {
+            const r = await fetch(`${SCRIPT_URL}?action=getDatosPlanta&k=${k}`);
+            const data = await r.json();
+            
+            if (data.status !== 'success') throw new Error("Sesión inválida");
+
+            document.getElementById('welcomeMessage').textContent = `GUARDIA / PLANTA: ${data.usuario}`;
+            
+            // Ordenamos alfabéticamente para que sea más fácil de buscar
+            clientesFlotantes = data.clientes.sort((a,b) => a.nombre.localeCompare(b.nombre)); 
+
+            document.getElementById('loaderData').style.display = 'none';
+            document.getElementById('uiPrincipal').style.display = 'block';
+        } catch (e) {
+            showToast("Error de conexión. Expulsando...", "error");
+            setTimeout(() => window.location.replace('index.html'), 2000);
+        }
+    }
+
+    // --- LOGICA DEL OMNIBOX ---
+    const inputBuscador = document.getElementById('buscadorCliente');
+    const listaResultados = document.getElementById('listaClientes');
+
+    function renderizarLista(filtro = '') {
+        listaResultados.innerHTML = '';
+        
+        // Filtramos por lo que tipea el usuario
+        const filtrados = clientesFlotantes.filter(c => c.nombre.toLowerCase().includes(filtro.toLowerCase()));
+        
+        // Mostramos máximo 20 resultados para no reventar la pantalla
+        filtrados.slice(0, 20).forEach(c => {
+            const div = document.createElement('div');
+            
+            // Armamos la info extra (DNI y Domicilio) si existen
+            let infoExtra = [];
+            if (c.dni) infoExtra.push(`Doc: ${c.dni}`);
+            if (c.domicilio) infoExtra.push(`Dir: ${c.domicilio}`);
+            
+            // Si hay info extra, la metemos en un <span> con letra más chica y gris
+            const spanExtra = infoExtra.length > 0 
+                ? `<br><span style="font-size: 11px; color: #888;">${infoExtra.join(' | ')}</span>` 
+                : '';
+
+            // Dibujamos el nombre en negrita y la info extra abajo
+            div.innerHTML = `<strong>${c.nombre}</strong>${spanExtra}`;
+            
+            div.onclick = () => seleccionarCliente(c);
+            listaResultados.appendChild(div);
+        });
+
+        // Mostramos el cuadrito si hay resultados
+        listaResultados.style.display = filtrados.length > 0 ? 'block' : 'none';
+    }
+
+    // Eventos del Input
+    inputBuscador.addEventListener('input', (e) => renderizarLista(e.target.value));
+    inputBuscador.addEventListener('focus', () => renderizarLista(inputBuscador.value));
+
+    // Si hace clic en cualquier lado fuera de la caja, se cierra
+    document.addEventListener('click', function(e) {
+        if (e.target !== inputBuscador && e.target !== listaResultados) {
+            listaResultados.style.display = 'none';
+        }
+    });
+
+    // Acción al elegir un cliente de la lista
+    function seleccionarCliente(c) {
+        inputBuscador.value = c.nombre; // Ponemos el nombre en el input
+        listaResultados.style.display = 'none'; // Escondemos la lista
+        clienteActual = c;
+        
+        // Actualizamos UI de Saldos
+        ['10', '15', '45'].forEach(peso => {
+            const el = document.getElementById(`bal${peso}`);
+            const saldo = clienteActual[`saldo${peso}`] || 0;
+            el.textContent = saldo;
+            el.className = '';
+            if(saldo > 0) el.classList.add('val-pos');
+            if(saldo < 0) el.classList.add('val-neg');
+        });
+
+        // Reseteo
+        document.getElementById('cant10').value = 0;
+        document.getElementById('cant15').value = 0;
+        document.getElementById('cant45').value = 0;
+        document.getElementById('notaOp').value = '';
+
+        document.getElementById('saldoPanel').style.display = 'block';
+        document.getElementById('formOperacion').style.display = 'block';
+    }
+    // --- FIN LOGICA OMNIBOX ---
+
+    async function guardarIngreso() {
+        if (!clienteActual) {
+           showToast("Por favor, buscá y seleccioná un cliente primero.", "error"); return;
+        }
+
+        const q10 = parseInt(document.getElementById('cant10').value) || 0;
+        const q15 = parseInt(document.getElementById('cant15').value) || 0;
+        const q45 = parseInt(document.getElementById('cant45').value) || 0;
+
+        if (q10 + q15 + q45 === 0) {
+            showToast("No ingresaste ninguna cantidad para recibir.", "error"); 
+            return;
+        }
+
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true; btn.textContent = "GUARDANDO...";
+
+        const payload = {
+            action: 'ingresoFlotante', 
+            k: k,
+            idCliente: clienteActual.id,
+            nombreCliente: clienteActual.nombre,
+            q10: q10, q15: q15, q45: q45,
+            nota: document.getElementById('notaOp').value
+        };
+
+        const fd = new FormData();
+        for(let key in payload) fd.append(key, payload[key]);
+
+        try {
+            const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
+            const j = await r.json();
+            
+            if(j.status === 'success') {
+                showToast("✅ INGRESO REGISTRADO CORRECTAMENTE.", "success");
+                setTimeout(() => window.location.replace(`inicio.html?k=${k}`), 1500); 
+            } else {
+                throw new Error(j.message);
+            }
+        } catch (e) {
+            showToast("⛔ ERROR: " + e.message, "error");
+            btn.disabled = false; btn.textContent = "📥 REGISTRAR INGRESO";
+        }
+    }
+
+    init();
+  </script>
+</body>
+</html>

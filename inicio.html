@@ -160,7 +160,9 @@
   }
 
   .tile.finance { border-color: rgba(50, 205, 50, 0.3); } 
-  .tile.audit { border-color: rgba(138, 43, 226, 0.3); }    
+  .tile.audit { border-color: rgba(138, 43, 226, 0.3); }   
+  .tile.flotantes { border-color: rgba(76, 175, 80, 0.3); } /* Verde sutil para flotantes */
+  .tile.treeview { border-color: rgba(255, 165, 0, 0.3); } /* Naranja para TreeView */
 
   .badge {
     position: absolute; top: -8px; right: -8px;
@@ -279,6 +281,16 @@
       <a class="tile audit" id="tileConFinanzas" onclick="navegar('controlfinanzas.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">query_stats</span>
           <span class="title">Control<br>Finanzas</span>
+      </a>
+
+      <a class="tile treeview" id="tileTreeView" onclick="navegar('treeview.html')" style="display:none">
+          <span class="material-symbols-rounded tile-icon">account_tree</span>
+          <span class="title">Control<br>Movimientos</span>
+      </a>
+
+      <a class="tile flotantes" id="tileFlotantes" onclick="navegar('index_recepcion.html')" style="display:none">
+          <span class="material-symbols-rounded tile-icon">move_to_inbox</span>
+          <span class="title">Recepción<br>Flotantes</span>
       </a>
 
       <a class="tile logout" onclick="logout()" style="border-color: rgba(255,55,95,0.3);">
@@ -414,6 +426,7 @@ function renderizarInterfaz(nombre, perms) {
         if (el) el.style.display = condition ? 'flex' : 'none';
     };
 
+    // VISIBILIDAD DE LOS MÓDULOS SEGÚN PERMISOS
     show('tileFormulario',  p.formulario);
     show('tileClientes',    p.clientes);
     show('tilePrecios',     p.precios);
@@ -424,6 +437,10 @@ function renderizarInterfaz(nombre, perms) {
     show('tileCarga',       p.carga);
     show('tileFinanzas',    p.finanzas);
     show('tileConFinanzas', p.confinanzas);
+    
+    // NUESTROS NUEVOS BOTONES
+    show('tileTreeView',    p.gastos); // Usamos el permiso "gastos" internamente
+    show('tileFlotantes',   p.flotantes);
 
     initHoverEffects();
 

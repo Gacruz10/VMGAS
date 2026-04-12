@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría Pro — Trazabilidad de Stock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #060a10;
+      --surface:   #0b1018;
+      --panel:     #0f1823;
+      --border:    #1c2a3a;
+      --border2:   #243040;
+      --text:      #c5d4e0;
+      --dim:       #546a7b;
+      --accent:    #38bdf8;
+      --pos:       #34d399;
+      --neg:       #f87171;
+      --warn:      #fbbf24;
+      --purple:    #a78bfa;
+      --teal:      #2dd4bf;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 40% at 10% 0%, rgba(14,165,233,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 60% at 90% 100%, rgba(52,211,153,0.03) 0%, transparent 60%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      line-height: 1.3;
+      min-height: 100vh;
+      padding: 8px; /* Aún menos padding general */
+    }
+
+    /* TODOS LOS NÚMEROS TABULARES */
+    .num, td, th, .kpi-value, span, div, input {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── HEADER & SELECTOR FECHA ────────────────────── */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--accent);
+      border-radius: 4px; padding: 8px 12px; margin-bottom: 8px;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 2px;}
+    .header-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.05em; }
+    .header-title span { color: var(--accent); }
+    
+    .header-right { display: flex; gap: 10px; align-items: center; }
+
+    /* Controles de Filtro */
+    .filter-group { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
+    .date-picker {
+      background: transparent; border: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 11px;
+      outline: none; font-weight: 600; cursor: pointer; color-scheme: dark;
+    }
+    .btn-filter {
+      background: var(--accent); color: #000; border: none; padding: 4px 8px; border-radius: 3px;
+      font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase;
+    }
+    .btn-filter:hover { opacity: 0.9; }
+
+    .btn-volver {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text);
+      padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-volver:hover { background: var(--border2); color: #fff; }
+
+    .badge {
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.05em; text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .badge-ok   { background: rgba(52,211,153,0.15); color: var(--pos); border: 1px solid rgba(52,211,153,0.3); }
+    .badge-warn { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
+    .badge-ruta { background: rgba(56,189,248,0.15); color: var(--accent); border: 1px solid rgba(56,189,248,0.3); }
+    .badge-alerta { background: rgba(248,113,113,0.15); color: var(--neg); border: 1px solid rgba(248,113,113,0.3); }
+    .badge-auto { background: rgba(167,139,250,0.15); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+
+    /* ── KPI BAR COMPRIMIDA ────────────────────────── */
+    .kpi-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .kpi {
+      flex: 1; min-width: 100px; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 4px; padding: 4px 8px; border-top: 2px solid var(--kpi-color, var(--accent));
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .kpi-label { color: var(--dim); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px;}
+    .kpi-value { font-size: 14px; font-weight: 700; color: var(--kpi-color, #fff); }
+
+    /* ── TURNO SECTION (1 FILA) ────────────────────── */
+    .turno-block { border: 1px solid var(--border); border-radius: 4px; margin-bottom: 8px; background: var(--surface); }
+    .turno-head { background: #0d1520; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+    .turno-head-inner { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; font-size: 11px; }
+    .turno-head:hover { background: #121c29; }
+    
+    .turno-id { display: flex; align-items: center; gap: 8px; }
+    .turno-id b { color: var(--accent); font-size: 12px; }
+    .turno-id .chevron { color: var(--dim); transition: transform 0.2s; font-size: 9px; }
+    .turno-id .chevron.open { transform: rotate(90deg); }
+    
+    .turno-stats { display: flex; gap: 12px; align-items: center; font-size: 10px;}
+    .turno-stat-label { color: var(--dim); }
+    .turno-stat-val   { color: var(--text); font-weight: 600; }
+
+    /* ── CONTENEDORES Y TABLAS ─────────────────────── */
+    .section-inner { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+
+    .data-table-wrap, .op-table-wrap, .bd1-section {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .table-scroll-container { max-height: 250px; overflow-y: auto; overflow-x: auto; }
+    .data-table-title {
+      background: rgba(0,0,0,0.3); padding: 4px 8px; font-size: 9px; text-transform: uppercase;
+      color: var(--dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .data-table-title strong { color: var(--text); }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    thead th {
+      position: sticky; top: 0; z-index: 10; background: #0a1018; color: var(--dim);
+      font-size: 9px; font-weight: 600; padding: 3px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: center;
+    }
+    thead th.group-head { border-right: 1px solid var(--border); }
+    th.num-header { text-align: right; }
+
+    tbody td { padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,0.02); white-space: nowrap; font-size: 10px; text-align: center;}
+    tbody td:first-child { text-align: left; }
+    tbody tr:hover td { background: rgba(56,189,248,0.05); }
+    
+    .num { text-align: right; }
+    .ctr { text-align: center; }
+
+    .val-L  { color: var(--pos);  font-weight: 600; }
+    .val-V  { color: var(--warn); font-weight: 600; }
+    .val-$ { color: var(--accent); font-weight: 600; }
+    .val-neg { color: var(--neg); font-weight: 600; }
+    .val-dim { color: var(--dim); }
+    .val-sug { color: var(--dim); font-style: italic; opacity: 0.8; } /* Valores Sugeridos */
+
+    .row-apertura td { background: rgba(52,211,153,0.04); }
+    .row-sugerida td { background: rgba(255,255,255,0.02); }
+    .row-totales td { border-top: 1px solid var(--border) !important; background: rgba(56,189,248,0.05); font-weight: 600; }
+
+    /* ── VIAJE BLOCK ───────────────────────────────── */
+    .viaje-block { border: 1px solid var(--border); border-radius: 3px; border-left: 3px solid var(--accent); }
+    .viaje-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: rgba(56,189,248,0.05); cursor: pointer; }
+    .viaje-title { font-weight: 600; font-size: 10px; color: var(--accent); display: flex; gap: 6px; align-items: center;}
+    .viaje-meta { display: flex; gap: 10px; color: var(--dim); font-size: 9px; }
+    .viaje-meta b { color: var(--text); }
+    .viaje-inner { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+
+    /* ── TAGS ──────────────────────────────────────── */
+    .tag { display: inline-block; padding: 1px 4px; border-radius: 2px; font-size: 8px; font-weight: 700; white-space: nowrap; }
+    .tag-VENTA      { background: rgba(52,211,153,0.15); color: var(--pos);  border: 1px solid rgba(52,211,153,0.3); }
+    .tag-COMODATO   { background: rgba(56,189,248,0.15); color: var(--accent); border: 1px solid rgba(56,189,248,0.3); }
+    .tag-CONSIG     { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
+
+    /* ── CARGA RESUMEN (HORIZONTAL Y CENTRADA) ─────── */
+    .carga-row { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+    .carga-header { padding: 4px 8px; font-size: 9px; font-weight: 600; color: var(--text); width: 140px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
+    .carga-header.llegada { color: var(--warn); border-color: rgba(251,191,36,0.3); }
+    .carga-data { display: flex; flex: 1; justify-content: space-around; padding: 4px; }
+    .env-mini-chip { font-size: 10px; display: flex; align-items: center; gap: 4px; color: var(--text); }
+    .env-mini-chip span { font-size: 9px; color: var(--dim); }
+    .env-mini-chip .l { color: var(--pos); font-weight: 600;}
+    .env-mini-chip .v { color: var(--warn); font-weight: 600;}
+
+    /* ── CUENTA CORRIENTE ENVASES (TIRA HORIZONTAL) ── */
+    .cc-tira { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: rgba(56,189,248,0.04); border: 1px solid var(--border); border-radius: 3px; font-size: 10px;}
+    .cc-tira-title { font-size: 9px; color: var(--dim); text-transform: uppercase; border-right: 1px solid var(--border); padding-right: 8px; }
+    .cc-item { display: flex; align-items: center; gap: 4px; border-right: 1px solid var(--border); padding-right: 8px; }
+    .cc-item:last-child { border-right: none; }
+    .cc-item span { color: var(--dim); font-size: 9px; }
+    .cc-item b { color: var(--text); font-weight: 600; }
+    .cc-item b.deuda { color: var(--neg); }
+
+    /* ── ALERTAS (UNA SOLA LÍNEA) ──────────────────── */
+    .alerta-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 3px; font-size: 9px; border: 1px solid rgba(248,113,113,0.2); background: rgba(248,113,113,0.05); margin-bottom: 2px; }
+    .alerta-row.ok { border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.05); opacity: 0.7; }
+    .alerta-time { color: var(--dim); width: 35px; text-align: center; }
+    .alerta-user { color: var(--text); width: 50px; font-weight: 600; text-align: center;}
+    .alerta-tipo { width: 80px; text-align: center;}
+    .alerta-desc { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alerta-status { width: 60px; text-align: right; }
+
+    /* ── COLLAPSIBLE ───────────────────────────────── */
+    .collapsible { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.2s; }
+    .collapsible.collapsed { grid-template-rows: 0fr; }
+    .collapsible > div { overflow: hidden; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .pulse-dot { display: inline-block; width: 6px; height: 6px; background: var(--warn); border-radius: 50%; animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">AUDITORÍA <span>PRO</span></div>
+    <div style="color:var(--dim);font-size:8px;letter-spacing:0.05em;">BD1 · CSTOCK · CCARGA · ALARMAS · ARQUEO</div>
+  </div>
+  <div class="header-right">
+    <div class="filter-group">
+        <span style="font-size: 10px; color: var(--dim);">FECHA:</span>
+        <input type="date" class="date-picker" id="fechaAuditoria" value="2026-04-06">
+        <button class="btn-filter" onclick="alert('Filtrando datos...')">Traer</button>
+    </div>
+    <span class="badge badge-warn"><span class="pulse-dot"></span>TURNO ABIERTO</span>
+    <button class="btn-volver" onclick="navegarInicio()">◀ Volver</button>
+  </div>
+</div>
+
+<div class="kpi-bar">
+  <div class="kpi" style="--kpi-color: var(--pos)"><div class="kpi-label">Inicial L10</div><div class="kpi-value">190</div></div>
+  <div class="kpi" style="--kpi-color: var(--warn)"><div class="kpi-label">Inicial V10</div><div class="kpi-value">10</div></div>
+  <div class="kpi" style="--kpi-color: var(--accent)"><div class="kpi-label">Viajes Act.</div><div class="kpi-value">1</div></div>
+  <div class="kpi" style="--kpi-color: var(--purple)"><div class="kpi-label">Ops BD1</div><div class="kpi-value">1</div></div>
+  <div class="kpi" style="--kpi-color: var(--neg)"><div class="kpi-label">Alarmas</div><div class="kpi-value">1</div></div>
+  <div class="kpi" style="--kpi-color: var(--teal)"><div class="kpi-label">Caja Total</div><div class="kpi-value">$1.030.000</div></div>
+</div>
+
+<div class="turno-block">
+  <div class="turno-head" onclick="toggleSection('t1')">
+    <div class="turno-head-inner">
+      <div class="turno-id">
+        <span class="chevron open" id="chev-t1">▶</span>
+        <span>TURNO: <b>3597A25E</b></span>
+        <span style="color:var(--dim); margin-left:8px;">Apertura: 20:58 · admin</span>
+      </div>
+      <div class="turno-stats">
+        <span class="turno-stat-label">Estado:</span> <span class="badge badge-warn">ABIERTO</span>
+        <span class="turno-stat-label" style="margin-left:8px;">Caja:</span> <span class="turno-stat-val val-dim">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible" id="t1">
+    <div> <div class="section-inner">
+
+        <div class="data-table-wrap">
+          <div class="data-table-title">
+            <strong>📦 INVENTARIO DE STOCK (CSTOCK)</strong>
+            <span>ID: 3597A25E</span>
+          </div>
+          <div class="table-scroll-container">
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2" style="width:70px; text-align:left;">ESTADO</th>
+                <th colspan="2" class="group-head" style="color:var(--pos)">10 KG</th>
+                <th colspan="2" class="group-head" style="color:var(--accent)">15 KG</th>
+                <th colspan="2" class="group-head" style="color:var(--warn)">45 KG</th>
+                <th rowspan="2" style="width:60px; text-align:right;">HORA</th>
+              </tr>
+              <tr>
+                <th style="color:var(--pos);">LLEN</th><th style="color:var(--warn);">VAC</th>
+                <th style="color:var(--pos);">LLEN</th><th style="color:var(--warn);">VAC</th>
+                <th style="color:var(--pos);">LLEN</th><th style="color:var(--warn);">VAC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-apertura">
+                <td><span class="tag tag-VENTA">APERTURA</span></td>
+                <td class="val-L">190</td><td class="val-V">10</td>
+                <td class="val-L">190</td><td class="val-V">10</td>
+                <td class="val-L">190</td><td class="val-V">10</td>
+                <td class="num val-dim">20:58</td>
+              </tr>
+              <tr class="row-sugerida">
+                <td style="text-align:left;"><span class="tag" style="background:rgba(255,255,255,0.1); color:var(--text);">CIERRE (CALC)</span></td>
+                <td class="val-sug">180</td><td class="val-sug">20</td>
+                <td class="val-sug">180</td><td class="val-sug">20</td>
+                <td class="val-sug">180</td><td class="val-sug">20</td>
+                <td class="num val-dim">Sugerido</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+
+        <div class="viaje-block">
+          <div class="viaje-head" onclick="toggleSection('v1')">
+            <div class="viaje-title">
+              <span id="chev-v1" style="font-size:10px;">▶</span>
+              🚚 VIAJE: 98AFA5FA <span class="badge badge-ruta" style="margin-left:6px;">EN_RUTA</span>
+            </div>
+            <div class="viaje-meta">
+              <span>Ch: <b>gacruz</b></span> | <span>Tipo: <b>REPARTO</b></span> | <span>Salida: <b>21:06</b></span>
+            </div>
+          </div>
+
+          <div class="collapsible" id="v1">
+            <div>
+              <div class="viaje-inner">
+
+                <div>
+                    <div class="carga-row">
+                        <div class="carga-header">📤 SALIDA <span style="color:var(--dim); font-weight:400;">21:06</span></div>
+                        <div class="carga-data">
+                            <div class="env-mini-chip"><span>10KG:</span> L<span class="l">50</span> / V<span class="v">0</span></div>
+                            <div class="env-mini-chip"><span>15KG:</span> L<span class="l">50</span> / V<span class="v">0</span></div>
+                            <div class="env-mini-chip"><span>45KG:</span> L<span class="l">50</span> / V<span class="v">0</span></div>
+                        </div>
+                    </div>
+                    <div class="carga-row" style="border-color: rgba(251,191,36,0.2);">
+                        <div class="carga-header llegada">📥 LLEGADA (CALC) <span style="color:var(--dim); font-weight:400;">Pendiente</span></div>
+                        <div class="carga-data">
+                            <div class="env-mini-chip"><span>10KG:</span> L<span class="l val-sug">40</span> / V<span class="v val-sug">10</span></div>
+                            <div class="env-mini-chip"><span>15KG:</span> L<span class="l val-sug">40</span> / V<span class="v val-sug">10</span></div>
+                            <div class="env-mini-chip"><span>45KG:</span> L<span class="l val-sug">40</span> / V<span class="v val-sug">10</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bd1-section">
+                  <div class="data-table-title">⚡ BD1 EN RUTA <span style="margin-left:auto;">1 op</span></div>
+                  
+                  <div class="cc-tira" style="border-bottom:none; border-radius: 3px 3px 0 0;">
+                      <div class="cc-tira-title">CLIENTE INFO</div>
+                      <div class="cc-item"><span>ID:</span> <b>CL-41QD</b></div>
+                      <div class="cc-item"><span>Nombre:</span> <b>GASTON</b></div>
+                      <div class="cc-item"><span>Tipo:</span> <b>SUBDISTRIB.</b></div>
+                      <div class="cc-item" style="margin-left:auto;"><span>Deuda $:</span> <b class="deuda">$3.000.000</b></div>
+                      <div class="cc-item"><span>Env. a Favor:</span> <b>0</b></div>
+                  </div>
+
+                  <div class="table-scroll-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:40px; text-align:left;">HORA</th>
+                        <th>TIPO</th>
+                        <th class="group-head" colspan="3" style="color:var(--pos)">LLENOS (10/15/45)</th>
+                        <th class="num-header">EFECTIVO</th>
+                        <th class="num-header">TRANSF.</th>
+                        <th class="num-header">TOTAL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="val-dim" style="text-align:left;">21:08</td>
+                        <td><span class="tag tag-VENTA">VENTA</span></td>
+                        <td class="val-L">10</td><td class="val-L">10</td><td class="val-L">10</td>
+                        <td class="num val-$">$150.000</td>
+                        <td class="num val-$">$500.000</td>
+                        <td class="num val-white">$650.000</td>
+                      </tr>
+                      <tr class="row-totales">
+                        <td colspan="2" style="color:#fff; text-align:left;">∑ TOT.</td>
+                        <td class="val-L">10</td><td class="val-L">10</td><td class="val-L">10</td>
+                        <td class="num val-$">$150.000</td>
+                        <td class="num val-$">$500.000</td>
+                        <td class="num val-pos">$650.000</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="viaje-block" style="border-left-color: var(--neg);">
+          <div class="viaje-head" onclick="toggleSection('a1')">
+            <div class="viaje-title"><span id="chev-a1" style="font-size:10px;">▶</span> 🔔 ALARMAS <span class="badge badge-alerta" style="margin-left:6px;">1 PEND.</span></div>
+          </div>
+          <div class="collapsible" id="a1">
+            <div style="padding:6px;">
+              <div class="alerta-row">
+                <div class="alerta-time">21:11</div>
+                <div class="alerta-user">gacruz</div>
+                <div class="alerta-tipo"><span class="tag tag-CONSIG">CONSIG_DEJADO</span></div>
+                <div class="alerta-desc">GASTON dejó 10x10. Deuda: $3.000.000</div>
+                <div class="alerta-status"><span class="badge badge-alerta" style="font-size:7px;">PENDIENTE</span></div>
+              </div>
+              <div class="alerta-row ok">
+                <div class="alerta-time">19:40</div>
+                <div class="alerta-user">gacruz</div>
+                <div class="alerta-tipo"><span class="tag tag-VENTA">DIF_CARGA</span></div>
+                <div class="alerta-desc">Descuadre L10-10, V10+10</div>
+                <div class="alerta-status"><span class="badge badge-ok" style="font-size:7px;">RESUELTO</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div></div>
+  </div></div>
+
+<script>
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    const chev = document.getElementById('chev-' + id);
+    el.classList.toggle('collapsed');
+    if (chev) chev.classList.toggle('open');
+  }
+
+  // Establecer fecha de hoy en el selector al cargar
+  window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fechaAuditoria').value = today;
+  }
+
+  function navegarInicio() {
+    const params = new URLSearchParams(window.location.search);
+    const k = params.get('k') || params.get('token');
+    if(k) {
+        window.location.href = `inicio.html?k=${k}`;
+    } else {
+        window.location.href = `inicio.html`;
+    }
+  }
+</script>
+</body>
+</html>

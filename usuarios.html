@@ -23,7 +23,7 @@
       --switch-on: #2dd4bf;  
       --switch-off: #4b5563; 
       --error: #ff5e5e;
-      --success: #2dd4bf; /* Color verde agua original para éxito */
+      --success: #2dd4bf;
     }
 
     * { box-sizing: border-box; }
@@ -137,7 +137,6 @@
       padding: 20px; display: flex; justify-content: center; z-index: 100; backdrop-filter: blur(2px);
     }
 
-    /* --- SISTEMA DE TOASTS --- */
     #toast-container { position: fixed; bottom: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
     .toast.show { opacity: 1; transform: translateY(0); }
@@ -145,7 +144,6 @@
     .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
     .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
 
-    /* --- ANIMACIÓN DE CARGA (OVERLAY) --- */
     .loading-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column;
@@ -203,11 +201,9 @@
 </footer>
 
 <script>
-// --- PROTOCOLO SEGURIDAD (VETERINARIO) ---
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
-const TIMEOUT_SESION = 300000; // 5 minutos
+const TIMEOUT_SESION = 300000; 
 
-// Funciones visuales
 function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -237,12 +233,10 @@ function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
     else overlay.classList.remove('active');
 }
 
-// 1. Detector de Atrás
 window.addEventListener('pageshow', (e) => {
   if (e.persisted || (window.performance && window.performance.navigation.type === 2)) window.location.reload();
 });
 
-// 2. Protocolo K
 const params = new URLSearchParams(window.location.search);
 const k = params.get('k') || params.get('token');
 
@@ -254,7 +248,6 @@ function expulsar() {
 if (!k) {
   expulsar();
 } else {
-    // Limpieza URL
     if (window.history.replaceState) {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -268,18 +261,17 @@ async function validarSesion() {
     
     const fd = new FormData();
     fd.append('action', 'verificarsesion');
-    fd.append('k', k); // Enviamos K
+    fd.append('k', k);
     const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
     const d = await r.json();
     
     if (d.status !== 'success') throw new Error();
     
     toggleLoader(true, "CARGANDO USUARIOS...");
-    cargar(); // Iniciar carga si validado
+    cargar();
   } catch (e) { expulsar(); }
 }
 
-// 3. Inactividad
 let tIdle;
 function resetTimer() {
   clearTimeout(tIdle);
@@ -288,11 +280,9 @@ function resetTimer() {
 ['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, resetTimer));
 resetTimer();
 
-// 4. Volver Seguro
 document.getElementById('btnInicio').onclick = () => {
   window.location.replace(`inicio.html?k=${k}`);
 };
-// ----------------------------
 
 const MAX_USERS = 50;
 let loadedUsers = [];
@@ -308,6 +298,7 @@ function crearTarjeta(data) {
     return v === 'TRUE' || v === 'SI' || v === '1';
   };
 
+  // ACÁ REEMPLAZAMOS "Gastos" por "TreeView" y agregamos "PIN Dinámico"
   el.innerHTML = `
     <div class="card-header">
       <div class="card-title">Credenciales de Acceso</div>
@@ -338,12 +329,11 @@ function crearTarjeta(data) {
         ${makeSwitch('clientes', 'Clientes', isChecked('clientes'))}
         ${makeSwitch('precios', 'Precios', isChecked('precios'))}
         ${makeSwitch('stock', 'Control Stock', isChecked('stock'))}
-        ${makeSwitch('gastos', 'Gastos', isChecked('gastos'))}
-        
-        ${makeSwitch('carga', 'Control Carga', isChecked('carga'))}
-        ${makeSwitch('finanzas', 'Carga Finanzas', isChecked('finanzas'))}
+        ${makeSwitch('gastos', 'TreeView', isChecked('gastos'))} ${makeSwitch('carga', 'Control Carga', isChecked('carga'))}
+        ${makeSwitch('finanzas', 'Arqueos', isChecked('finanzas'))}
         ${makeSwitch('confinanzas', 'Control Finanzas', isChecked('confinanzas'))}
-      </div>
+        ${makeSwitch('flotantes', 'Recepción Flotantes', isChecked('flotantes'))}
+        ${makeSwitch('pinDinamico', 'PIN Dinámico', isChecked('pinDinamico'))} </div>
     </div>
   `;
 
@@ -389,10 +379,13 @@ async function guardar() {
   const cards = document.querySelectorAll('.user-card');
   const rows = [];
 
-  const toBit = (k, card) => card.querySelector(`[data-key="${k}"]`).checked ? "1" : "0";
+  const toBit = (k, card) => {
+    const check = card.querySelector(`[data-key="${k}"]`);
+    return (check && check.checked) ? "1" : "0";
+  };
 
   cards.forEach(card => {
-    const getVal = (k) => card.querySelector(`[data-key="${k}"]`).value.trim();
+    const getVal = (k) => card.querySelector(`[data-key="${k}"]`) ? card.querySelector(`[data-key="${k}"]`).value.trim() : '';
     
     if (getVal('usuario')) {
       rows.push({
@@ -404,7 +397,6 @@ async function guardar() {
         domicilio: getVal('domicilio'), 
         datosExtra: getVal('datosExtra'),
         
-        // PERMISOS (TODOS)
         alarmas: toBit('alarmas', card),
         tablero: toBit('tablero', card),
         usuarios: toBit('usuarios', card),
@@ -412,10 +404,12 @@ async function guardar() {
         clientes: toBit('clientes', card),
         precios: toBit('precios', card),
         stock: toBit('stock', card),
-        gastos: toBit('gastos', card),
+        gastos: toBit('gastos', card), // Gastos se usa para el TreeView
         carga: toBit('carga', card),
         finanzas: toBit('finanzas', card),
-        confinanzas: toBit('confinanzas', card)
+        confinanzas: toBit('confinanzas', card),
+        flotantes: toBit('flotantes', card),
+        pinDinamico: toBit('pinDinamico', card) // AGREGADO AQUÍ PARA MANDAR AL BACKEND
       });
     }
   });
@@ -425,7 +419,7 @@ async function guardar() {
     
     const body = new FormData();
     body.append('action', 'saveUsuarios');
-    body.append('k', k); // Protocolo K
+    body.append('k', k);
     body.append('rows', JSON.stringify(rows));
 
     const res = await fetch(SCRIPT_URL, { method: 'POST', body });

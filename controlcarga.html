@@ -453,7 +453,6 @@ function selectTrip(trip) {
     document.getElementById('viewLlegadaList').classList.remove('active'); document.getElementById('viewLlegadaForm').classList.add('active');
     
     const isCompra = trip.tipoViaje === 'COMPRA';
-    const s = trip.sDetails;
     const txtRemito = document.getElementById('txtRemitoCompra');
 
     document.querySelectorAll('#viewLlegadaForm input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
@@ -461,28 +460,21 @@ function selectTrip(trip) {
     if (isCompra) {
         document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--compra); margin-left:10px;">(Volviendo de Planta)</span>`;
         document.getElementById('btnFinalizar').className = "btn-main btn-llegada-compra"; document.getElementById('btnFinalizar').innerHTML = "CONFIRMAR INGRESO DE COMPRA ✅";
-        
-        // Mostrar campo de remito
-        txtRemito.classList.remove('hidden');
-        txtRemito.value = '';
+        txtRemito.classList.remove('hidden'); txtRemito.value = '';
 
         ['10','15','45'].forEach(kg => {
             document.getElementById(`L_wrap_V${kg}`).classList.add('input-disabled');
-            document.getElementById(`LL${kg}`).value = s[`v${kg}`]; document.getElementById(`LL${kg}`).classList.add('highlight-lleno');
+            document.getElementById(`LL${kg}`).value = trip.sDetails[`v${kg}`]; 
+            document.getElementById(`LL${kg}`).classList.add('highlight-lleno');
         });
     } else {
-        const v = trip.ventasDetalle || { 10: {gas:0, env:0}, 15: {gas:0, env:0}, 45: {gas:0, env:0} };
-        const totalVentas = (v[10].gas + v[10].env) + (v[15].gas + v[15].env) + (v[45].gas + v[45].env);
-        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Vendió: ${totalVentas})</span>`;
-        document.getElementById('btnFinalizar').className = "btn-main btn-llegada"; document.getElementById('btnFinalizar').innerHTML = "FINALIZAR VIAJE ✅";
-        
-        // Ocultar campo de remito
-        txtRemito.classList.add('hidden');
-        txtRemito.value = '';
+        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Entregó: ${trip.totalEntregas})</span>`;
+        txtRemito.classList.add('hidden'); txtRemito.value = '';
 
         ['10','15','45'].forEach(kg => {
-            document.getElementById(`LL${kg}`).value = Math.max(0, s[`l${kg}`] - (v[kg].gas + v[kg].env));
-            document.getElementById(`LV${kg}`).value = s[`v${kg}`] + v[kg].gas;
+            // EL PIZARRÓN TONTO: Solo imprime lo que dictó el servidor
+            document.getElementById(`LL${kg}`).value = trip.sugerencia[kg].L;
+            document.getElementById(`LV${kg}`).value = trip.sugerencia[kg].V;
         });
     }
     calcLlegadaDiff(); 
@@ -494,14 +486,19 @@ function updateSalidaTotal() { document.getElementById('totalSalidaDisplay').tex
 
 function calcLlegadaDiff() {
     if(!viajeSeleccionado) return;
-    const s = viajeSeleccionado.sDetails; const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA'; let diff = 0;
-    if (isCompra) { diff += Math.abs(val('LL10') - s.v10); diff += Math.abs(val('LL15') - s.v15); diff += Math.abs(val('LL45') - s.v45); } 
-    else {
-        const v = viajeSeleccionado.ventasDetalle;
-        diff += Math.abs(val('LL10') - Math.max(0, s.l10 - (v[10].gas + v[10].env))); diff += Math.abs(val('LV10') - (s.v10 + v[10].gas));
-        diff += Math.abs(val('LL15') - Math.max(0, s.l15 - (v[15].gas + v[15].env))); diff += Math.abs(val('LV15') - (s.v15 + v[15].gas));
-        diff += Math.abs(val('LL45') - Math.max(0, s.l45 - (v[45].gas + v[45].env))); diff += Math.abs(val('LV45') - (s.v45 + v[45].gas));
+    const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA'; let diff = 0;
+    
+    if (isCompra) { 
+        diff += Math.abs(val('LL10') - viajeSeleccionado.sDetails.v10); 
+        diff += Math.abs(val('LL15') - viajeSeleccionado.sDetails.v15); 
+        diff += Math.abs(val('LL45') - viajeSeleccionado.sDetails.v45); 
+    } else {
+        // EL PIZARRÓN TONTO: Compara lo que el usuario tipeó vs la sugerencia masticada
+        diff += Math.abs(val('LL10') - viajeSeleccionado.sugerencia[10].L); diff += Math.abs(val('LV10') - viajeSeleccionado.sugerencia[10].V);
+        diff += Math.abs(val('LL15') - viajeSeleccionado.sugerencia[15].L); diff += Math.abs(val('LV15') - viajeSeleccionado.sugerencia[15].V);
+        diff += Math.abs(val('LL45') - viajeSeleccionado.sugerencia[45].L); diff += Math.abs(val('LV45') - viajeSeleccionado.sugerencia[45].V);
     }
+    
     hayDiferenciaLlegada = diff > 0;
     const txt = document.getElementById('txtMotivo'); const box = document.getElementById('llegadaDiffBox');
     if (hayDiferenciaLlegada) { txt.className = "tx-obligatorio"; txt.placeholder = "⚠️ MOTIVO DE LA DIFERENCIA (OBLIGATORIO)..."; box.innerHTML = `<div style="text-align:center; color:var(--error); font-weight:bold;">⚠️ NO COINCIDE. DIFERENCIA: ${diff}</div>`; } 
