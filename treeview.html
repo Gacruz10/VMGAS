@@ -6,180 +6,78 @@
   <title>Auditoría Pro — Trazabilidad de Stock</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:        #060a10;
-      --surface:   #0b1018;
-      --panel:     #0f1823;
-      --border:    #1c2a3a;
-      --border2:   #243040;
-      --text:      #c5d4e0;
-      --dim:       #546a7b;
-      --accent:    #38bdf8;
-      --pos:       #34d399;
-      --neg:       #f87171;
-      --warn:      #fbbf24;
-      --purple:    #a78bfa;
-      --teal:      #2dd4bf;
-    }
-
+    :root { --bg: #060a10; --surface: #0b1018; --panel: #0f1823; --border: #1c2a3a; --border2: #243040; --text: #c5d4e0; --dim: #546a7b; --accent: #38bdf8; --pos: #34d399; --neg: #f87171; --warn: #fbbf24; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
-      font-size: 11px; line-height: 1.3; min-height: 100vh; padding: 8px; margin: 0;
-    }
-
-    /* NÚMEROS TABULARES PARA ALINEACIÓN PERFECTA */
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 11px; line-height: 1.3; min-height: 100vh; padding: 8px; margin: 0; }
     .num, td, th, span, div, input, b { font-variant-numeric: tabular-nums; }
-
-    /* ── HEADER & SELECTOR FECHA ────────────────────── */
-    .header {
-      display: flex; justify-content: space-between; align-items: center;
-      background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--accent);
-      border-radius: 4px; padding: 6px 12px; margin-bottom: 8px;
-    }
+    .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid var(--border); border-top: 2px solid var(--accent); border-radius: 4px; padding: 6px 12px; margin-bottom: 8px; }
     .header-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 0.05em; }
     .header-title span { color: var(--accent); }
     .header-right { display: flex; gap: 10px; align-items: center; }
-
     .filter-group { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border); }
     .date-picker { background: transparent; border: none; color: var(--text); font-family: 'Inter', sans-serif; font-size: 11px; outline: none; font-weight: 600; cursor: pointer; color-scheme: dark; }
-    .btn-filter { background: var(--accent); color: #000; border: none; padding: 4px 8px; border-radius: 3px; font-size: 10px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-    .btn-filter:hover { opacity: 0.9; }
-    
-    .btn-action { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-action:hover { background: var(--border2); color: #fff; }
-
+    .btn-filter { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 3px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: transform 0.1s; }
+    .btn-filter:active { transform: scale(0.95); }
+    .btn-action { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
     .badge { font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 3px; letter-spacing: 0.05em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
-    .badge-ok   { background: rgba(52,211,153,0.15); color: var(--pos); border: 1px solid rgba(52,211,153,0.3); }
+    .badge-ok { background: rgba(52,211,153,0.15); color: var(--pos); border: 1px solid rgba(52,211,153,0.3); }
     .badge-warn { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
     .badge-ruta { background: rgba(56,189,248,0.15); color: var(--accent); border: 1px solid rgba(56,189,248,0.3); }
     .badge-alerta { background: rgba(248,113,113,0.15); color: var(--neg); border: 1px solid rgba(248,113,113,0.4); }
-
-    /* ── PANTALLA DE BIENVENIDA Y CARGA (GLITCH) ────── */
-    #overlayCarga {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 70vh; text-align: center;
-    }
-    .welcome-text { font-size: 14px; color: var(--text); line-height: 1.6; max-width: 500px; padding: 20px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
-    .welcome-text span { color: var(--warn); font-weight: 700; }
-
-    .glitch-container { display: none; }
-    .glitch { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #fff; position: relative; letter-spacing: 0.1em; }
-    .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); }
-    .glitch::before { left: 2px; text-shadow: -1px 0 var(--neg); clip: rect(24px, 550px, 90px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
-    .glitch::after { left: -2px; text-shadow: -1px 0 var(--accent); clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
-    @keyframes glitch-anim {
-      0% { clip: rect(10px, 9999px, 31px, 0); }
-      20% { clip: rect(62px, 9999px, 18px, 0); }
-      40% { clip: rect(29px, 9999px, 83px, 0); }
-      60% { clip: rect(74px, 9999px, 12px, 0); }
-      80% { clip: rect(3px, 9999px, 65px, 0); }
-      100% { clip: rect(44px, 9999px, 92px, 0); }
-    }
-
-    #mainContent { display: none; } /* Oculto por defecto hasta cargar */
-
-    /* ── TURNO MAIN SECTION ────────────────────────── */
+    
+    #overlayCarga { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 75vh; text-align: center; }
+    .welcome-text { font-size: 14px; color: var(--text); line-height: 1.6; max-width: 450px; padding: 30px; border: 1px dashed var(--dim); border-radius: 8px; background: linear-gradient(145deg, #0b1018, #060a10); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    #mainContent { display: none; }
     .turno-block { border: 1px solid var(--border); border-radius: 4px; margin-bottom: 8px; background: var(--surface); }
     .turno-head { background: #0d1520; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
     .turno-head-inner { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; font-size: 11px; }
-    
     .turno-id { display: flex; align-items: center; gap: 8px; }
     .turno-id b { color: var(--accent); font-size: 12px; font-weight: 800; }
     .turno-id .chevron { color: var(--dim); transition: transform 0.2s; font-size: 9px; }
     .turno-id .chevron.open { transform: rotate(90deg); }
-    
     .turno-stats { display: flex; gap: 10px; align-items: center; font-size: 10px; color: var(--dim); }
     .turno-stats b { color: var(--text); }
-    
     .section-inner { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
-
-    /* ── LÍNEAS COMPACTAS (ST-LINE) ────────────────── */
     .st-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 3px; border: 1px solid var(--border); }
     .st-grupo { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
     .st-lbl { font-size: 9px; font-weight: 800; letter-spacing: 0.05em; width: 55px; text-transform: uppercase;}
-    .st-lbl.pos { color: var(--pos); }
-    .st-lbl.warn { color: var(--warn); }
-    .st-lbl.dim { color: var(--dim); }
-    .st-lbl.accent { color: var(--accent); }
-    
+    .st-lbl.pos { color: var(--pos); } .st-lbl.warn { color: var(--warn); } .st-lbl.dim { color: var(--dim); } .st-lbl.accent { color: var(--accent); }
     .v-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
-    
     .m-chip { font-size: 11px; display: flex; align-items: center; gap: 3px; background: var(--surface); padding: 1px 6px; border-radius: 2px; border: 1px solid var(--border); }
     .m-chip span { color: var(--dim); font-size: 9px; font-weight: 700; }
-    .m-chip .l { color: var(--pos); font-weight: 700; }
-    .m-chip .v { color: var(--warn); font-weight: 700; }
-    .m-chip .pipe { color: rgba(255,255,255,0.1); font-size: 9px; margin: 0 1px; }
-    .m-chip.sug { opacity: 0.7; border-color: transparent; background: rgba(255,255,255,0.02); }
-    .m-chip.sug .l, .m-chip.sug .v { color: var(--dim); font-weight: 600; }
-
-    /* ── VIAJE BLOCK ───────────────────────────────── */
+    .m-chip .l { color: var(--pos); font-weight: 700; } .m-chip .v { color: var(--warn); font-weight: 700; }
     .viaje-block { border: 1px solid var(--border); border-radius: 3px; border-left: 3px solid var(--accent); }
     .viaje-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: rgba(56,189,248,0.05); cursor: pointer; }
     .viaje-title { font-weight: 700; font-size: 10px; color: var(--accent); display: flex; gap: 6px; align-items: center;}
     .viaje-meta { display: flex; gap: 10px; color: var(--dim); font-size: 9px; align-items: center; }
     .viaje-meta b { color: var(--text); }
     .viaje-inner { padding: 4px; display: flex; flex-direction: column; gap: 4px; }
-
-    /* ── BD1 EN RUTA (GRID PERFECTO) ───────────────── */
     .bd1-section { background: var(--panel); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; }
-    .op-tira { 
-      display: grid; 
-      grid-template-columns: 32px 18px 120px 85px 90px 28px 28px 28px 85px 80px 80px 1fr; 
-      align-items: center; gap: 6px; padding: 4px 8px; 
-      font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.02); 
-      font-family: 'Inter', monospace; white-space: nowrap;
-    }
-    .op-tira:hover { background: rgba(56,189,248,0.05); }
-    .op-tira:last-child { border-bottom: none; }
-    
+    .op-tira { display: grid; grid-template-columns: 32px 18px 120px 85px 90px 28px 28px 28px 85px 80px 80px 1fr; align-items: center; gap: 6px; padding: 4px 8px; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.02); font-family: 'Inter', monospace; white-space: nowrap; }
     .op-time { color: var(--dim); }
-    .op-gps { font-size: 10px; text-align: center; }
-    .op-gps.off { filter: grayscale(1); opacity: 0.3; }
-
-    .op-cli { display: flex; gap: 4px; align-items: center; overflow: hidden; }
-    .op-cli-id { color: var(--dim); font-size: 8px; }
     .op-cli-nombre { flex: 1; color: var(--text); font-weight: 700; overflow: hidden; text-overflow: ellipsis; cursor: default; }
     .op-cli-tipo { width: 85px; text-align: center; font-size: 8px; color: var(--dim); border: 1px solid var(--border); padding: 1px 0; border-radius: 2px; }
-    
     .op-tag { width: 90px; text-align: center; font-size: 8px; font-weight: 800; padding: 1px 0; border-radius: 2px; }
     .bg-venta { background: rgba(52,211,153,0.15); color: var(--pos); border: 1px solid rgba(52,211,153,0.3); }
     .bg-consig { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
     .bg-flot { background: rgba(56,189,248,0.15); color: var(--accent); border: 1px solid rgba(56,189,248,0.3); }
-
+    .bg-alerta { background: rgba(248,113,113,0.15); color: var(--neg); border: 1px solid rgba(248,113,113,0.3); }
     .op-env { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
-    .op-env span { font-size: 7px; color: var(--dim); }
-    .op-env b { font-size: 10px; color: var(--text); }
-    
+    .op-env span { font-size: 7px; color: var(--dim); } .op-env b { font-size: 10px; color: var(--text); }
     .op-mon { display: flex; align-items: baseline; gap: 2px; border-left: 1px solid var(--border); padding-left: 6px; }
     .op-mon .lbl { color: var(--dim); font-size: 8px; width: 12px; }
-    .op-mon b { text-align: right; flex: 1; font-weight: 700; letter-spacing: -0.2px; }
-    .op-mon .tot { color: var(--pos); font-size: 11px; }
-    .op-deuda { color: var(--neg); font-weight: 700; text-align: right; padding-left: 10px; }
-
-    /* ── ALERTAS CONSOLA ───────────────────────────── */
+    .op-mon b { text-align: right; flex: 1; font-weight: 700; }
     .alerta-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; font-size: 9px; border-bottom: 1px solid var(--border); background: rgba(248,113,113,0.05); border-left: 2px solid var(--neg); }
-    .alerta-row.ok { background: rgba(52,211,153,0.05); border-left-color: var(--pos); opacity: 0.8; }
-    .alerta-time { color: var(--dim); width: 35px; }
-    .alerta-user { color: var(--text); font-weight: 700; width: 45px; }
-    .alerta-tipo { width: 90px; }
-    .alerta-desc { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
+    .alerta-time { color: var(--dim); width: 35px; } .alerta-user { color: var(--text); font-weight: 700; width: 45px; } .alerta-desc { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .collapsible { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 0.2s; }
     .collapsible.collapsed { grid-template-rows: 0fr; }
     .collapsible > div { overflow: hidden; }
-
-    @keyframes pulse-rojo { 0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); } 50% { box-shadow: 0 0 0 4px rgba(248,113,113,0); } }
-    .pulse-auto { animation: pulse-rojo 1.5s infinite; }
-
-    /* ── ESTILOS DE IMPRESIÓN (WYSIWYG) ────────────── */
-    @media print {
-      body { background: var(--bg) !important; color: var(--text) !important; margin: 0; padding: 0; }
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      .header-right, .btn-action, .filter-group { display: none !important; }
-      .turno-block { border: 1px solid var(--border2); page-break-inside: avoid; }
-      /* La magia del WYSIWYG: no forzamos displays, imprime lo que esté visible */
+    
+    @keyframes pulse-glow {
+      0% { text-shadow: 0 0 5px var(--accent); opacity: 0.8; }
+      50% { text-shadow: 0 0 20px var(--accent); opacity: 1; }
+      100% { text-shadow: 0 0 5px var(--accent); opacity: 0.8; }
     }
   </style>
 </head>
@@ -188,297 +86,237 @@
 <div class="header">
   <div class="header-left">
     <div class="header-title">AUDITORÍA <span>PRO</span></div>
-    <div style="color:var(--dim);font-size:8px;letter-spacing:0.05em;">BD1 · CSTOCK · CCARGA · ALARMAS · ARQUEO</div>
   </div>
   <div class="header-right">
     <div class="filter-group">
-        <span style="font-size: 10px; color: var(--dim);">DESDE:</span>
-        <input type="date" class="date-picker" id="fechaDesde">
-        <span style="font-size: 10px; color: var(--dim);">HASTA:</span>
-        <input type="date" class="date-picker" id="fechaHasta">
-        <button class="btn-filter" onclick="iniciarCarga()">Traer</button>
+        <span style="color:var(--dim); font-size:10px; font-weight:600;">DESDE</span>
+        <input type="date" id="fechaDesde" class="date-picker">
+        <div class="v-sep"></div>
+        <span style="color:var(--dim); font-size:10px; font-weight:600;">HASTA</span>
+        <input type="date" id="fechaHasta" class="date-picker">
+        <button class="btn-filter" onclick="iniciarCarga()">AUDITAR</button>
     </div>
-    <button class="btn-action" onclick="window.print()">🖨️ Imprimir</button>
-    <button class="btn-action" onclick="navegarInicio()">◀ Volver</button>
   </div>
 </div>
 
 <div id="overlayCarga">
   <div class="welcome-text" id="msgBienvenida">
-    Bienvenido al módulo de auditoría de movimientos.<br><br>
-    Seleccione el rango de fechas a auditar en el menú superior.<br>
-    <span>⚠️ No puede exceder un rango de una semana.</span>
-  </div>
-  <div class="glitch-container" id="loaderGlitch">
-    <div class="glitch" data-text="RECUPERANDO DATOS...">RECUPERANDO DATOS...</div>
-    <div style="color:var(--dim); font-size:10px; margin-top:10px; font-family:'Inter', monospace;">CONECTANDO CON BD1...</div>
+    <div style="font-size:40px; margin-bottom:15px; color:var(--dim);">🛡️</div>
+    <h2 style="font-family:'Syne', sans-serif; color:#fff; letter-spacing:1px; margin-bottom:10px;">MOTOR DE TRAZABILIDAD</h2>
+    <p style="color:var(--dim); font-size:12px;">Seleccione el rango de fechas en el panel superior y presione <b style="color:var(--accent)">AUDITAR</b> para extraer y decodificar el historial de operaciones.</p>
   </div>
 </div>
 
 <div id="mainContent">
-  <div class="turno-block">
-    <div class="turno-head" onclick="toggleSection('t1')">
-      <div class="turno-head-inner">
-        <div class="turno-id">
-          <span class="chevron" id="chev-t1">▶</span>
-          <span>TURNO: <b>3597A25E</b></span>
-          <span class="badge badge-warn" style="margin-left:8px;">ABIERTO</span>
-          <span class="badge badge-alerta pulse-auto">CERRADO AUTO</span>
-        </div>
-        <div class="turno-stats">
-          <span>Apertura: <b>20:58</b> (admin)</span>
-          <span style="margin: 0 4px; color:var(--border2)">|</span>
-          <span>Cierre: <b>{Un. Sugeridas}</b></span>
-        </div>
-      </div>
-    </div>
-
-    <div class="collapsible collapsed" id="t1">
-      <div> <div class="section-inner">
-
-          <div class="st-line">
-            <div class="st-grupo">
-              <span class="st-lbl pos">APERTURA</span>
-              <div class="m-chip"><span>10K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip"><span>15K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip"><span>45K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip"><span>BUT:</span> <b class="l">999</b></div>
-              <div class="m-chip"><span>PRO:</span> <b class="l">999</b></div>
-              
-              <div class="v-sep"></div>
-              
-              <span class="st-lbl dim">CIERRE (S)</span>
-              <div class="m-chip sug"><span>10K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip sug"><span>15K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip sug"><span>45K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-              <div class="m-chip sug"><span>BUT:</span> <b class="l">999</b></div>
-              <div class="m-chip sug"><span>PRO:</span> <b class="l">999</b></div>
-            </div>
-          </div>
-
-          <div class="viaje-block">
-            <div class="viaje-head" onclick="toggleSection('v1')">
-              <div class="viaje-title">
-                <span class="chevron" id="chev-v1" style="font-size:10px;">▶</span>
-                🚚 VIAJE: 98AFA5FA <span class="badge badge-ruta" style="margin-left:6px;">EN_RUTA</span>
-              </div>
-              <div class="viaje-meta">
-                <span>Usuario: <b>gacruz</b></span> | <span>Salida: <b>21:06</b></span> | <span>Llegada: <b style="color:var(--warn)">Pendiente</b></span>
-                <span style="margin: 0 4px; color:var(--border2)">|</span>
-                <span style="color:var(--dim);"><b style="color:var(--text)">3</b> ops</span>
-                <span style="margin-left:4px; color:var(--dim)">TOT: <b class="tot" style="color:var(--pos); font-size:11px;">$700.000</b></span>
-                <span style="color:var(--dim)">E: <b>$200.000</b></span>
-                <span style="color:var(--dim)">X: <b>$500.000</b></span>
-              </div>
-            </div>
-
-            <div class="collapsible collapsed" id="v1">
-              <div>
-                <div class="viaje-inner">
-
-                  <div class="st-line" style="background: var(--panel);">
-                    <div class="st-grupo">
-                      <span class="st-lbl accent">SALIDA</span>
-                      <div class="m-chip"><span>10K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip"><span>15K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip"><span>45K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip"><span>BUT:</span> <b class="l">999</b></div>
-                      <div class="m-chip"><span>PRO:</span> <b class="l">999</b></div>
-                      
-                      <div class="v-sep"></div>
-                      
-                      <span class="st-lbl warn">LLEGADA</span>
-                      <div class="m-chip sug"><span>10K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip sug"><span>15K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip sug"><span>45K:</span> <b class="l">999</b><span class="pipe">|</span><b class="v">999</b></div>
-                      <div class="m-chip sug"><span>BUT:</span> <b class="l">999</b></div>
-                      <div class="m-chip sug"><span>PRO:</span> <b class="l">999</b></div>
-                    </div>
-                  </div>
-
-                  <div class="bd1-section" style="border-radius: 3px;">
-                    
-                    <div class="op-tira">
-                      <div class="op-time">21:08</div>
-                      <div class="op-gps" title="Con GPS">📍</div>
-                      <div class="op-cli">
-                        <span class="op-cli-id">CL-41QD</span> 
-                        <span class="op-cli-nombre" title="GASTON EMANUEL DE LA RIOJA">GASTON EMANUEL DE LA RIOJA</span>
-                      </div>
-                      <div class="op-cli-tipo">SUBDISTRIBUIDOR</div>
-                      <div class="op-tag bg-venta">VENTA</div>
-                      <div class="op-env"><span>10K</span><b>10</b></div>
-                      <div class="op-env"><span>15K</span><b>10</b></div>
-                      <div class="op-env"><span>45K</span><b>10</b></div>
-                      <div class="op-mon"><span class="lbl">T:</span><b class="tot">$650.000</b></div>
-                      <div class="op-mon"><span class="lbl">E:</span><b>$150.000</b></div>
-                      <div class="op-mon"><span class="lbl">X:</span><b>$500.000</b></div>
-                      <div class="op-deuda"></div>
-                    </div>
-
-                    <div class="op-tira">
-                      <div class="op-time">21:11</div>
-                      <div class="op-gps off" title="Sin GPS">🚫</div>
-                      <div class="op-cli">
-                        <span class="op-cli-id">CL-02AA</span> 
-                        <span class="op-cli-nombre" title="LA BIZARRA KIOSCO">LA BIZARRA KIOSCO</span>
-                      </div>
-                      <div class="op-cli-tipo">COMERCIO</div>
-                      <div class="op-tag bg-consig">CONSIGNACION</div>
-                      <div class="op-env"><span>10K</span><b>5</b></div>
-                      <div class="op-env"><span>15K</span><b>0</b></div>
-                      <div class="op-env"><span>45K</span><b>0</b></div>
-                      <div class="op-mon"><span class="lbl">T:</span><b class="tot">$0</b></div>
-                      <div class="op-mon"><span class="lbl">E:</span><b>$0</b></div>
-                      <div class="op-mon"><span class="lbl">X:</span><b>$0</b></div>
-                      <div class="op-deuda">Deuda: $45.000</div>
-                    </div>
-
-                    <div class="op-tira">
-                      <div class="op-time">21:30</div>
-                      <div class="op-gps" title="Con GPS">📍</div>
-                      <div class="op-cli">
-                        <span class="op-cli-id">CL-99ZZ</span> 
-                        <span class="op-cli-nombre" title="JUANA VIP EVENTOS">JUANA VIP EVENTOS</span>
-                      </div>
-                      <div class="op-cli-tipo">PÚBLICO</div>
-                      <div class="op-tag bg-flot">FLOTANTE</div>
-                      <div class="op-env"><span>10K</span><b>12</b></div>
-                      <div class="op-env"><span>15K</span><b>0</b></div>
-                      <div class="op-env"><span>45K</span><b>0</b></div>
-                      <div class="op-mon"><span class="lbl">T:</span><b class="tot">-99.999.999</b></div>
-                      <div class="op-mon"><span class="lbl">E:</span><b>-99.999.999</b></div>
-                      <div class="op-mon"><span class="lbl">X:</span><b>-99.999.999</b></div>
-                      <div class="op-deuda" style="color:var(--accent);">S.Env: -2</div>
-                    </div>
-
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="viaje-block" style="border-left-color: var(--border);">
-            <div class="viaje-head" onclick="toggleSection('a1')" style="background:var(--surface)">
-              <div class="viaje-title" style="color:var(--dim)"><span class="chevron" id="chev-a1" style="font-size:10px;">▶</span> 🔔 ALARMAS <span class="badge" style="background:var(--border); color:var(--dim); margin-left:6px;">2 REGISTROS</span></div>
-            </div>
-            <div class="collapsible collapsed" id="a1">
-              <div class="bd1-section" style="border-radius:0; border:none;">
-                <div class="alerta-row">
-                  <div class="alerta-time">21:11</div>
-                  <div class="alerta-user">gacruz</div>
-                  <div class="alerta-tipo"><span class="badge badge-alerta" style="font-size:8px;">CONSIG_DEJADO</span></div>
-                  <div class="alerta-desc">GASTON dejó 10x10. Deuda generada: $3.000.000</div>
-                </div>
-                <div class="alerta-row ok">
-                  <div class="alerta-time">19:40</div>
-                  <div class="alerta-user">gacruz</div>
-                  <div class="alerta-tipo"><span class="badge badge-ok" style="font-size:8px;">DIF_CARGA</span></div>
-                  <div class="alerta-desc">Descuadre L10-10, V10+10 (Resuelto por admin)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div></div>
-    </div></div>
-
-</div>
+  </div>
 
 <script>
-  // 1. BLOQUEO DE BOTÓN ATRÁS
-  window.history.pushState(null, "", window.location.href);
-  window.onpopstate = function () { window.history.pushState(null, "", window.location.href); };
-
-  // 2. VALIDACIÓN DE TOKEN (Modificada para enmascarar URL)
-  let token = sessionStorage.getItem('vmgas_token');
-  
-  // Si venimos de un link viejo con ?k=, lo atrapamos, lo guardamos y limpiamos la URL
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
   const params = new URLSearchParams(window.location.search);
-  const tokenUrl = params.get('k');
-  
-  if (tokenUrl) {
-    token = tokenUrl;
-    sessionStorage.setItem('vmgas_token', token);
-    // Magia negra: Limpia la URL sin recargar la página
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
+  const token = params.get('k') || params.get('token') || '';
 
-  if (!token) {
-    alert("Acceso denegado. Iniciando sesión nuevamente.");
-    window.location.href = 'index.html'; 
-  }
-
-  // 3. TIMER DE INACTIVIDAD (5 min)
-  let tiempoInactividad = 0;
-  function resetTimer() { tiempoInactividad = 0; }
-  document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.onclick = resetTimer;
-  setInterval(() => {
-    tiempoInactividad++;
-    if (tiempoInactividad >= 300) { // 300 seg = 5 min
-      alert("Sesión expirada por inactividad.");
-      sessionStorage.removeItem('vmgas_token'); // Sumamos esto por prolijidad
-      window.location.href = 'index.html';
-    }
-  }, 1000);
-
-  // 4. INICIALIZAR FECHAS HOY
+  // Configurar fechas por defecto (Hoy) al cargar
   window.onload = () => {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('fechaDesde').value = today;
-      document.getElementById('fechaHasta').value = today;
-  }
-
-  // 5. NAVEGACIÓN Y EXPANSIÓN
-  function navegarInicio() {
-    // Ya no le concatenamos el ?k=token
-    window.location.href = 'inicio.html';
-  }
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaDesde').value = hoy;
+    document.getElementById('fechaHasta').value = hoy;
+  };
 
   function toggleSection(id) {
     const el = document.getElementById(id);
     const chev = document.getElementById('chev-' + id);
-    el.classList.toggle('collapsed');
-    if (chev) chev.classList.toggle('open');
+    if(el) el.classList.toggle('collapsed');
+    if(chev) chev.classList.toggle('open');
   }
 
-  // 6. LÓGICA DE CARGA Y RANGO DE FECHAS
-  function iniciarCarga() {
-    const fDesde = new Date(document.getElementById('fechaDesde').value);
-    const fHasta = new Date(document.getElementById('fechaHasta').value);
+  async function iniciarCarga() {
+    const fDesdeStr = document.getElementById('fechaDesde').value;
+    const fHastaStr = document.getElementById('fechaHasta').value;
 
-    // Validar que haya fechas
-    if (isNaN(fDesde) || isNaN(fHasta)) {
-        alert("Por favor, seleccione ambas fechas.");
-        return;
+    if (!fDesdeStr || !fHastaStr) { 
+        alert("⚠️ Seleccione ambas fechas."); 
+        return; 
+    }
+    if (new Date(fDesdeStr) > new Date(fHastaStr)) { 
+        alert("⚠️ La fecha de inicio no puede ser mayor a la fecha final."); 
+        return; 
     }
 
-    // Validar orden lógico
-    if (fDesde > fHasta) {
-        alert("La fecha de inicio no puede ser mayor a la fecha de fin.");
-        return;
-    }
+    // UI de Carga Estética
+    const overlay = document.getElementById('overlayCarga');
+    document.getElementById('mainContent').style.display = 'none';
+    overlay.style.display = 'flex';
+    overlay.innerHTML = `
+      <div class="welcome-text" style="border-color: var(--accent); box-shadow: 0 0 20px rgba(56,189,248,0.15);">
+        <div style="font-size:30px; margin-bottom:10px; animation: pulse-glow 1.5s infinite;">⏳</div>
+        <h3 style="color:var(--accent); margin-bottom:5px; font-family:'Syne', sans-serif;">PROCESANDO AUDITORÍA</h3>
+        <p style="color:var(--dim); font-size:11px;">Extrayendo y empaquetando datos del servidor central...</p>
+      </div>
+    `;
 
-    // Validar Rango Máximo (7 días)
-    const diffTime = Math.abs(fHasta - fDesde);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    if (diffDays > 7) {
-        alert("El rango de fechas no puede exceder los 7 días.");
-        return;
-    }
+    try {
+      const url = `${SCRIPT_URL}?action=gettreeview&k=${token}&start=${fDesdeStr}&end=${fHastaStr}`;
+      const response = await fetch(url);
+      const json = await response.json();
 
-    // Ocultar Bienvenida y Mostrar Glitch
-    document.getElementById('msgBienvenida').style.display = 'none';
-    document.getElementById('loaderGlitch').style.display = 'block';
-
-    // Simular tiempo de carga (Acá irá el Google.script.run real luego)
-    setTimeout(() => {
-        document.getElementById('overlayCarga').style.display = 'none';
+      if (json.status === 'success') {
+        renderizarTurnos(json.data);
+        overlay.style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
-    }, 2000); // 2 segundos de glitch
+      } else {
+        overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">❌ Error del Servidor: ${json.message}</div>`;
+      }
+    } catch (e) {
+      overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">🔌 Error de Conexión: ${e.message}</div>`;
+    }
+  }
+
+  function renderizarTurnos(turnos) {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = ''; 
+
+    if (!turnos || turnos.length === 0) {
+      main.innerHTML = `
+        <div style="text-align:center; padding:50px; background:var(--surface); border:1px solid var(--border); border-radius:6px;">
+            <div style="font-size:30px; margin-bottom:10px; filter:grayscale(1); opacity:0.5;">📁</div>
+            <h3 style="color:var(--text); font-family:'Syne', sans-serif;">SIN REGISTROS</h3>
+            <p style="color:var(--dim);">No se encontró historial en el rango de fechas seleccionado.</p>
+        </div>`;
+      return;
+    }
+
+    let htmlFull = '';
+
+    turnos.forEach((turno, tIdx) => {
+      const tId = `t_${tIdx}`;
+      const sInicial = turno.stockInicial || {};
+      const sFinal = turno.stockFinal || {};
+      const estadoClase = String(turno.estado).includes('AUTO') ? 'badge-alerta pulse-auto' : 'badge-ok';
+
+      let htmlTurno = `
+      <div class="turno-block">
+        <div class="turno-head" onclick="toggleSection('${tId}')">
+          <div class="turno-head-inner">
+            <div class="turno-id">
+              <span class="chevron" id="chev-${tId}">▶</span>
+              <span>TURNO: <b>${turno.idTurno}</b></span>
+              <span class="badge ${estadoClase}" style="margin-left:8px;">${turno.estado}</span>
+              <span style="color:var(--dim); font-size:9px; margin-left:8px;">📅 ${turno.fecha}</span>
+            </div>
+            <div class="turno-stats">
+              <span>Apertura: <b>${(turno.apertura || "N/A").split('|')[0]}</b> (${(turno.apertura || "|").split('|')[1]})</span>
+              <span style="margin: 0 4px; color:var(--border2)">|</span>
+              <span>Cierre: <b>${(turno.cierre || "N/A").split('|')[0]}</b> (${(turno.cierre || "|").split('|')[1]})</span>
+            </div>
+          </div>
+        </div>
+        <div class="collapsible collapsed" id="${tId}">
+          <div><div class="section-inner">
+      `;
+
+      // Control Stock (Apertura vs Cierre)
+      htmlTurno += `
+        <div class="st-line">
+          <div class="st-grupo">
+            <span class="st-lbl pos">APERTURA</span>
+            <div class="m-chip"><span>10K:</span> <b class="l">${sInicial["10K"] || 0}</b></div>
+            <div class="m-chip"><span>15K:</span> <b class="l">${sInicial["15K"] || 0}</b></div>
+            <div class="m-chip"><span>45K:</span> <b class="l">${sInicial["45K"] || 0}</b></div>
+            <div class="v-sep"></div>
+            <span class="st-lbl dim">CIERRE</span>
+            <div class="m-chip sug"><span>10K:</span> <b class="l">${sFinal["10K"] || 0}</b></div>
+            <div class="m-chip sug"><span>15K:</span> <b class="l">${sFinal["15K"] || 0}</b></div>
+            <div class="m-chip sug"><span>45K:</span> <b class="l">${sFinal["45K"] || 0}</b></div>
+          </div>
+        </div>
+      `;
+
+      // Viajes (Bolsa de Consorcio)
+      if (turno.viajes && turno.viajes.length > 0) {
+        turno.viajes.forEach((viaje, vIdx) => {
+          const vId = `v_${tIdx}_${vIdx}`;
+          const totales = viaje.totales || { ops: 0, total: 0 };
+          
+          htmlTurno += `
+          <div class="viaje-block">
+            <div class="viaje-head" onclick="toggleSection('${vId}')">
+              <div class="viaje-title">
+                <span class="chevron" id="chev-${vId}" style="font-size:10px;">▶</span>
+                🚚 VIAJE: ${viaje.idViaje || "DESC"}
+              </div>
+              <div class="viaje-meta">
+                <span>Chofer: <b>${String(viaje.chofer || 'DESC').toUpperCase()}</b></span> | <span>S: <b>${viaje.salida || '-'}</b> / L: <b>${viaje.llegada || '-'}</b></span>
+                <span style="margin: 0 4px; color:var(--border2)">|</span>
+                <span style="color:var(--dim);"><b style="color:var(--text)">${totales.ops}</b> ops</span>
+                <span style="margin-left:4px; color:var(--dim)">TOT: <b class="tot" style="color:var(--pos); font-size:11px;">$${Number(totales.total).toLocaleString('es-AR')}</b></span>
+              </div>
+            </div>
+            
+            <div class="collapsible collapsed" id="${vId}">
+              <div><div class="viaje-inner">
+                <div class="bd1-section" style="border-radius: 3px;">
+          `;
+
+          if (viaje.operaciones && viaje.operaciones.length > 0) {
+            viaje.operaciones.forEach(op => {
+              const strTipo = String(op.tipo).toUpperCase();
+              let tagColor = "bg-venta";
+              if(strTipo.includes('CONSIG')) tagColor = "bg-consig";
+              else if(strTipo.includes('FLOT')) tagColor = "bg-flot";
+              else if(strTipo.includes('GAST')) tagColor = "bg-alerta";
+
+              htmlTurno += `
+                <div class="op-tira">
+                  <div class="op-time">${op.hora || '-'}</div>
+                  <div class="op-gps" title="Info GPS">📍</div>
+                  <div class="op-cli">
+                    <span class="op-cli-nombre" title="${op.cliente || '-'}">${op.cliente || '-'}</span>
+                  </div>
+                  <div class="op-cli-tipo">-</div>
+                  <div class="op-tag ${tagColor}">${op.tipo || '-'}</div>
+                  <div class="op-env"><span>10K</span><b>${op.env10 || 0}</b></div>
+                  <div class="op-env"><span>15K</span><b>${op.env15 || 0}</b></div>
+                  <div class="op-env"><span>45K</span><b>${op.env45 || 0}</b></div>
+                  <div class="op-mon"><span class="lbl">T:</span><b class="tot">$${(Number(op.efectivo || 0) + Number(op.transf || 0)).toLocaleString('es-AR')}</b></div>
+                  <div class="op-mon"><span class="lbl">E:</span><b>$${Number(op.efectivo || 0).toLocaleString('es-AR')}</b></div>
+                  <div class="op-mon"><span class="lbl">X:</span><b>$${Number(op.transf || 0).toLocaleString('es-AR')}</b></div>
+                  <div class="op-deuda"></div>
+                </div>
+              `;
+            });
+          } else {
+            htmlTurno += `<div style="padding:10px; color:var(--dim); text-align:center;">Sin operaciones registradas en este viaje.</div>`;
+          }
+          htmlTurno += `</div></div></div></div>`; 
+        });
+      } else {
+         htmlTurno += `<div style="padding:15px; color:var(--dim); text-align:center; background:var(--panel);">No hay viajes registrados en este turno.</div>`;
+      }
+
+      // Alarmas del turno
+      if (turno.alarmas && turno.alarmas.length > 0) {
+          htmlTurno += `
+          <div class="viaje-block" style="border-left-color: var(--border);">
+            <div class="viaje-head" onclick="toggleSection('a_${tIdx}')" style="background:var(--surface)">
+              <div class="viaje-title" style="color:var(--dim)"><span class="chevron" id="chev-a_${tIdx}">▶</span> 🔔 ALARMAS <span class="badge" style="background:var(--border);">${turno.alarmas.length} REGISTRO(S)</span></div>
+            </div>
+            <div class="collapsible collapsed" id="a_${tIdx}">
+              <div class="bd1-section" style="border-radius:0; border:none;">`;
+          
+          turno.alarmas.forEach(al => {
+              htmlTurno += `<div class="alerta-row"><div class="alerta-time">${al.hora || '-'}</div><div class="alerta-user">${al.usuario || 'sys'}</div><div class="alerta-desc">${al.descripcion || '-'}</div></div>`;
+          });
+          htmlTurno += `</div></div></div>`;
+      }
+
+      htmlTurno += `</div></div></div></div>`;
+      htmlFull += htmlTurno;
+    });
+
+    main.innerHTML = htmlFull;
   }
 </script>
+
 <div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
   <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
   <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
@@ -498,22 +336,19 @@
     const min = ahora.getMinutes();
     const capa = document.getElementById('capaMantenimiento');
 
-    // Ventana de bloqueo: 23:45 hasta las 00:05
     const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
 
     if (estaEnBloqueo) {
       capa.style.display = 'flex';
-      // Deshabilitamos cualquier interacción del teclado
       document.onkeydown = function (e) { return false; };
     } else {
       capa.style.display = 'none';
       document.onkeydown = null;
     }
   }
-
-  // Correr el control apenas carga y después cada 30 segundos
   controlPatovica();
   setInterval(controlPatovica, 30000);
 </script>
+
 </body>
 </html>
