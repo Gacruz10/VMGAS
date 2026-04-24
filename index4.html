@@ -640,6 +640,30 @@
             animation: pulseGlow 2s infinite;
             display: inline-block;
         }
+
+        /* --- ESTILOS NUEVOS PARA GRABADOR DE VOZ --- */
+        @keyframes recordingPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: recordingPulse 1.5s infinite;
+        }
+        .audio-recorder-box {
+            background: rgba(255,255,255,0.05); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            text-align: center; 
+            border: 1px dashed var(--glass-border);
+        }
+        .audio-recorder-box audio {
+            height: 35px;
+            width: 100%;
+            outline: none;
+            border-radius: 20px;
+        }
     </style>
 </head>
 
@@ -871,6 +895,17 @@
                     style="text-align:center; letter-spacing: 5px; font-weight: bold; font-size: 18px;">
             </div>
 
+            <div class="audio-recorder-box">
+                <label style="color: var(--accent); font-size: 12px; margin-bottom: 10px; display: block;">🎤 NOTA DE VOZ (Opcional)</label>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                    <button type="button" id="btnMic" style="background: var(--input-bg); border: 2px solid var(--accent); border-radius: 50%; width: 50px; height: 50px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; color: white;">🎙️</button>
+                    <div id="audioStatus" style="font-size: 12px; color: var(--text-muted); text-align: left;">Listo para grabar<br><small>(Máx 1 minuto)</small></div>
+                </div>
+                <div id="audioPlaybackContainer" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px;">
+                    <audio id="audioPlayback" controls></audio>
+                    <button type="button" id="btnDeleteAudio" style="background: var(--error); color: white; border: none; padding: 6px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer;">🗑️ BORRAR AUDIO</button>
+                </div>
+            </div>
             <button type="button" id="btnGuardar" class="submit-btn" disabled>GUARDAR REGISTRO</button>
         </div>
     </div>
@@ -898,6 +933,13 @@
         let sessionTimeout = 180;
         let idClienteSeleccionado = '';
         let deudasData = {};
+
+        // Variables Globales del Audio
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBase64 = null;
+        let recordingTimer;
+        let recSeconds = 0;
 
         // 1. EL CRONÓMETRO IMPLACABLE HÍBRIDO
         let expireTime = Date.now() + 300000; // 5 minutos (300,000 ms)
@@ -1031,6 +1073,7 @@
 
                 calentarGPS();
                 await cargarDatos();
+                iniciarManejadorAudio(); // <-- Iniciamos el grabador de voz
             } catch (e) { window.location.replace('index.html'); }
         }
 
@@ -1060,6 +1103,80 @@
             const overlay = document.getElementById('loadingOverlay'); overlay.style.opacity = '0';
             setTimeout(() => { overlay.style.visibility = 'hidden'; overlay.style.display = 'none'; document.getElementById('formContainer').classList.remove('is-loading'); }, 150);
         }
+
+        // ==========================================
+        // LOGICA DEL GRABADOR DE VOZ
+        // ==========================================
+        function iniciarManejadorAudio() {
+            const btnMic = document.getElementById('btnMic');
+            const audioStatus = document.getElementById('audioStatus');
+            const audioPlaybackContainer = document.getElementById('audioPlaybackContainer');
+            const audioPlayback = document.getElementById('audioPlayback');
+            const btnDeleteAudio = document.getElementById('btnDeleteAudio');
+
+            btnMic.addEventListener('click', async () => {
+                if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        audioBase64 = null;
+
+                        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                        mediaRecorder.onstop = () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                            const reader = new FileReader();
+                            reader.readAsDataURL(audioBlob);
+                            reader.onloadend = () => {
+                                audioBase64 = reader.result; // Acá guardamos la cadena Base64
+                                audioPlayback.src = URL.createObjectURL(audioBlob);
+                                audioPlaybackContainer.style.display = 'flex';
+                                btnMic.style.display = 'none';
+                            };
+                            // Cortamos el micrófono
+                            stream.getTracks().forEach(track => track.stop());
+                        };
+
+                        mediaRecorder.start();
+                        btnMic.style.background = 'var(--error)';
+                        btnMic.style.borderColor = 'var(--error)';
+                        btnMic.innerHTML = '⏹️';
+                        btnMic.classList.add('recording-pulse');
+                        
+                        recSeconds = 0;
+                        audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... 00:00</span>`;
+                        recordingTimer = setInterval(() => {
+                            recSeconds++;
+                            let m = Math.floor(recSeconds / 60).toString().padStart(2, '0');
+                            let s = (recSeconds % 60).toString().padStart(2, '0');
+                            audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... ${m}:${s}</span>`;
+                            if (recSeconds >= 60) btnMic.click(); // Corte automático a los 60 seg
+                        }, 1000);
+
+                    } catch (err) {
+                        showToast("⚠️ No se pudo acceder al micrófono.", "error");
+                    }
+                } else if (mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    clearInterval(recordingTimer);
+                    btnMic.style.background = 'var(--input-bg)';
+                    btnMic.style.borderColor = 'var(--accent)';
+                    btnMic.innerHTML = '🎙️';
+                    btnMic.classList.remove('recording-pulse');
+                    audioStatus.innerHTML = `<span style="color:var(--success); font-weight:bold;">Audio capturado</span>`;
+                }
+            });
+
+            btnDeleteAudio.addEventListener('click', () => {
+                audioBase64 = null;
+                audioChunks = [];
+                audioPlayback.src = "";
+                audioPlaybackContainer.style.display = 'none';
+                btnMic.style.display = 'flex';
+                audioStatus.innerHTML = `Listo para grabar<br><small>(Máx 1 minuto)</small>`;
+            });
+        }
+        // ==========================================
 
         function checkVisibilidadCascada() {
             const hasClient = document.getElementById('cliente').value !== "";
@@ -1494,7 +1611,7 @@
             if (pinContainer.style.display !== 'none') { const val = pinInput.value.trim(); if (val.length < 4) { showToast("⚠️ FALTA AUTORIZACIÓN: Ingrese el PIN de 4 dígitos.", "error"); pinInput.focus(); return; } pinParaEnviar = val; }
             
             btn.disabled = true; 
-            btn.textContent = "UBICANDO Y GUARDANDO...";
+            btn.textContent = "PROCESANDO OPERACIÓN...";
 
             const ubicacionActual = await obtenerUbicacionFantasma();
 
@@ -1509,9 +1626,8 @@
             const isPlanta = document.getElementById('ventaPlanta').checked;
             const modoEnv = operandoEnvase ? document.getElementById('modoEnvase').value : 'ninguna';
 
-            // Lógica de separación: Gas Vendido vs Vacíos Devueltos
-            let q10 = 0, q15 = 0, q45 = 0; // Total gas vendido (Llenos que bajan del camión / se llevan de planta)
-            let ret10 = 0, ret15 = 0, ret45 = 0; // Vacíos que suben al camión / se dejan en planta
+            let q10 = 0, q15 = 0, q45 = 0; 
+            let ret10 = 0, ret15 = 0, ret45 = 0; 
 
             if (isPlanta) {
                 q10 = parseInt(document.getElementById('plantaLlenos10').value) || 0;
@@ -1543,7 +1659,6 @@
             
             const now = new Date(); const hora24 = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
             
-            // Calculo de deuda generada si falta pagar la plata de Planta
             let pagado = parseM('montoEfectivo') + parseM('montoTransferencia');
             let objetivoGas = (q10 * parseM('precioGarrafa1')) + (q15 * parseM('precioGarrafa2')) + (q45 * parseM('precioGarrafa3'));
             let deudaGeneradaPlanta = (isPlanta && objetivoGas > pagado) ? (objetivoGas - pagado) : 0;
@@ -1556,17 +1671,12 @@
                 declaracionGastos: esGasto, garrafas: JSON.stringify(garrafasArray), pin: pinParaEnviar, esClienteNuevo: esNuevo, clienteNombre: esNuevo ? document.getElementById('nombreCliente').value : '',
                 clienteZona: document.getElementById('zona').value, clienteCategoria: cat, clienteDireccion: document.getElementById('nuevaDireccion').value, clienteTelefono: document.getElementById('nuevoTelefono').value, clienteMail: document.getElementById('nuevoMail').value,
                 operacionEnvase: modoEnv,
-                
-                // LA BANDERA CLAVE: AVISARLE AL BACKEND QUE NO TOQUE LOS CAMIONES
-                ventaDesdePlanta: isPlanta,
-                deudaGeneradaPlanta: deudaGeneradaPlanta,
-
-                ALL10: q10, ALL15: q15, ALL45: q45, // Llenos totales bajados/entregados
-                AV10: ret10, AV15: ret15, AV45: ret45, // Vacíos recuperados/dejados
+                ventaDesdePlanta: isPlanta, deudaGeneradaPlanta: deudaGeneradaPlanta,
+                ALL10: q10, ALL15: q15, ALL45: q45, 
+                AV10: ret10, AV15: ret15, AV45: ret45, 
                 [`${pfx}10`]: q10, [`${pfx}10$`]: parseM('precioGarrafa1') * q10,
                 [`${pfx}15`]: q15, [`${pfx}15$`]: parseM('precioGarrafa2') * q15,
                 [`${pfx}45`]: q45, [`${pfx}45$`]: parseM('precioGarrafa3') * q45,
-                
                 ID_CLIENTE: idClienteSeleccionado,
                 cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : '',
                 UBICACION: ubicacionActual 
@@ -1597,8 +1707,36 @@
                 payload.dev45 = parseInt(document.getElementById('dev45').value) || 0;
             }
 
+            // ---> NUEVO: SUBIDA DE AUDIO PREVIA <---
+            if (audioBase64) {
+                if (!navigator.onLine) {
+                    showToast("⚠️ Estás sin conexión. No se subirá el audio, pero se guardará el registro.", "warning");
+                } else {
+                    btn.textContent = "SUBIENDO AUDIO (ESPERE)...";
+                    const audioName = `${generarID()}-${idClienteSeleccionado || 'SC'}`;
+                    const fdAudio = new FormData();
+                    fdAudio.append('action', 'upload_audio');
+                    fdAudio.append('k', k);
+                    fdAudio.append('audioBase64', audioBase64);
+                    fdAudio.append('fileName', audioName);
+
+                    try {
+                        const rAudio = await fetch(SCRIPT_URL, { method: 'POST', body: fdAudio });
+                        const jAudio = await rAudio.json();
+                        if (jAudio.status === 'success') {
+                            const notaActual = payload.G || '';
+                            payload.G = notaActual ? `${notaActual} | Audio: ${jAudio.url}` : `Audio: ${jAudio.url}`;
+                        }
+                    } catch (e) {
+                        showToast("⚠️ Falló la subida del audio, pero se guardará el registro.", "warning");
+                    }
+                }
+            }
+            // ---------------------------------------
+
             if (!navigator.onLine) { guardarEnCola(payload); return; }
             
+            btn.textContent = "GUARDANDO REGISTRO...";
             const fd = new FormData(); 
             for(let key in payload) {
                 fd.append(key, payload[key]);
