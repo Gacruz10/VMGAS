@@ -899,7 +899,7 @@
                 <label style="color: var(--accent); font-size: 12px; margin-bottom: 10px; display: block;">🎤 NOTA DE VOZ (Opcional)</label>
                 <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
                     <button type="button" id="btnMic" style="background: var(--input-bg); border: 2px solid var(--accent); border-radius: 50%; width: 50px; height: 50px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; color: white;">🎙️</button>
-                    <div id="audioStatus" style="font-size: 12px; color: var(--text-muted); text-align: left;">Listo para grabar<br><small>(Máx 1 minuto)</small></div>
+                    <div id="audioStatus" style="font-size: 12px; color: var(--text-muted); text-align: left;">Listo para grabar<br><small>(Máx 2 minutos)</small></div>
                 </div>
                 <div id="audioPlaybackContainer" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px;">
                     <audio id="audioPlayback" controls></audio>
@@ -939,7 +939,7 @@
         let audioChunks = [];
         let audioBase64 = null;
         let recordingTimer;
-        let recSeconds = 0;
+        let recSeconds = 120; // 2 minutos
 
         // 1. EL CRONÓMETRO IMPLACABLE HÍBRIDO
         let expireTime = Date.now() + 300000; // 5 minutos (300,000 ms)
@@ -959,9 +959,6 @@
             }, 1000);
         }
 
-        // =======================================================
-        // MOTOR DE GPS FANTASMA MEJORADO (Alta Precisión + Tolerancia)
-        // =======================================================
         function obtenerUbicacionFantasma() {
             return new Promise((resolve) => {
                 if (!navigator.geolocation) {
@@ -969,7 +966,6 @@
                     return;
                 }
 
-                // Le damos hasta 15 segundos al celular para que despierte la antena
                 const timeoutGPS = setTimeout(() => {
                     resolve("SIN_GPS_TIMEOUT_FORZADO");
                 }, 15000);
@@ -986,28 +982,24 @@
                         let motivo = "SIN_GPS_DESCONOCIDO";
                         if (error.code === 1) motivo = "SIN_GPS_DENEGADO";
                         if (error.code === 2) motivo = "SIN_GPS_SIN_SEÑAL";
-                        if (error.code === 3) motivo = "SIN_GPS_TIMEOUT_API"; // Capturamos si la API de Android abortó por falta de tiempo
+                        if (error.code === 3) motivo = "SIN_GPS_TIMEOUT_API"; 
                         resolve(motivo);
                     },
                     {
-                        enableHighAccuracy: true, // TRUE: Obliga a Android a usar el chip GPS y no solo el Wi-Fi
-                        timeout: 10000,           // 10 segundos internos del navegador
-                        maximumAge: 30000         // Recicla una posición que haya sido tomada en los últimos 30 segundos
+                        enableHighAccuracy: true,
+                        timeout: 10000,           
+                        maximumAge: 30000         
                     }
                 );
             });
         }
 
-        // =======================================================
-        // EL CALENTADOR DE GPS INTELIGENTE MEJORADO
-        // =======================================================
         async function calentarGPS() {
             if (!navigator.geolocation) return;
 
             try {
                 const perm = await navigator.permissions.query({ name: 'geolocation' });
                 if (perm.state === 'granted') {
-                    // Ya tiene permiso, calentamos en silencio pidiendo Alta Precisión
                     navigator.geolocation.getCurrentPosition(() => { }, () => { }, { enableHighAccuracy: true, maximumAge: 30000 });
                     return;
                 }
@@ -1037,7 +1029,6 @@
             );
         }
 
-        // Reseteamos el reloj absoluto cada vez que tocan algo
         function refreshSession() { expireTime = Date.now() + 300000; }
         ['click', 'mousemove', 'keydown', 'touchstart'].forEach(evt => document.addEventListener(evt, refreshSession));
 
@@ -1073,7 +1064,8 @@
 
                 calentarGPS();
                 await cargarDatos();
-                iniciarManejadorAudio(); // <-- Iniciamos el grabador de voz
+                iniciarManejadorAudio(); 
+                aplicarAutoFoco(); // <--- Aplicar la selección automática de texto
             } catch (e) { window.location.replace('index.html'); }
         }
 
@@ -1105,7 +1097,24 @@
         }
 
         // ==========================================
-        // LOGICA DEL GRABADOR DE VOZ
+        // AUTO-SELECCIÓN DE TEXTO (FOCO)
+        // ==========================================
+        function aplicarAutoFoco() {
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('focus', function() {
+                    // Esperar unos ms evita que el teclado de Android deseleccione todo
+                    setTimeout(() => {
+                        try {
+                            this.select();
+                            this.setSelectionRange(0, 9999);
+                        } catch(e) {} // Para inputs que no soportan esto (como checkbox)
+                    }, 50);
+                });
+            });
+        }
+
+        // ==========================================
+        // LOGICA DEL GRABADOR DE VOZ (MEJORADO)
         // ==========================================
         function iniciarManejadorAudio() {
             const btnMic = document.getElementById('btnMic');
@@ -1128,12 +1137,11 @@
                             const reader = new FileReader();
                             reader.readAsDataURL(audioBlob);
                             reader.onloadend = () => {
-                                audioBase64 = reader.result; // Acá guardamos la cadena Base64
+                                audioBase64 = reader.result; 
                                 audioPlayback.src = URL.createObjectURL(audioBlob);
                                 audioPlaybackContainer.style.display = 'flex';
                                 btnMic.style.display = 'none';
                             };
-                            // Cortamos el micrófono
                             stream.getTracks().forEach(track => track.stop());
                         };
 
@@ -1143,14 +1151,14 @@
                         btnMic.innerHTML = '⏹️';
                         btnMic.classList.add('recording-pulse');
                         
-                        recSeconds = 0;
-                        audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... 00:00</span>`;
+                        recSeconds = 120; // Empezar en 2 minutos (120s)
+                        audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... 02:00</span>`;
                         recordingTimer = setInterval(() => {
-                            recSeconds++;
+                            recSeconds--;
                             let m = Math.floor(recSeconds / 60).toString().padStart(2, '0');
                             let s = (recSeconds % 60).toString().padStart(2, '0');
                             audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... ${m}:${s}</span>`;
-                            if (recSeconds >= 60) btnMic.click(); // Corte automático a los 60 seg
+                            if (recSeconds <= 0) btnMic.click(); // Corte a los 0 segundos
                         }, 1000);
 
                     } catch (err) {
@@ -1173,10 +1181,9 @@
                 audioPlayback.src = "";
                 audioPlaybackContainer.style.display = 'none';
                 btnMic.style.display = 'flex';
-                audioStatus.innerHTML = `Listo para grabar<br><small>(Máx 1 minuto)</small>`;
+                audioStatus.innerHTML = `Listo para grabar<br><small>(Máx 2 minutos)</small>`;
             });
         }
-        // ==========================================
 
         function checkVisibilidadCascada() {
             const hasClient = document.getElementById('cliente').value !== "";
@@ -1289,17 +1296,15 @@
             verificarSiNecesitaPin(); actualizarTotales();
         });
 
-        // Agregamos los inputs de Planta al listener de cambios
         ['cantVentaEnv10', 'cantVentaEnv15', 'cantVentaEnv45', 'comodato10', 'comodato15', 'comodato45', 'pagoDeudaDinero', 'dev10', 'dev15', 'dev45', 'plantaLlenos10', 'plantaLlenos15', 'plantaLlenos45', 'plantaVacios10', 'plantaVacios15', 'plantaVacios45'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.addEventListener('input', actualizarTotales);
         });
 
         function actualizarTotales() {
-            let c10 = 0, c15 = 0, c45 = 0; // Contadores totales de Gas
+            let c10 = 0, c15 = 0, c45 = 0; 
             const isPlanta = document.getElementById('ventaPlanta').checked;
 
-            // 1. Sumamos el gas de una Venta Planta o Entrega Gas Normal
             if (isPlanta) {
                 c10 += Math.max(0, parseInt(document.getElementById('plantaLlenos10').value) || 0);
                 c15 += Math.max(0, parseInt(document.getElementById('plantaLlenos15').value) || 0);
@@ -1313,14 +1318,12 @@
             const operandoEnvase = document.getElementById('ventaEnvases').checked;
             const modo = document.getElementById('modoEnvase').value;
 
-            // 2. Sumamos el gas de los envases dejados en Comodato o Consignación (Solo si no es Planta)
             if (!isPlanta && operandoEnvase && (modo === 'comodato' || modo === 'consignacion')) {
                 c10 += Math.max(0, parseInt(document.getElementById('comodato10').value) || 0);
                 c15 += Math.max(0, parseInt(document.getElementById('comodato15').value) || 0);
                 c45 += Math.max(0, parseInt(document.getElementById('comodato45').value) || 0);
             }
 
-            // 3. Calculamos el dinero total del Gas Lleno
             let v_gas = (c10 * parseM('precioGarrafa1')) + (c15 * parseM('precioGarrafa2')) + (c45 * parseM('precioGarrafa3'));
 
             let v_env = 0;
@@ -1339,7 +1342,7 @@
                         ((parseInt(document.getElementById('comodato45').value) || 0) * obtenerPrecioEnvase(cat, 'ENV45'));
                     rowEnv.style.display = 'flex'; rowEnv.querySelector('span:first-child').textContent = "Total Deuda Generada:";
                 } else if (modo === 'comodato') { v_env = 0; rowEnv.style.display = 'none'; }
-            } else { rowEnv.style.display = 'none'; } // En planta ocultamos esto
+            } else { rowEnv.style.display = 'none'; }
 
             let objetivoCaja = v_gas;
             if (!isPlanta && operandoEnvase && modo === 'venta') objetivoCaja += v_env;
@@ -1383,7 +1386,6 @@
             let pagado = 0; if (document.getElementById('pagoEfectivo').checked) pagado += parseM('montoEfectivo'); if (document.getElementById('pagoTransferencia').checked) pagado += parseM('montoTransferencia');
             const dif = objetivo - pagado;
             
-            // Lógica permitida: Venta Normal exacta, Gasto sin venta, Consignacion paga más o Planta paga cualquier cosa mayor o igual a cero (la dif pasa a deuda).
             const operacionValida = (hayVenta && Math.abs(dif) < 1) || (!hayVenta && hayGasto) || (esConsignacion && pagado >= objetivo) || (hayVenta && isPlanta && dif >= 0);
 
             if (operacionValida) {
@@ -1441,7 +1443,6 @@
             let dEnv45 = parseInt(deudaCliente.env45) || 0;
             let dPlata = parseFloat(deudaCliente.plata?.toString().replace(/\D/g, '')) || 0;
 
-            // Cargar Flotantes en UI Planta si existen (Asumimos que el backend mandará flotante10, etc.)
             let fEnv10 = parseInt(deudaCliente.flotante10) || 0; 
             let fEnv15 = parseInt(deudaCliente.flotante15) || 0;
             let fEnv45 = parseInt(deudaCliente.flotante45) || 0;
@@ -1518,7 +1519,6 @@
         document.querySelectorAll('input, select').forEach(el => { el.oninput = () => { if (el.classList.contains('money-input')) { let v = el.value.replace(/\D/g, ""); el.value = v ? parseInt(v).toLocaleString('es-AR') : ""; } actualizarTotales(); }; });
 
         function toggleMutuallyExclusive(clickedId) {
-            // Agregamos 'ventaPlanta' a la lista de excluyentes
             const ids = ['entregaGas', 'ventaEnvases', 'declaracionGastos', 'ventaPlanta'];
             const isChecked = document.getElementById(clickedId) ? document.getElementById(clickedId).checked : false;
             
@@ -1587,7 +1587,6 @@
                         procesados++;
                     } else {
                         showToast("⛔ RECHAZADO: " + (json.message || "Error desconocido en servidor"), "error");
-                        alert("El servidor rechazó un registro pendiente.\nMotivo: " + (json.message || "Desconocido"));
                         nuevaCola.push(item);
                         errores++;
                     }
@@ -1607,6 +1606,12 @@
         }
 
         async function guardar() {
+            // ---> NUEVA DEFENSA: Evitar que guarden si están grabando
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                showToast("⚠️ Debes detener la grabación antes de guardar.", "warning");
+                return;
+            }
+
             const btn = document.getElementById('btnGuardar'); const pinContainer = document.getElementById('globalPinContainer'); const pinInput = document.getElementById('globalPinInput'); let pinParaEnviar = "";
             if (pinContainer.style.display !== 'none') { const val = pinInput.value.trim(); if (val.length < 4) { showToast("⚠️ FALTA AUTORIZACIÓN: Ingrese el PIN de 4 dígitos.", "error"); pinInput.focus(); return; } pinParaEnviar = val; }
             
@@ -1707,7 +1712,6 @@
                 payload.dev45 = parseInt(document.getElementById('dev45').value) || 0;
             }
 
-            // ---> NUEVO: SUBIDA DE AUDIO PREVIA <---
             if (audioBase64) {
                 if (!navigator.onLine) {
                     showToast("⚠️ Estás sin conexión. No se subirá el audio, pero se guardará el registro.", "warning");
@@ -1726,13 +1730,14 @@
                         if (jAudio.status === 'success') {
                             const notaActual = payload.G || '';
                             payload.G = notaActual ? `${notaActual} | Audio: ${jAudio.url}` : `Audio: ${jAudio.url}`;
+                        } else {
+                            showToast("⚠️ Falló la subida de audio: " + jAudio.message, "warning");
                         }
                     } catch (e) {
                         showToast("⚠️ Falló la subida del audio, pero se guardará el registro.", "warning");
                     }
                 }
             }
-            // ---------------------------------------
 
             if (!navigator.onLine) { guardarEnCola(payload); return; }
             
@@ -1804,12 +1809,10 @@
     const min = ahora.getMinutes();
     const capa = document.getElementById('capaMantenimiento');
 
-    // Ventana de bloqueo: 23:45 hasta las 00:05
     const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
 
     if (estaEnBloqueo) {
       capa.style.display = 'flex';
-      // Deshabilitamos cualquier interacción del teclado
       document.onkeydown = function (e) { return false; };
     } else {
       capa.style.display = 'none';
@@ -1817,7 +1820,6 @@
     }
   }
 
-  // Correr el control apenas carga y después cada 30 segundos
   controlPatovica();
   setInterval(controlPatovica, 30000);
 </script>
