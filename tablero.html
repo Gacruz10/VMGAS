@@ -446,7 +446,7 @@
         <div class="header-top">
             <button class="btn-action" id="btnVolver">❮ Volver</button>
             <h2 class="page-title">Tablero de Comando</h2>
-            <button class="btn-action" style="visibility: hidden;">⚙️</button>
+            <button class="btn-action" id="btnFlota" style="color: var(--accent); border-color: var(--accent); font-weight: bold;">🚚 KM FLOTA</button>
         </div>
     </div>
 
@@ -751,6 +751,9 @@
         }
 
         document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+        
+        // 👇 ACÁ AGREGAMOS LA FUNCIÓN DE TU NUEVO BOTÓN 👇
+        document.getElementById('btnFlota').onclick = () => window.location.replace(`flota.html?k=${k}`);
 
         function setQuickDate(modo, btnElement) {
             document.querySelectorAll('.btn-pill').forEach(b => b.classList.remove('active'));

@@ -150,9 +150,19 @@
       </div>
 
       <div id="viewSalida" class="section active">
-        <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER / TRANSPORTE</label>
+        <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER</label>
         <select id="selChofer"><option value="">Cargando...</option></select>
         
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <div style="flex: 2;">
+                <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">VEHÍCULO</label>
+                <select id="selVehiculo" style="margin-bottom:0;"><option value="">Cargando...</option></select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">KM SALIDA</label>
+                <input type="number" id="txtKmSalida" placeholder="KM" style="padding: 14px; background: #1a1a1a; border: 1px solid var(--glass-border); border-radius: 12px; color: white; width: 100%; text-align: center; font-weight: bold; font-size: 16px; margin-bottom:0;">
+            </div>
+        </div>
         <div class="grid-inputs" id="gridSalida"></div>
         
         <div class="diff-box" style="text-align:center;">
@@ -194,6 +204,12 @@
           <div id="llegadaDiffBox" class="diff-box">
               <div style="text-align:center; color:#aaa;">Ingrese la carga para calcular...</div>
           </div>
+
+          <div style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
+              <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; display:block; margin-bottom:5px;">KM LLEGADA (TABLERO)</label>
+              <input type="number" id="txtKmLlegada" placeholder="KM al llegar" style="margin-bottom: 5px; transition: all 0.3s; border-width: 2px;">
+              <div id="msgKmFeedback" style="font-size: 11px; font-weight: bold; min-height: 14px;"></div>
+          </div>
           
           <input type="text" id="txtRemitoCompra" class="tx-obligatorio hidden" placeholder="Nº DE REMITO (OBLIGATORIO)..." style="margin-top: 10px; font-family: 'Inter', sans-serif;">
           
@@ -215,6 +231,15 @@ let modoActual = 'REPARTO';
 let viajesPendientes = [];
 let viajeSeleccionado = null;
 let hayDiferenciaLlegada = false;
+
+// Funciones para focus automático
+function aplicarFocoAuto() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('focus', function() {
+            setTimeout(() => { try { this.select(); this.setSelectionRange(0, 9999); } catch(e){} }, 50);
+        });
+    });
+}
 
 function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -273,7 +298,8 @@ async function init() {
     renderGrid('gridLlegada', 'L');
     document.getElementById('gridRetro').innerHTML = renderRetroInputs();
 
-    await Promise.all([loadDrivers(), loadTrips()]);
+    // Sumamos la carga de vehículos a las peticiones iniciales
+    await Promise.all([loadDrivers(), loadTrips(), loadVehiculos()]);
     syncDropdownConViajesActivos(); 
     
     toggleLoader(false);
@@ -292,6 +318,51 @@ async function init() {
         }
     });
 
+    document.getElementById('selVehiculo').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.dataset.ocupado === "true") {
+             showToast(`⛔ ESTE VEHÍCULO YA ESTÁ EN RUTA.`, "error");
+             this.value = ""; 
+        }
+    });
+
+    // --- NUEVO: VIGILANTE VISUAL DE KILÓMETROS A LA LLEGADA ---
+    document.getElementById('txtKmLlegada').addEventListener('input', function() {
+        const inputKm = parseInt(this.value) || 0;
+        const msgBox = document.getElementById('msgKmFeedback');
+        
+        // Asumimos que el backend mandará el kmSalida. Si no lo tiene, no bloqueamos el color.
+        const kmSalidaOculto = viajeSeleccionado ? (parseInt(viajeSeleccionado.kmSalida) || 0) : 0;
+
+        if (inputKm === 0) {
+            this.style.color = "white";
+            this.style.borderColor = "var(--glass-border)";
+            msgBox.textContent = "";
+        } else if (kmSalidaOculto > 0 && inputKm <= kmSalidaOculto) {
+            this.style.color = "var(--error)";
+            this.style.borderColor = "var(--error)";
+            msgBox.style.color = "var(--error)";
+            msgBox.textContent = "❌ ERROR: Menor al KM de salida.";
+        } else if (kmSalidaOculto > 0 && (inputKm - kmSalidaOculto) > 400) {
+            // Techo de cordura visual (Ej: 400km maximos por viaje)
+            this.style.color = "var(--accent)";
+            this.style.borderColor = "var(--accent)";
+            msgBox.style.color = "var(--accent)";
+            msgBox.textContent = `⚠️ ¿Seguro? Hizo ${inputKm - kmSalidaOculto} KM en este viaje.`;
+        } else if (kmSalidaOculto > 0) {
+            this.style.color = "var(--ok)";
+            this.style.borderColor = "var(--ok)";
+            msgBox.style.color = "var(--ok)";
+            msgBox.textContent = `✅ Lógico (+${inputKm - kmSalidaOculto} KM recorridos).`;
+        } else {
+            // Si el backend no nos mandó el kmSalida (viajes viejos) lo dejamos en blanco neutro
+            this.style.color = "white";
+            this.style.borderColor = "var(--glass-border)";
+            msgBox.textContent = "";
+        }
+    });
+
+    aplicarFocoAuto();
     setMode('REPARTO');
 }
 
@@ -393,6 +464,29 @@ async function loadDrivers() {
     } catch(e) { console.error(e); }
 }
 
+// Cargar flota de vehículos
+async function loadVehiculos() {
+    try {
+        const r = await fetch(`${API}?action=getflota`); 
+        const d = await r.json();
+        
+        const sel = document.getElementById('selVehiculo');
+        sel.innerHTML = '<option value="">-- Seleccionar Camión --</option>';
+        
+        if (d.status === 'success' && Array.isArray(d.flota)) {
+            d.flota.forEach(v => {
+                const o = document.createElement('option');
+                o.value = v.patente; 
+                o.text = `${v.vehiculo} (${v.patente})`; 
+                sel.add(o);
+            });
+        }
+    } catch(e) { 
+        const sel = document.getElementById('selVehiculo');
+        sel.innerHTML = '<option value="">-- Carga Manual (Falta API) --</option><option value="CAMION-1">Camión 1</option><option value="CAMION-2">Camión 2</option>';
+    }
+}
+
 async function loadTrips() {
     const list = document.getElementById('listViajes');
     const colorCarga = modoActual === 'COMPRA' ? 'var(--compra)' : 'var(--accent)';
@@ -411,26 +505,46 @@ async function loadTrips() {
 }
 
 function syncDropdownConViajesActivos() {
-    const sel = document.getElementById('selChofer');
-    if (!sel || !viajesPendientes) return;
+    const selChofer = document.getElementById('selChofer');
+    const selVehiculo = document.getElementById('selVehiculo');
+    if (!viajesPendientes) return;
 
+    // Bloquear Choferes
     const choferesEnCalle = viajesPendientes.map(v => String(v.chofer).toUpperCase().trim());
+    if (selChofer) {
+        Array.from(selChofer.options).forEach(opt => {
+            if (!opt.value) return; 
+            const optText = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '').toUpperCase().trim();
+            const optVal = String(opt.value).toUpperCase().trim();
+            const enRuta = choferesEnCalle.includes(optText) || choferesEnCalle.includes(optVal) || opt.dataset.backendOcupado === "true";
+            
+            if (enRuta) {
+                if (!opt.text.includes('⛔')) { opt.text = `⛔ ${opt.text} (En Ruta)`; }
+                opt.className = "ocupado"; opt.dataset.ocupado = "true";
+            } else {
+                opt.text = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '');
+                opt.className = ""; opt.dataset.ocupado = "false";
+            }
+        });
+    }
 
-    Array.from(sel.options).forEach(opt => {
-        if (!opt.value) return; 
-        
-        const optText = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '').toUpperCase().trim();
-        const optVal = String(opt.value).toUpperCase().trim();
-        const enRuta = choferesEnCalle.includes(optText) || choferesEnCalle.includes(optVal) || opt.dataset.backendOcupado === "true";
-        
-        if (enRuta) {
-            if (!opt.text.includes('⛔')) { opt.text = `⛔ ${opt.text} (En Ruta)`; }
-            opt.className = "ocupado"; opt.dataset.ocupado = "true";
-        } else {
-            opt.text = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '');
-            opt.className = ""; opt.dataset.ocupado = "false";
-        }
-    });
+    // Bloquear Vehículos
+    const vehiculosEnCalle = viajesPendientes.map(v => String(v.vehiculo || '').toUpperCase().trim());
+    if (selVehiculo) {
+        Array.from(selVehiculo.options).forEach(opt => {
+            if (!opt.value) return; 
+            const optVal = String(opt.value).toUpperCase().trim();
+            const enRuta = vehiculosEnCalle.includes(optVal);
+            
+            if (enRuta) {
+                if (!opt.text.includes('⛔')) { opt.text = `⛔ ${opt.text} (En Uso)`; }
+                opt.className = "ocupado"; opt.dataset.ocupado = "true";
+            } else {
+                opt.text = opt.text.replace('⛔ ', '').replace(' (En Uso)', '');
+                opt.className = ""; opt.dataset.ocupado = "false";
+            }
+        });
+    }
 }
 
 function renderTripList() {
@@ -443,7 +557,8 @@ function renderTripList() {
         const isCompra = v.tipoViaje === 'COMPRA';
         const cardClass = `trip-card ${v.isLate ? 'alert' : ''} ${isCompra ? 'compra-mode' : ''}`;
         const card = document.createElement('div'); card.className = cardClass; card.onclick = () => selectTrip(v);
-        card.innerHTML = `<div class="trip-info"><h4>${v.chofer} ${isCompra ? '🏭' : '🚚'}</h4><span>${v.fechaSalida} - ${v.horaSalida}</span><div class="trip-detail">${v.cargaLabel}</div></div><div style="font-size:20px;">${v.isLate ? '⚠️' : '⬅️'}</div>`;
+        const titulo = v.vehiculo ? `${v.chofer} - ${v.vehiculo}` : v.chofer;
+        card.innerHTML = `<div class="trip-info"><h4>${titulo} ${isCompra ? '🏭' : '🚚'}</h4><span>${v.fechaSalida} - ${v.horaSalida}</span><div class="trip-detail">${v.cargaLabel}</div></div><div style="font-size:20px;">${v.isLate ? '⚠️' : '⬅️'}</div>`;
         list.appendChild(card);
     });
 }
@@ -455,7 +570,14 @@ function selectTrip(trip) {
     const isCompra = trip.tipoViaje === 'COMPRA';
     const txtRemito = document.getElementById('txtRemitoCompra');
 
-    document.querySelectorAll('#viewLlegadaForm input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
+    // Reset visual del input de KM
+    const inputKm = document.getElementById('txtKmLlegada');
+    inputKm.value = '';
+    inputKm.style.color = "white";
+    inputKm.style.borderColor = "var(--glass-border)";
+    document.getElementById('msgKmFeedback').textContent = "";
+
+    document.querySelectorAll('#viewLlegadaForm input[type="number"]:not(#txtKmLlegada)').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
 
     if (isCompra) {
         document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--compra); margin-left:10px;">(Volviendo de Planta)</span>`;
@@ -472,7 +594,6 @@ function selectTrip(trip) {
         txtRemito.classList.add('hidden'); txtRemito.value = '';
 
         ['10','15','45'].forEach(kg => {
-            // EL PIZARRÓN TONTO: Solo imprime lo que dictó el servidor
             document.getElementById(`LL${kg}`).value = trip.sugerencia[kg].L;
             document.getElementById(`LV${kg}`).value = trip.sugerencia[kg].V;
         });
@@ -493,7 +614,6 @@ function calcLlegadaDiff() {
         diff += Math.abs(val('LL15') - viajeSeleccionado.sDetails.v15); 
         diff += Math.abs(val('LL45') - viajeSeleccionado.sDetails.v45); 
     } else {
-        // EL PIZARRÓN TONTO: Compara lo que el usuario tipeó vs la sugerencia masticada
         diff += Math.abs(val('LL10') - viajeSeleccionado.sugerencia[10].L); diff += Math.abs(val('LV10') - viajeSeleccionado.sugerencia[10].V);
         diff += Math.abs(val('LL15') - viajeSeleccionado.sugerencia[15].L); diff += Math.abs(val('LV15') - viajeSeleccionado.sugerencia[15].V);
         diff += Math.abs(val('LL45') - viajeSeleccionado.sugerencia[45].L); diff += Math.abs(val('LV45') - viajeSeleccionado.sugerencia[45].V);
@@ -549,25 +669,48 @@ async function enviar(payload) {
 }
 
 document.getElementById('btnRegistrarSalida').onclick = () => {
-    const sel = document.getElementById('selChofer'); const c = sel.value;
+    const selChofer = document.getElementById('selChofer'); const c = selChofer.value;
+    const selVehiculo = document.getElementById('selVehiculo'); const vehiculo = selVehiculo.value;
+    const kmSalida = document.getElementById('txtKmSalida').value;
     const total = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
-    if(!c) return showToast('Selecciona chofer', 'error');
-    if (sel.options[sel.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Chofer en ruta.", 'error');
     
+    if(!c) return showToast('Selecciona chofer', 'error');
+    if (selChofer.options[selChofer.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Chofer en ruta.", 'error');
+    
+    if(!vehiculo) return showToast('Selecciona el vehículo', 'error');
+    if (selVehiculo.options[selVehiculo.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Vehículo en uso.", 'error');
+    if(!kmSalida) return showToast('Ingresa los KM de salida del tablero', 'error');
+
     const cStr = String(c).toUpperCase().trim();
     const estaEnRuta = viajesPendientes.some(v => String(v.chofer).toUpperCase().trim() === cStr);
     if (estaEnRuta) return showToast("⛔ ERROR: Este chofer ya tiene un viaje activo en la calle.", 'error');
 
     if(total === 0) return showToast('La carga está vacía', 'error');
 
-    enviar({ modo: 'SALIDA', tipoViaje: typeof modoActual !== 'undefined' ? modoActual : 'REPARTO', chofer: c, totalSalida: total, L10: val('SL10'), V10: val('SV10'), L15: val('SL15'), V15: val('SV15'), L45: val('SL45'), V45: val('SV45') });
+    enviar({ 
+        modo: 'SALIDA', tipoViaje: typeof modoActual !== 'undefined' ? modoActual : 'REPARTO', 
+        chofer: c, vehiculo: vehiculo, kmSalida: kmSalida,
+        totalSalida: total, L10: val('SL10'), V10: val('SV10'), L15: val('SL15'), V15: val('SV15'), L45: val('SL45'), V45: val('SV45') 
+    });
 };
 
 document.getElementById('btnFinalizar').onclick = () => {
     const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA';
     const motivo = document.getElementById('txtMotivo').value.trim();
     const remito = document.getElementById('txtRemitoCompra').value.trim();
+    const kmLlegada = parseInt(document.getElementById('txtKmLlegada').value) || 0;
     
+    if(!kmLlegada) return showToast("⚠️ Debes registrar los KM del tablero a la llegada", "error");
+    
+    // BLOQUEO EN FRÍO: No lo deja ni mandar la petición al backend si está mal tipeado
+    const kmSalidaOculto = viajeSeleccionado ? (parseInt(viajeSeleccionado.kmSalida) || 0) : 0;
+    if (kmSalidaOculto > 0 && kmLlegada <= kmSalidaOculto) {
+        return showToast(`❌ ERROR: El KM de llegada debe ser MAYOR a ${kmSalidaOculto}.`, "error");
+    }
+    if (kmSalidaOculto > 0 && (kmLlegada - kmSalidaOculto) > 400) {
+        return showToast(`⚠️ ALERTA: Diferencia irreal de +400km. Revisá los ceros.`, "error");
+    }
+
     if (isCompra && !remito) return showToast("⚠️ Debes ingresar el Nº de Remito que entregó la Planta", "error");
     if (hayDiferenciaLlegada && !motivo) return showToast("⚠️ Faltan explicar las diferencias detectadas", "error");
     
@@ -579,7 +722,8 @@ document.getElementById('btnFinalizar').onclick = () => {
         tipoViaje: viajeSeleccionado.tipoViaje || 'REPARTO', 
         totalLlegada: totalLleg, 
         motivo: motivo, 
-        remitoPlanta: remito, // Mandamos el remito al backend
+        remitoPlanta: remito, 
+        kmLlegada: kmLlegada, 
         L10: val('LL10'), V10: val('LV10'), L15: val('LL15'), V15: val('LV15'), L45: val('LL45'), V45: val('LV45') 
     });
 };

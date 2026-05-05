@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gestión de Flota</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050510;
+            --bg-card: #12121a;
+            --accent: #FFD700;
+            --text-main: #ffffff;
+            --text-sec: #a0a0b0;
+            --success: #2dd4bf;
+            --danger: #ff4757;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(76, 29, 149, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- LOADING NEÓN --- */
+        .neon-loader {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 50px; height: 50px; border: 3px solid transparent;
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite, neon-glow 1.5s ease-in-out infinite alternate;
+            z-index: 9999; display: none;
+        }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes neon-glow {
+            from { box-shadow: 0 0 10px var(--accent), inset 0 0 10px var(--accent); }
+            to { box-shadow: 0 0 25px var(--accent), inset 0 0 20px var(--accent); }
+        }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 800px; margin: 0 auto 20px auto;
+            border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;
+        }
+
+        .page-title {
+            font-size: 1.2rem; margin: 0;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+            color: var(--text-sec); padding: 8px 15px; border-radius: 8px; cursor: pointer;
+            font-size: 12px; font-weight: 600; transition: all 0.3s ease;
+        }
+
+        .btn-action:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+        .btn-accent { border-color: var(--accent); color: var(--accent); width: 100%; margin-top: 10px; }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); position: relative; overflow: hidden;
+        }
+
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        .grid-info {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px; margin-top: 15px; font-size: 13px;
+        }
+
+        .data-box {
+            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255,255,255,0.05);
+            padding: 10px; border-radius: 8px; text-align: center;
+        }
+
+        .data-box span { display: block; color: var(--text-sec); font-size: 10px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+        .data-box b { font-family: monospace; font-size: 16px; color: #fff; }
+
+        .form-section {
+            margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--glass-border);
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: end;
+        }
+
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-size: 10px; color: var(--text-sec); margin-bottom: 5px; font-weight: bold; }
+        .input-group input {
+            background: transparent; border: 1px solid var(--glass-border); color: #fff;
+            padding: 8px; border-radius: 6px; font-family: 'Outfit'; font-size: 13px;
+        }
+        
+        /* Ajuste responsive para celulares */
+        @media (max-width: 600px) {
+            .form-section { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader" class="neon-loader"></div>
+
+    <div class="header">
+        <button class="btn-action" onclick="window.location.replace('inicio.html?k=' + k)">❮ Volver a Inicio</button>
+        <h2 class="page-title">Gestión de Flota</h2>
+    </div>
+
+    <div class="container" id="flota-container">
+        <!-- Los camiones se inyectan acá -->
+    </div>
+
+    <script>
+        // 1. CONFIGURACIÓN Y EXTRACCIÓN DEL TOKEN
+        const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+        const TIMEOUT_SESION = 300000; // 5 minutos exactos en milisegundos
+
+        const params = new URLSearchParams(window.location.search);
+        const k = params.get('k') || params.get('token');
+
+        if (!k) { window.location.replace('index.html'); }
+
+        // 2. PATRULLA DE INACTIVIDAD (5 MINUTOS)
+        let tIdle;
+        function resetTimer() {
+            clearTimeout(tIdle);
+            tIdle = setTimeout(() => window.location.replace('index.html'), TIMEOUT_SESION);
+        }
+        ['click', 'mousemove', 'keydown', 'touchstart'].forEach(e => document.addEventListener(e, resetTimer));
+        resetTimer();
+
+        // 3. CARGA INICIAL
+        async function cargarFlota() {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('flota-container').style.opacity = '0.3';
+            
+            try {
+                const res = await fetch(`${API_URL}?action=getflotadetalle&k=${k}`);
+                const data = await res.json();
+                
+                if (data.status === 'error') {
+                    alert("⚠️ Error: " + data.message);
+                    if (data.message.includes('Sesión')) window.location.replace('index.html');
+                    return;
+                }
+                renderizarFlota(data.data);
+            } catch (e) {
+                alert("Error de conexión al servidor.");
+                console.error(e);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('flota-container').style.opacity = '1';
+            }
+        }
+
+        // 4. INYECTOR AL DOM
+        function renderizarFlota(flota) {
+            const container = document.getElementById('flota-container');
+            container.innerHTML = '';
+
+            if(!flota || flota.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-sec); padding:40px;">No hay vehículos registrados en la pestaña FLOTA.</div>`;
+                return;
+            }
+
+            flota.forEach(v => {
+                const proxyService = v.kmUltimo + v.frecuencia;
+                const kmFaltantes = proxyService - v.kmActual;
+                
+                let alarmaColor = 'var(--success)';
+                if (kmFaltantes <= 500) alarmaColor = 'var(--accent)'; // Advertencia amarilla
+                if (kmFaltantes <= 0) alarmaColor = 'var(--danger)';   // Peligro rojo
+
+                const hoy = new Date().toISOString().split('T')[0];
+
+                const html = `
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3 style="margin:0; font-size:18px;">${v.patente}</h3>
+                            <span style="font-size:12px; color:var(--accent); background:rgba(255,215,0,0.1); padding:4px 8px; border-radius:4px;">${v.vehiculo}</span>
+                        </div>
+                        
+                        <div class="grid-info">
+                            <div class="data-box"><span>KM Actual</span><b>${v.kmActual}</b></div>
+                            <div class="data-box"><span>Últ. Service</span><b>${v.kmUltimo}</b><span style="margin-top:2px; font-weight:normal;">${v.fechaUltimo || 'S/D'}</span></div>
+                            <div class="data-box" style="border-color:${alarmaColor}">
+                                <span style="color:${alarmaColor}">Próximo Service</span>
+                                <b style="color:${alarmaColor}">${proxyService}</b>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <div class="input-group">
+                                <label>Nuevo Service (KM)</label>
+                                <input type="number" id="km-${v.patente}" value="${v.kmActual}">
+                            </div>
+                            <div class="input-group">
+                                <label>Fecha Real</label>
+                                <input type="date" id="fecha-${v.patente}" value="${hoy}">
+                            </div>
+                            <div class="input-group">
+                                <label>Frecuencia</label>
+                                <input type="number" id="frec-${v.patente}" value="${v.frecuencia}">
+                            </div>
+                        </div>
+                        <button class="btn-action btn-accent" onclick="guardarService('${v.patente}')">🛠️ Guardar Service / Actualizar</button>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // 5. GUARDAR AL SERVIDOR
+        async function guardarService(patente) {
+            const km = document.getElementById(`km-${patente}`).value;
+            const fecha = document.getElementById(`fecha-${patente}`).value;
+            const frec = document.getElementById(`frec-${patente}`).value;
+
+            if (!km || !fecha || !frec) {
+                alert("Por favor, completá todos los campos.");
+                return;
+            }
+
+            // 👇 NUEVO: ALERTA ANTI-DEDAZO 👇
+            const mensajeConfirmacion = 
+`⚠️ ATENCIÓN: ¿Estás seguro de guardar estos datos como ÚLTIMO SERVICE?
+
+🚚 Patente: ${patente}
+⚙️ KM Service: ${km}
+📅 Fecha: ${fecha}
+🔄 Frecuencia: ${frec} km
+
+Revisá bien para evitar errores.`;
+
+            if (!confirm(mensajeConfirmacion)) {
+                return; // Si el usuario pone "Cancelar", cortamos todo acá y no enviamos nada.
+            }
+
+            document.getElementById('loader').style.display = 'block';
+
+            const fd = new FormData();
+            fd.append('action', 'saveservice');
+            fd.append('k', k);
+            fd.append('patente', patente);
+            fd.append('km', km);
+            fd.append('fecha', fecha);
+            fd.append('frecuencia', frec);
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: fd });
+                const r = await res.json();
+                
+                if (r.status === 'success') {
+                    alert("✅ Service guardado con éxito.");
+                    cargarFlota(); // Recargamos para ver los cambios impactados
+                } else {
+                    alert("❌ Error del servidor: " + r.message);
+                }
+            } catch(e) {
+                alert("❌ Error de red: " + e.message);
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        // Arrancar
+        window.onload = cargarFlota;
+    </script>
+</body>
+</html>
