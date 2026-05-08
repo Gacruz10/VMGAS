@@ -1,285 +1,274 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Gestión de Flota</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #050510;
-            --bg-card: #12121a;
-            --accent: #FFD700;
-            --text-main: #ffffff;
-            --text-sec: #a0a0b0;
-            --success: #2dd4bf;
-            --danger: #ff4757;
-            --glass-border: rgba(255, 255, 255, 0.08);
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Outfit', sans-serif;
-            color: var(--text-main);
-            background-color: var(--bg-dark);
-            background-image:
-                radial-gradient(circle at 0% 0%, rgba(76, 29, 149, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        /* --- LOADING NEÓN --- */
-        .neon-loader {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 50px; height: 50px; border: 3px solid transparent;
-            border-top-color: var(--accent); border-radius: 50%;
-            animation: spin 1s linear infinite, neon-glow 1.5s ease-in-out infinite alternate;
-            z-index: 9999; display: none;
-        }
-
-        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes neon-glow {
-            from { box-shadow: 0 0 10px var(--accent), inset 0 0 10px var(--accent); }
-            to { box-shadow: 0 0 25px var(--accent), inset 0 0 20px var(--accent); }
-        }
-
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            max-width: 800px; margin: 0 auto 20px auto;
-            border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;
-        }
-
-        .page-title {
-            font-size: 1.2rem; margin: 0;
-            background: linear-gradient(to right, #fff, var(--accent));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;
-        }
-
-        .btn-action {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
-            color: var(--text-sec); padding: 8px 15px; border-radius: 8px; cursor: pointer;
-            font-size: 12px; font-weight: 600; transition: all 0.3s ease;
-        }
-
-        .btn-action:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-        .btn-accent { border-color: var(--accent); color: var(--accent); width: 100%; margin-top: 10px; }
-
-        .container { max-width: 800px; margin: 0 auto; }
-
-        .card {
-            background: var(--bg-card); border: 1px solid var(--glass-border);
-            border-radius: 12px; padding: 20px; margin-bottom: 20px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); position: relative; overflow: hidden;
-        }
-
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        }
-
-        .grid-info {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px; margin-top: 15px; font-size: 13px;
-        }
-
-        .data-box {
-            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255,255,255,0.05);
-            padding: 10px; border-radius: 8px; text-align: center;
-        }
-
-        .data-box span { display: block; color: var(--text-sec); font-size: 10px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
-        .data-box b { font-family: monospace; font-size: 16px; color: #fff; }
-
-        .form-section {
-            margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--glass-border);
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; align-items: end;
-        }
-
-        .input-group { display: flex; flex-direction: column; }
-        .input-group label { font-size: 10px; color: var(--text-sec); margin-bottom: 5px; font-weight: bold; }
-        .input-group input {
-            background: transparent; border: 1px solid var(--glass-border); color: #fff;
-            padding: 8px; border-radius: 6px; font-family: 'Outfit'; font-size: 13px;
-        }
-        
-        /* Ajuste responsive para celulares */
-        @media (max-width: 600px) {
-            .form-section { grid-template-columns: 1fr; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Flota y Services</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --glass: rgba(0, 0, 0, 0.6); --glass-border: rgba(255, 255, 255, 0.1); --bg-color: #0d031a; --text-primary: #ffffff; --text-muted: rgba(255, 255, 255, 0.5); --ok: #2dd4bf; --warning: #f59e0b; --error: #ef4444; --accent: #a855f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary); background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%), radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%); background-color: var(--bg-color); background-attachment: fixed; min-height: 100vh; padding: 20px; }
+    
+    /* Adapté el header para que contenga el botón de volver sin romper tu centrado */
+    .header-container { display: flex; justify-content: space-between; align-items: center; max-width: 1000px; margin: 0 auto 20px auto; }
+    .header-text { text-align: center; flex-grow: 1; }
+    .header-text h2 { margin: 0; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;}
+    
+    .config-panel { background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 16px; padding: 15px; margin: 0 auto 30px auto; max-width: 800px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .config-box { display: flex; flex-direction: column; align-items: center; } .config-box label { font-size: 10px; color: var(--text-muted); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; } .config-box input { background: #1a1a1a; color: white; border: 1px solid var(--glass-border); padding: 8px; border-radius: 8px; width: 100px; text-align: center; font-weight: bold; } .config-box input:focus { outline: none; border-color: var(--accent); }
+    .grid-flota { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
+    .card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .card.status-ok { border-top: 4px solid var(--ok); } .card.status-warning { border-top: 4px solid var(--warning); } .card.status-error { border-top: 4px solid var(--error); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+    .card-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 15px; width: 100%; gap: 10px; } .card-title { margin: 0; font-size: 18px; font-weight: 800; } .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; } .badge.ok { background: rgba(45, 212, 191, 0.1); color: var(--ok); border: 1px solid var(--ok); } .badge.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); } .badge.error { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid var(--error); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 5px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+    .progress-container { background: rgba(255,255,255,0.1); border-radius: 10px; height: 12px; width: 100%; margin: 10px 0 5px 0; overflow: hidden; } .progress-bar { height: 100%; border-radius: 10px; transition: width 0.5s ease; } .progress-text { font-size: 12px; font-weight: bold; margin-bottom: 5px; width: 100%; text-align: center; } .prediction-text { font-size: 10px; color: var(--text-muted); font-style: italic; margin-bottom: 15px; width: 100%; text-align: center; }
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 20px; width: 100%;} .data-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; text-align: center; } .data-label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; display: block; margin-bottom: 3px;} .data-value { font-weight: 600; font-size: 14px;}
+    .btn-action { width: 100%; background: transparent; border: 1px solid var(--text-muted); color: white; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; } .btn-action:hover { background: rgba(255,255,255,0.1); border-color: white; }
+    
+    /* Clases extra para el botón del header */
+    .btn-header { width: auto; padding: 8px 15px; font-size: 12px; }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; } .modal { background: #1a0b2e; border: 1px solid var(--accent); border-radius: 16px; padding: 25px; width: 90%; max-width: 350px; text-align: center; } .modal h3 { margin-top: 0; color: var(--accent); } .modal-input-group { text-align: center; margin-bottom: 15px; } .modal-input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; } .modal-input-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-weight: bold; text-align: center; font-size: 16px; } .modal-input-group input:focus { outline: none; border-color: var(--accent); } .modal-buttons { display: flex; gap: 10px; margin-top: 20px; } .modal-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; } .btn-cancel { background: transparent; border: 1px solid var(--error); color: var(--error); } .btn-confirm { background: var(--ok); color: #000; }
+    .loading-text { text-align: center; color: var(--accent); font-weight: bold; margin-top: 50px; animation: pulse 1.5s infinite; }
+  </style>
 </head>
-
 <body>
 
-    <div id="loader" class="neon-loader"></div>
-
-    <div class="header">
-        <button class="btn-action" onclick="window.location.replace('inicio.html?k=' + k)">❮ Volver a Inicio</button>
-        <h2 class="page-title">Gestión de Flota</h2>
+  <div class="header-container">
+    <button class="btn-action btn-header" onclick="window.location.replace('inicio.html')">❮ Volver</button>
+    <div class="header-text">
+      <h2>Tablero de Flota</h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">Mantenimiento y Control de Services</p>
     </div>
+    <div style="width: 80px;"></div> 
+  </div>
 
-    <div class="container" id="flota-container">
-        <!-- Los camiones se inyectan acá -->
+  <div class="config-panel">
+    <div class="config-box">
+      <label>Alerta: Próximo (KM)</label>
+      <input type="number" id="cfgProximo" value="1000" onfocus="this.select()" onchange="dibujarTarjetas()">
     </div>
+    <div class="config-box">
+      <label>Alerta: Realizar (KM)</label>
+      <input type="number" id="cfgPeligro" value="50" onfocus="this.select()" onchange="dibujarTarjetas()">
+    </div>
+  </div>
 
-    <script>
-        // 1. CONFIGURACIÓN Y EXTRACCIÓN DEL TOKEN
-        const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
-        const TIMEOUT_SESION = 300000; // 5 minutos exactos en milisegundos
+  <div class="grid-flota" id="flotaContainer">
+    <div class="loading-text">Conectando con la base de datos... 🛰️</div>
+  </div>
 
-        const params = new URLSearchParams(window.location.search);
-        const k = params.get('k') || params.get('token');
+  <div class="modal-overlay" id="serviceModal">
+    <div class="modal">
+      <h3 id="modalTitle">🛠️ Registrar Service</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;" id="modalSubtitle"></p>
+      
+      <div class="modal-input-group">
+        <label>Fecha de Realización</label>
+        <input type="date" id="modFecha">
+      </div>
+      <div class="modal-input-group">
+        <label>KM Exactos del Tablero</label>
+        <input type="number" id="modKm" onfocus="this.select()">
+      </div>
+      <div class="modal-input-group">
+        <label>Frecuencia de Service (KM)</label>
+        <input type="number" id="modFrecuencia" onfocus="this.select()">
+      </div>
 
-        if (!k) { window.location.replace('index.html'); }
+      <div class="modal-buttons">
+        <button class="modal-btn btn-cancel" onclick="cerrarModal()">CANCELAR</button>
+        <button class="modal-btn btn-confirm" id="btnGuardar" onclick="guardarServiceEnNube()">CONFIRMAR</button>
+      </div>
+    </div>
+  </div>
 
-        // 2. PATRULLA DE INACTIVIDAD (5 MINUTOS)
-        let tIdle;
-        function resetTimer() {
-            clearTimeout(tIdle);
-            tIdle = setTimeout(() => window.location.replace('index.html'), TIMEOUT_SESION);
+  <script>
+    // ========================================================
+    // ⚙️ CONFIGURACIÓN CRÍTICA (¡No borrar!)
+    // ========================================================
+    const API = 'https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec'; 
+    const TIMEOUT_SESION = 300000; // 5 Minutos exactos
+    
+    // ========================================================
+    // 🕵️‍♂️ LECTURA NINJA DEL TOKEN
+    // ========================================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('k') || urlParams.get('token');
+    
+    // Si viene en la URL, lo guardamos en la bóveda del navegador
+    if (urlToken) {
+        localStorage.setItem('tokenSesion', urlToken);
+    }
+    
+    // Recuperamos de la bóveda
+    const TOKEN = localStorage.getItem('tokenSesion');
+
+    if (!TOKEN) {
+        window.location.replace('index.html');
+    } else {
+        // Magia: Borramos el token de la barra de direcciones para que no se vea
+        if (window.history.replaceState && urlToken) {
+            const urlLimpia = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: urlLimpia}, '', urlLimpia);
         }
-        ['click', 'mousemove', 'keydown', 'touchstart'].forEach(e => document.addEventListener(e, resetTimer));
-        resetTimer();
+    }
 
-        // 3. CARGA INICIAL
-        async function cargarFlota() {
-            document.getElementById('loader').style.display = 'block';
-            document.getElementById('flota-container').style.opacity = '0.3';
-            
-            try {
-                const res = await fetch(`${API_URL}?action=getflotadetalle&k=${k}`);
-                const data = await res.json();
-                
-                if (data.status === 'error') {
-                    alert("⚠️ Error: " + data.message);
-                    if (data.message.includes('Sesión')) window.location.replace('index.html');
-                    return;
-                }
-                renderizarFlota(data.data);
-            } catch (e) {
-                alert("Error de conexión al servidor.");
-                console.error(e);
-            } finally {
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('flota-container').style.opacity = '1';
-            }
+    // ========================================================
+    // 🛡️ PATOVICA DE INACTIVIDAD
+    // ========================================================
+    let tIdle;
+    function resetTimer() {
+        clearTimeout(tIdle);
+        tIdle = setTimeout(() => window.location.replace('index.html'), TIMEOUT_SESION);
+    }
+    ['click', 'mousemove', 'keydown', 'touchstart'].forEach(e => document.addEventListener(e, resetTimer));
+    resetTimer();
+
+    // ========================================================
+    // 🚀 LÓGICA DE LA FLOTA
+    // ========================================================
+    let dbFlota = []; 
+    let vehiculoEnEdicion = null; 
+
+    function fmt(num) { return Number(num).toLocaleString('es-AR'); }
+
+    // --- 1. LEER DATOS DE LA NUBE ---
+    async function cargarDatos() {
+      try {
+        const respuesta = await fetch(`${API}?action=getflotadetalle&k=${TOKEN}`);
+        const result = await respuesta.json();
+        
+        if (result.status === 'success') {
+          dbFlota = result.data;
+          dibujarTarjetas();
+        } else {
+          document.getElementById('flotaContainer').innerHTML = `<div class="loading-text" style="color:red;">❌ Error: ${result.message}</div>`;
         }
+      } catch (error) {
+        document.getElementById('flotaContainer').innerHTML = `<div class="loading-text" style="color:red;">❌ Error de conexión al servidor.</div>`;
+      }
+    }
 
-        // 4. INYECTOR AL DOM
-        function renderizarFlota(flota) {
-            const container = document.getElementById('flota-container');
-            container.innerHTML = '';
+    // --- 2. DIBUJAR TARJETAS (Lógica visual) ---
+    function dibujarTarjetas() {
+      const container = document.getElementById('flotaContainer');
+      container.innerHTML = ''; 
+      
+      const limiteProximo = parseInt(document.getElementById('cfgProximo').value) || 500;
+      const limitePeligro = parseInt(document.getElementById('cfgPeligro').value) || 50;
+      const hoy = new Date(); 
 
-            if(!flota || flota.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-sec); padding:40px;">No hay vehículos registrados en la pestaña FLOTA.</div>`;
-                return;
-            }
+      dbFlota.forEach(c => {
+        const kmConsumidos = c.kmActual - c.kmUltimo;
+        let kmRestantes = c.frecuencia - kmConsumidos;
+        
+        const fechaUltimoObj = new Date(c.fechaUltimo);
+        const diasTranscurridos = Math.max(1, Math.floor((hoy - fechaUltimoObj) / (1000 * 60 * 60 * 24)));
+        const kmPorDia = kmConsumidos / diasTranscurridos;
+        
+        let textoPrediccion = "";
+        if (kmRestantes <= 0) { textoPrediccion = "⚠️ Atención requerida inmediata."; } 
+        else if (kmPorDia > 0) {
+            const diasFaltantes = Math.floor(kmRestantes / kmPorDia);
+            const fechaEstimada = new Date();
+            fechaEstimada.setDate(hoy.getDate() + diasFaltantes);
+            textoPrediccion = `🗓️ Estimado: ${fechaEstimada.toLocaleDateString('es-AR')} (Aprox ${Math.round(kmPorDia)} km/día)`;
+        } else { textoPrediccion = "Sin datos de movimiento para predecir."; }
 
-            flota.forEach(v => {
-                const proxyService = v.kmUltimo + v.frecuencia;
-                const kmFaltantes = proxyService - v.kmActual;
-                
-                let alarmaColor = 'var(--success)';
-                if (kmFaltantes <= 500) alarmaColor = 'var(--accent)'; // Advertencia amarilla
-                if (kmFaltantes <= 0) alarmaColor = 'var(--danger)';   // Peligro rojo
+        let estadoStr = "OK", claseCard = "status-ok", claseBadge = "ok", colorBarra = "var(--ok)";
+        if (kmRestantes <= limitePeligro) { estadoStr = "REALIZAR SERVICE"; claseCard = "status-error"; claseBadge = "error"; colorBarra = "var(--error)"; } 
+        else if (kmRestantes <= limiteProximo) { estadoStr = "PRÓXIMO A SERVICE"; claseCard = "status-warning"; claseBadge = "warning"; colorBarra = "var(--warning)"; }
 
-                const hoy = new Date().toISOString().split('T')[0];
+        let porcentaje = Math.min(Math.max((kmConsumidos / c.frecuencia) * 100, 0), 100);
+        const fechaFormateada = c.fechaUltimo ? c.fechaUltimo.split('-').reverse().join('/') : '-';
 
-                const html = `
-                    <div class="card">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <h3 style="margin:0; font-size:18px;">${v.patente}</h3>
-                            <span style="font-size:12px; color:var(--accent); background:rgba(255,215,0,0.1); padding:4px 8px; border-radius:4px;">${v.vehiculo}</span>
-                        </div>
-                        
-                        <div class="grid-info">
-                            <div class="data-box"><span>KM Actual</span><b>${v.kmActual}</b></div>
-                            <div class="data-box"><span>Últ. Service</span><b>${v.kmUltimo}</b><span style="margin-top:2px; font-weight:normal;">${v.fechaUltimo || 'S/D'}</span></div>
-                            <div class="data-box" style="border-color:${alarmaColor}">
-                                <span style="color:${alarmaColor}">Próximo Service</span>
-                                <b style="color:${alarmaColor}">${proxyService}</b>
-                            </div>
-                        </div>
-                        
-                        <div class="form-section">
-                            <div class="input-group">
-                                <label>Nuevo Service (KM)</label>
-                                <input type="number" id="km-${v.patente}" value="${v.kmActual}">
-                            </div>
-                            <div class="input-group">
-                                <label>Fecha Real</label>
-                                <input type="date" id="fecha-${v.patente}" value="${hoy}">
-                            </div>
-                            <div class="input-group">
-                                <label>Frecuencia</label>
-                                <input type="number" id="frec-${v.patente}" value="${v.frecuencia}">
-                            </div>
-                        </div>
-                        <button class="btn-action btn-accent" onclick="guardarService('${v.patente}')">🛠️ Guardar Service / Actualizar</button>
-                    </div>
-                `;
-                container.innerHTML += html;
-            });
-        }
+        const cardHtml = `
+          <div class="card ${claseCard}">
+            <div class="card-header">
+              <h3 class="card-title">${c.vehiculo}</h3>
+              <div class="card-subtitle">Patente: <b>${c.patente}</b></div>
+              <span class="badge ${claseBadge}">${estadoStr}</span>
+            </div>
+            <div class="progress-container"><div class="progress-bar" style="width: ${porcentaje}%; background-color: ${colorBarra};"></div></div>
+            <div class="progress-text" style="color: ${colorBarra};">${kmRestantes > 0 ? `Restan ${fmt(kmRestantes)} km` : `¡VENCIDO POR ${fmt(Math.abs(kmRestantes))} km!`}</div>
+            <div class="prediction-text">${textoPrediccion}</div>
+            <div class="data-grid">
+              <div class="data-item"><span class="data-label">KM Actual</span><span class="data-value">${fmt(c.kmActual)}</span></div>
+              <div class="data-item"><span class="data-label">Frecuencia</span><span class="data-value">${fmt(c.frecuencia)} km</span></div>
+              <div class="data-item"><span class="data-label">Último Service</span><span class="data-value">${fechaFormateada}</span></div>
+              <div class="data-item"><span class="data-label">KM en Service</span><span class="data-value">${fmt(c.kmUltimo)}</span></div>
+            </div>
+            <button class="btn-action" onclick="abrirModal('${c.patente}')">🛠️ Registrar Mantenimiento</button>
+          </div>
+        `;
+        container.innerHTML += cardHtml;
+      });
+    }
 
-        // 5. GUARDAR AL SERVIDOR
-        async function guardarService(patente) {
-            const km = document.getElementById(`km-${patente}`).value;
-            const fecha = document.getElementById(`fecha-${patente}`).value;
-            const frec = document.getElementById(`frec-${patente}`).value;
+    // --- 3. MODAL ---
+    function abrirModal(patente) {
+      const vehiculo = dbFlota.find(v => v.patente === patente);
+      if(!vehiculo) return;
+      vehiculoEnEdicion = patente;
+      document.getElementById('modalSubtitle').innerHTML = `${vehiculo.vehiculo} (${patente})<br><b style="color:white">KM Tablero Actual: ${fmt(vehiculo.kmActual)}</b>`;
+      document.getElementById('modFecha').value = new Date().toISOString().split('T')[0];
+      document.getElementById('modKm').value = vehiculo.kmActual;
+      document.getElementById('modFrecuencia').value = vehiculo.frecuencia;
+      document.getElementById('serviceModal').style.display = 'flex';
+    }
 
-            if (!km || !fecha || !frec) {
-                alert("Por favor, completá todos los campos.");
-                return;
-            }
+    function cerrarModal() { document.getElementById('serviceModal').style.display = 'none'; vehiculoEnEdicion = null; }
 
-            // 👇 NUEVO: ALERTA ANTI-DEDAZO 👇
-            const mensajeConfirmacion = 
-`⚠️ ATENCIÓN: ¿Estás seguro de guardar estos datos como ÚLTIMO SERVICE?
+    // --- 4. GUARDAR EN LA NUBE ---
+    async function guardarServiceEnNube() {
+      const nuevaFecha = document.getElementById('modFecha').value;
+      const nuevoKm = parseInt(document.getElementById('modKm').value);
+      const nuevaFrec = parseInt(document.getElementById('modFrecuencia').value);
 
-🚚 Patente: ${patente}
-⚙️ KM Service: ${km}
-📅 Fecha: ${fecha}
-🔄 Frecuencia: ${frec} km
+      if(!nuevaFecha || isNaN(nuevoKm) || isNaN(nuevaFrec)) { alert("Completá todos los campos correctamente."); return; }
+      
+      const vehiculo = dbFlota.find(v => v.patente === vehiculoEnEdicion);
+      
+      // Control de Dedazo
+      if(nuevoKm < vehiculo.kmUltimo) {
+          alert("❌ Error: El KM del nuevo service no puede ser menor al del último service.");
+          return;
+      }
+      if(nuevoKm > vehiculo.kmActual + 500) { 
+          if(!confirm("⚠️ El KM ingresado es llamativamente mayor al actual. ¿Estás seguro de continuar?")) return; 
+      }
 
-Revisá bien para evitar errores.`;
+      if(!confirm(`⚠️ ¿Confirmás guardar ÚLTIMO SERVICE para ${vehiculoEnEdicion} a los ${fmt(nuevoKm)} km?`)) return;
 
-            if (!confirm(mensajeConfirmacion)) {
-                return; // Si el usuario pone "Cancelar", cortamos todo acá y no enviamos nada.
-            }
+      const btn = document.getElementById('btnGuardar');
+      btn.innerText = "GUARDANDO...";
+      btn.disabled = true;
 
-            document.getElementById('loader').style.display = 'block';
+      const payload = { action: 'saveservice', k: TOKEN, patente: vehiculoEnEdicion, fecha: nuevaFecha, km: nuevoKm, frecuencia: nuevaFrec };
 
-            const fd = new FormData();
-            fd.append('action', 'saveservice');
-            fd.append('k', k);
-            fd.append('patente', patente);
-            fd.append('km', km);
-            fd.append('fecha', fecha);
-            fd.append('frecuencia', frec);
+      try {
+        const req = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(payload)
+        });
+        const res = await req.json();
 
-            try {
-                const res = await fetch(API_URL, { method: 'POST', body: fd });
-                const r = await res.json();
-                
-                if (r.status === 'success') {
-                    alert("✅ Service guardado con éxito.");
-                    cargarFlota(); // Recargamos para ver los cambios impactados
-                } else {
-                    alert("❌ Error del servidor: " + r.message);
-                }
-            } catch(e) {
-                alert("❌ Error de red: " + e.message);
-            } finally {
-                document.getElementById('loader').style.display = 'none';
-            }
-        }
+        if(res.status === 'success') {
+          cerrarModal();
+          cargarDatos(); // Recargar datos frescos del servidor
+        } else { alert("Error al guardar: " + res.message); }
+      } catch (err) { alert("Error de red."); }
+      
+      btn.innerText = "CONFIRMAR";
+      btn.disabled = false;
+    }
 
-        // Arrancar
-        window.onload = cargarFlota;
-    </script>
+    // Arranque
+    window.onload = cargarDatos;
+  </script>
 </body>
 </html>

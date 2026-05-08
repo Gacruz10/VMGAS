@@ -46,7 +46,7 @@
     .v-sep { width: 1px; height: 14px; background: var(--border); margin: 0 4px; }
     .m-chip { font-size: 11px; display: flex; align-items: center; gap: 3px; background: var(--surface); padding: 1px 6px; border-radius: 2px; border: 1px solid var(--border); }
     .m-chip span { color: var(--dim); font-size: 9px; font-weight: 700; }
-    .m-chip .l { color: var(--pos); font-weight: 700; } .m-chip .v { color: var(--warn); font-weight: 700; }
+    .m-chip .l { color: var(--pos); font-weight: 800; } .m-chip .v { color: var(--warn); font-weight: 800; }
     .viaje-block { border: 1px solid var(--border); border-radius: 3px; border-left: 3px solid var(--accent); }
     .viaje-head { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: rgba(56,189,248,0.05); cursor: pointer; }
     .viaje-title { font-weight: 700; font-size: 10px; color: var(--accent); display: flex; gap: 6px; align-items: center;}
@@ -79,6 +79,10 @@
       50% { text-shadow: 0 0 20px var(--accent); opacity: 1; }
       100% { text-shadow: 0 0 5px var(--accent); opacity: 0.8; }
     }
+
+    /* CSS EXTRA PARA EL MODAL GPS */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 100000; }
+    .modal { background: #0b1018; border: 1px solid var(--accent); border-radius: 8px; padding: 15px; width: 95%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
   </style>
 </head>
 <body>
@@ -108,14 +112,27 @@
 </div>
 
 <div id="mainContent">
+</div>
+
+<div class="modal-overlay" id="mapModal">
+  <div class="modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+      <h3 style="margin:0; color:var(--accent); font-family:'Syne', sans-serif;">📍 Ubicación GPS</h3>
+      <button onclick="document.getElementById('mapModal').style.display='none'" style="background:transparent; border:none; color:var(--dim); cursor:pointer; font-size:16px;">✖</button>
+    </div>
+    <div id="mapContainer" style="width: 100%; height: 300px; background: var(--bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+      </div>
+    <button class="btn-action" style="width:100%; margin-top:15px; background: rgba(56,189,248,0.1); color: var(--accent); border-color: var(--accent);" id="btnAbrirMaps">
+      Abrir en Google Maps 🗺️
+    </button>
   </div>
+</div>
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
   const params = new URLSearchParams(window.location.search);
   const token = params.get('k') || params.get('token') || '';
 
-  // Configurar fechas por defecto (Hoy) al cargar
   window.onload = () => {
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fechaDesde').value = hoy;
@@ -129,20 +146,28 @@
     if(chev) chev.classList.toggle('open');
   }
 
+  // --- LÓGICA DEL MAPA GPS CORREGIDA ---
+  function abrirMapa(coordenadas) {
+    if (!coordenadas || coordenadas === '-' || String(coordenadas).trim() === '') {
+      alert("⚠️ No hay coordenadas GPS registradas para esta operación.");
+      return;
+    }
+
+    const mapContainer = document.getElementById('mapContainer');
+    // URL correcta para iframes de Google Maps (usando q=lat,long)
+    mapContainer.innerHTML = `<iframe width="100%" height="100%" frameborder="0" style="border:0" src="https://maps.google.com/maps?q=${coordenadas}&hl=es&z=16&output=embed" allowfullscreen></iframe>`;
+    
+    document.getElementById('btnAbrirMaps').onclick = () => window.open(`https://maps.google.com/maps?q=${coordenadas}`, '_blank');
+    document.getElementById('mapModal').style.display = 'flex';
+  }
+
   async function iniciarCarga() {
     const fDesdeStr = document.getElementById('fechaDesde').value;
     const fHastaStr = document.getElementById('fechaHasta').value;
 
-    if (!fDesdeStr || !fHastaStr) { 
-        alert("⚠️ Seleccione ambas fechas."); 
-        return; 
-    }
-    if (new Date(fDesdeStr) > new Date(fHastaStr)) { 
-        alert("⚠️ La fecha de inicio no puede ser mayor a la fecha final."); 
-        return; 
-    }
+    if (!fDesdeStr || !fHastaStr) { alert("⚠️ Seleccione ambas fechas."); return; }
+    if (new Date(fDesdeStr) > new Date(fHastaStr)) { alert("⚠️ La fecha de inicio no puede ser mayor a la final."); return; }
 
-    // UI de Carga Estética
     const overlay = document.getElementById('overlayCarga');
     document.getElementById('mainContent').style.display = 'none';
     overlay.style.display = 'flex';
@@ -164,10 +189,10 @@
         overlay.style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
       } else {
-        overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">❌ Error del Servidor: ${json.message}</div>`;
+        overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">❌ Error: ${json.message}</div>`;
       }
     } catch (e) {
-      overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">🔌 Error de Conexión: ${e.message}</div>`;
+      overlay.innerHTML = `<div class="welcome-text" style="border-color: var(--neg);">🔌 Error: ${e.message}</div>`;
     }
   }
 
@@ -180,7 +205,7 @@
         <div style="text-align:center; padding:50px; background:var(--surface); border:1px solid var(--border); border-radius:6px;">
             <div style="font-size:30px; margin-bottom:10px; filter:grayscale(1); opacity:0.5;">📁</div>
             <h3 style="color:var(--text); font-family:'Syne', sans-serif;">SIN REGISTROS</h3>
-            <p style="color:var(--dim);">No se encontró historial en el rango de fechas seleccionado.</p>
+            <p style="color:var(--dim);">No se encontró historial en el rango seleccionado.</p>
         </div>`;
       return;
     }
@@ -189,9 +214,12 @@
 
     turnos.forEach((turno, tIdx) => {
       const tId = `t_${tIdx}`;
-      const sInicial = turno.stockInicial || {};
-      const sFinal = turno.stockFinal || {};
-      const estadoClase = String(turno.estado).includes('AUTO') ? 'badge-alerta pulse-auto' : 'badge-ok';
+      const sIn = turno.stockInicial || {};
+      const sFi = turno.stockFinal || {};
+      
+      // Control de color para el estado del turno (SISTEMA = Rojo, MANUAL = Verde)
+      const esAuto = String(turno.estado).includes('AUTO') || String(turno.estado).includes('SISTEMA');
+      const estadoClase = esAuto ? 'badge-alerta pulse-auto' : 'badge-ok';
 
       let htmlTurno = `
       <div class="turno-block">
@@ -214,35 +242,46 @@
           <div><div class="section-inner">
       `;
 
-      // Control Stock (Apertura vs Cierre)
+      // Llenos y Vacíos del Galpón (Apertura vs Cierre)
       htmlTurno += `
         <div class="st-line">
           <div class="st-grupo">
             <span class="st-lbl pos">APERTURA</span>
-            <div class="m-chip"><span>10K:</span> <b class="l">${sInicial["10K"] || 0}</b></div>
-            <div class="m-chip"><span>15K:</span> <b class="l">${sInicial["15K"] || 0}</b></div>
-            <div class="m-chip"><span>45K:</span> <b class="l">${sInicial["45K"] || 0}</b></div>
+            <div class="m-chip"><span title="10K">10:</span> <b class="l" title="Llenos">${sIn.L10||sIn["10K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sIn.V10||0}</b></div>
+            <div class="m-chip"><span title="15K">15:</span> <b class="l" title="Llenos">${sIn.L15||sIn["15K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sIn.V15||0}</b></div>
+            <div class="m-chip"><span title="45K">45:</span> <b class="l" title="Llenos">${sIn.L45||sIn["45K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sIn.V45||0}</b></div>
+            
             <div class="v-sep"></div>
-            <span class="st-lbl dim">CIERRE</span>
-            <div class="m-chip sug"><span>10K:</span> <b class="l">${sFinal["10K"] || 0}</b></div>
-            <div class="m-chip sug"><span>15K:</span> <b class="l">${sFinal["15K"] || 0}</b></div>
-            <div class="m-chip sug"><span>45K:</span> <b class="l">${sFinal["45K"] || 0}</b></div>
+            
+            <span class="st-lbl warn">CIERRE</span>
+            <div class="m-chip"><span title="10K">10:</span> <b class="l" title="Llenos">${sFi.L10||sFi["10K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sFi.V10||0}</b></div>
+            <div class="m-chip"><span title="15K">15:</span> <b class="l" title="Llenos">${sFi.L15||sFi["15K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sFi.V15||0}</b></div>
+            <div class="m-chip"><span title="45K">45:</span> <b class="l" title="Llenos">${sFi.L45||sFi["45K"]||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v" title="Vacíos">${sFi.V45||0}</b></div>
           </div>
         </div>
       `;
 
-      // Viajes (Bolsa de Consorcio)
+      // Viajes / Compras
       if (turno.viajes && turno.viajes.length > 0) {
         turno.viajes.forEach((viaje, vIdx) => {
           const vId = `v_${tIdx}_${vIdx}`;
           const totales = viaje.totales || { ops: 0, total: 0 };
+          const esCompra = String(viaje.tipo).toUpperCase() === 'COMPRA';
           
+          let iconViaje = esCompra ? '🛒' : '🚚';
+          let titleViaje = `${iconViaje} ${viaje.tipo || 'VIAJE'}: ${viaje.idViaje || "DESC"}`;
+          
+          // Si es compra, agregamos el remito
+          if (esCompra && viaje.remito) {
+              titleViaje += ` <span style="color:var(--dim); font-weight:600; font-size:9px; margin-left:6px; background:rgba(255,255,255,0.05); padding:2px 4px; border-radius:3px;">RTO: ${viaje.remito}</span>`;
+          }
+
           htmlTurno += `
-          <div class="viaje-block">
-            <div class="viaje-head" onclick="toggleSection('${vId}')">
+          <div class="viaje-block" style="${esCompra ? 'border-left-color: var(--pos);' : ''}">
+            <div class="viaje-head" onclick="toggleSection('${vId}')" style="${esCompra ? 'background: rgba(52,211,153,0.05);' : ''}">
               <div class="viaje-title">
                 <span class="chevron" id="chev-${vId}" style="font-size:10px;">▶</span>
-                🚚 VIAJE: ${viaje.idViaje || "DESC"}
+                ${titleViaje}
               </div>
               <div class="viaje-meta">
                 <span>Chofer: <b>${String(viaje.chofer || 'DESC').toUpperCase()}</b></span> | <span>S: <b>${viaje.salida || '-'}</b> / L: <b>${viaje.llegada || '-'}</b></span>
@@ -254,8 +293,29 @@
             
             <div class="collapsible collapsed" id="${vId}">
               <div><div class="viaje-inner">
-                <div class="bd1-section" style="border-radius: 3px;">
           `;
+
+          // Fila de Llenos y Vacíos para el Viaje (Debajo del Header, tal como pediste)
+          if (viaje.envases) {
+              const eS = viaje.envases.salida || {};
+              const eL = viaje.envases.llegada || {};
+              htmlTurno += `
+              <div class="st-line" style="background: rgba(0,0,0,0.15); border-color: transparent; margin-bottom: 4px;">
+                <div class="st-grupo">
+                  <span class="st-lbl pos">SALIDA</span>
+                  <div class="m-chip"><span title="10K">10:</span> <b class="l">${eS.L10||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eS.V10||0}</b></div>
+                  <div class="m-chip"><span title="15K">15:</span> <b class="l">${eS.L15||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eS.V15||0}</b></div>
+                  <div class="m-chip"><span title="45K">45:</span> <b class="l">${eS.L45||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eS.V45||0}</b></div>
+                  <div class="v-sep"></div>
+                  <span class="st-lbl warn">LLEGADA</span>
+                  <div class="m-chip"><span title="10K">10:</span> <b class="l">${eL.L10||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eL.V10||0}</b></div>
+                  <div class="m-chip"><span title="15K">15:</span> <b class="l">${eL.L15||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eL.V15||0}</b></div>
+                  <div class="m-chip"><span title="45K">45:</span> <b class="l">${eL.L45||0}</b><span style="color:var(--border2);margin:0 2px;">|</span><b class="v">${eL.V45||0}</b></div>
+                </div>
+              </div>`;
+          }
+
+          htmlTurno += `<div class="bd1-section" style="border-radius: 3px;">`;
 
           if (viaje.operaciones && viaje.operaciones.length > 0) {
             viaje.operaciones.forEach(op => {
@@ -264,11 +324,15 @@
               if(strTipo.includes('CONSIG')) tagColor = "bg-consig";
               else if(strTipo.includes('FLOT')) tagColor = "bg-flot";
               else if(strTipo.includes('GAST')) tagColor = "bg-alerta";
+              else if(strTipo.includes('COMPRA')) tagColor = "bg-pos";
+
+              const coords = op.coordenadas || op.gps || '';
+              const gpsClick = coords ? `onclick="abrirMapa('${coords}')" style="cursor:pointer; animation: pulse-glow 2s infinite;" title="Ver en Mapa"` : `style="opacity:0.2; cursor:not-allowed;" title="Sin GPS"`;
 
               htmlTurno += `
                 <div class="op-tira">
                   <div class="op-time">${op.hora || '-'}</div>
-                  <div class="op-gps" title="Info GPS">📍</div>
+                  <div class="op-gps" ${gpsClick}>📍</div>
                   <div class="op-cli">
                     <span class="op-cli-nombre" title="${op.cliente || '-'}">${op.cliente || '-'}</span>
                   </div>
@@ -289,8 +353,6 @@
           }
           htmlTurno += `</div></div></div></div>`; 
         });
-      } else {
-         htmlTurno += `<div style="padding:15px; color:var(--dim); text-align:center; background:var(--panel);">No hay viajes registrados en este turno.</div>`;
       }
 
       // Alarmas del turno
