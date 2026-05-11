@@ -99,6 +99,7 @@
         <span style="color:var(--dim); font-size:10px; font-weight:600;">HASTA</span>
         <input type="date" id="fechaHasta" class="date-picker">
         <button class="btn-filter" onclick="iniciarCarga()">AUDITAR</button>
+        <button class="btn-filter" onclick="volverInicio()">Volver</button>       
     </div>
   </div>
 </div>
@@ -146,18 +147,39 @@
     if(chev) chev.classList.toggle('open');
   }
 
-  // --- LÓGICA DEL MAPA GPS CORREGIDA ---
+function volverInicio() {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('k') || params.get('token');
+    window.location.href = token ? 'inicio.html?k=' + token : 'inicio.html';
+  }
+
+  // --- LÓGICA DEL MAPA GPS ---
   function abrirMapa(coordenadas) {
-    if (!coordenadas || coordenadas === '-' || String(coordenadas).trim() === '') {
+    if (!coordenadas || coordenadas === '-' || String(coordenadas).trim() === '' || coordenadas === 'SIN_GPS') {
       alert("⚠️ No hay coordenadas GPS registradas para esta operación.");
       return;
     }
 
+    const raw = String(coordenadas).trim();
+
+    // 1. Extraer coordenadas puras (LAT,LNG) desde cualquier formato de URL o texto
+    //    Soporta: "LAT,LNG", "https://maps.google.com/?q=LAT,LNG",
+    //             "http://googleusercontent.com/maps.google.com/?q=LAT,LNG", etc.
+    let coordsPuras = raw;
+    const matchQ = raw.match(/[?&]q=([^&]+)/);
+    if (matchQ) {
+      coordsPuras = decodeURIComponent(matchQ[1]);
+    }
+
+    // 2. Construir URL canónica para abrir y para el iframe embed
+    //    Google Maps Embed API: https://maps.google.com/maps?q=LAT,LNG&output=embed
+    const urlAbrir  = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordsPuras)}`;
+    const urlIframe = `https://maps.google.com/maps?q=${encodeURIComponent(coordsPuras)}&z=16&output=embed`;
+
     const mapContainer = document.getElementById('mapContainer');
-    // URL correcta para iframes de Google Maps (usando q=lat,long)
-    mapContainer.innerHTML = `<iframe width="100%" height="100%" frameborder="0" style="border:0" src="https://maps.google.com/maps?q=${coordenadas}&hl=es&z=16&output=embed" allowfullscreen></iframe>`;
-    
-    document.getElementById('btnAbrirMaps').onclick = () => window.open(`https://maps.google.com/maps?q=${coordenadas}`, '_blank');
+    mapContainer.innerHTML = `<iframe width="100%" height="100%" frameborder="0" style="border:0" src="${urlIframe}" allowfullscreen loading="lazy"></iframe>`;
+
+    document.getElementById('btnAbrirMaps').onclick = () => window.open(urlAbrir, '_blank');
     document.getElementById('mapModal').style.display = 'flex';
   }
 
