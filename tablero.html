@@ -468,52 +468,82 @@
 
     <div id="view-riesgo" class="view-section">
         <div class="section-header">⚠️ Riesgo & Stock</div>
-        <div class="card" style="margin-bottom: 15px; border-top: 2px solid var(--success);">
-            <div class="card-title">Panel de Stock Físico (Galpón / Planta) <span id="ind-stock"
-                    style="font-size:14px">⚫</span></div>
+        
+        <div class="card" style="margin-bottom: 15px; border-top: 2px solid var(--accent);">
+            <div class="card-title">Stock Total Empresa (Planta + Calle) <span id="ind-stock" style="font-size:14px">⚫</span></div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:5px;">
 
                 <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
                     <div class="stat-lbl" style="color:#2dd4bf; font-size:12px;">GARRAFA 10KG</div>
                     <div style="font-size:13px; margin:8px 0;">
-                        <span class="text-pos">🟢 Llenos: <b id="stock-l10" style="font-size:16px;">...</b></span>
+                        <span class="text-pos">🟢 Llenos: <b id="t-stock-l10" style="font-size:16px;">...</b></span>
                     </div>
                     <div style="font-size:13px;">
-                        <span class="text-neg">🔴 Vacíos: <b id="stock-v10" style="font-size:16px;">...</b></span>
+                        <span class="text-neg">🔴 Vacíos: <b id="t-stock-v10" style="font-size:16px;">...</b></span>
                     </div>
                 </div>
 
                 <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
                     <div class="stat-lbl" style="color:#3b82f6; font-size:12px;">GARRAFA 15KG</div>
                     <div style="font-size:13px; margin:8px 0;">
-                        <span class="text-pos">🟢 Llenos: <b id="stock-l15" style="font-size:16px;">...</b></span>
+                        <span class="text-pos">🟢 Llenos: <b id="t-stock-l15" style="font-size:16px;">...</b></span>
                     </div>
                     <div style="font-size:13px;">
-                        <span class="text-neg">🔴 Vacíos: <b id="stock-v15" style="font-size:16px;">...</b></span>
+                        <span class="text-neg">🔴 Vacíos: <b id="t-stock-v15" style="font-size:16px;">...</b></span>
                     </div>
                 </div>
 
                 <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
                     <div class="stat-lbl" style="color:#FFD700; font-size:12px;">CILINDRO 45KG</div>
                     <div style="font-size:13px; margin:8px 0;">
-                        <span class="text-pos">🟢 Llenos: <b id="stock-l45" style="font-size:16px;">...</b></span>
+                        <span class="text-pos">🟢 Llenos: <b id="t-stock-l45" style="font-size:16px;">...</b></span>
                     </div>
                     <div style="font-size:13px;">
-                        <span class="text-neg">🔴 Vacíos: <b id="stock-v45" style="font-size:16px;">...</b></span>
+                        <span class="text-neg">🔴 Vacíos: <b id="t-stock-v45" style="font-size:16px;">...</b></span>
                     </div>
                 </div>
 
             </div>
-            <div
-                style="margin-top:15px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
                 <span style="font-size:11px; color:var(--text-sec);">Proyección de Quiebre (Al ritmo actual):</span>
                 <span class="kpi-value text-neg" id="kpi-quiebre" style="font-size:1.2rem;">...</span>
             </div>
         </div>
 
+        <div class="card" style="margin-bottom: 15px; border-top: 2px solid var(--success); background: rgba(0,0,0,0.2);">
+            <div class="card-title">Stock Físico en Plataforma (Base) <span id="estado-turno" class="badge" style="background:rgba(255,255,255,0.1)">...</span></div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:5px;">
+                
+                <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
+                    <div class="stat-lbl" style="color:#2dd4bf; font-size:12px;">10KG</div>
+                    <div style="font-size:12px; margin:4px 0;"><span class="text-pos">Llenos: <b id="p-stock-l10" style="font-size:14px;">...</b></span></div>
+                    <div style="font-size:12px;"><span class="text-neg">Vacíos: <b id="p-stock-v10" style="font-size:14px;">...</b></span></div>
+                </div>
+                
+                <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
+                    <div class="stat-lbl" style="color:#3b82f6; font-size:12px;">15KG</div>
+                    <div style="font-size:12px; margin:4px 0;"><span class="text-pos">Llenos: <b id="p-stock-l15" style="font-size:14px;">...</b></span></div>
+                    <div style="font-size:12px;"><span class="text-neg">Vacíos: <b id="p-stock-v15" style="font-size:14px;">...</b></span></div>
+                </div>
+
+                <div class="stat-box" style="flex:1; min-width:90px; text-align:center;">
+                    <div class="stat-lbl" style="color:#FFD700; font-size:12px;">45KG</div>
+                    <div style="font-size:12px; margin:4px 0;"><span class="text-pos">Llenos: <b id="p-stock-l45" style="font-size:14px;">...</b></span></div>
+                    <div style="font-size:12px;"><span class="text-neg">Vacíos: <b id="p-stock-v45" style="font-size:14px;">...</b></span></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 15px; border-top: 2px solid #3b82f6;">
+            <div class="card-title">Unidades en Tránsito (Flota en la calle)</div>
+            <div id="lista-flota" style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+                </div>
+        </div>
+
         <div class="grid-charts">
             <div class="card">
-                <div class="card-title">Agujero Negro: Envases en la calle</div>
+                <div class="card-title">Envases en Clientes (Fijos y Eventuales)</div>
                 <div id="lista-calle" style="margin-top:5px;"></div>
             </div>
 
@@ -726,7 +756,6 @@
                 setupEntorno();
             } catch (e) {
                 console.error(e);
-                // Si falla el login, igual dejamos ver la estructura (vacía) para pruebas de diseño
                 setupEntorno();
             }
         }
@@ -752,7 +781,6 @@
 
         document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
         
-        // 👇 ACÁ AGREGAMOS LA FUNCIÓN DE TU NUEVO BOTÓN 👇
         document.getElementById('btnFlota').onclick = () => window.location.replace(`flota.html?k=${k}`);
 
         function setQuickDate(modo, btnElement) {
@@ -770,22 +798,18 @@
             invalidateCacheAndReload();
         }
 
-        // Evento del botón para cargar el resto de la info
         document.getElementById('btnCargarMas').onclick = function() {
-            this.parentElement.style.display = 'none'; // Oculto el contenedor del botón
+            this.parentElement.style.display = 'none'; 
             
             const viewOp = document.getElementById('view-operativa');
             const viewFin = document.getElementById('view-finanzas');
             
-            // 1. Mostrar contenedores para que Chart.js tenga medidas reales
             viewOp.style.display = 'block';
             viewFin.style.display = 'block';
             
-            // 2. Forzar resize de gráficos y mapa
             if (heatMapObj) heatMapObj.invalidateSize();
             Object.values(chartInst).forEach(chart => { if(chart) chart.resize(); });
             
-            // 3. Efecto Fade In
             setTimeout(() => {
                 viewOp.style.opacity = 1;
                 viewFin.style.opacity = 1;
@@ -793,19 +817,16 @@
 
             seccionesExtraVisibles = true;
             
-            // 4. Llamar al servidor
             fetchTabData('operativa');
             fetchTabData('finanzas');
         };
 
         function initMap() {
-            // Centrado en La Rioja Capital
             heatMapObj = L.map('mapa-calor').setView([-29.413, -66.850], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(heatMapObj);
         }
 
         function invalidateCacheAndReload() {
-            // Si cambian las fechas, refrescamos lo que esté visible
             fetchTabData('riesgo');
             if (seccionesExtraVisibles) {
                 fetchTabData('operativa');
@@ -832,7 +853,6 @@
                     if (data.status === 'success') { 
                         renderData(viewId, data.payload); 
                     } else { 
-                        // Fallo silencioso, volcamos datos limpios en 0
                         renderData(viewId, getEmptyData(viewId)); 
                     }
                 })
@@ -845,7 +865,6 @@
                 });
         }
 
-        // Inyector de Datos Estructurado
         function renderData(view, data) {
             if (view === 'finanzas') {
                 document.getElementById('kpi-ingresos').innerText = "$" + formatM(data.ingresos);
@@ -922,16 +941,67 @@
                 }
 
             } else if (view === 'riesgo') {
-                document.getElementById('stock-l10').innerText = data.stock.llenos['10kg'];
-                document.getElementById('stock-v10').innerText = data.stock.vacios['10kg'];
-                document.getElementById('stock-l15').innerText = data.stock.llenos['15kg'];
-                document.getElementById('stock-v15').innerText = data.stock.vacios['15kg'];
-                document.getElementById('stock-l45').innerText = data.stock.llenos['45kg'];
-                document.getElementById('stock-v45').innerText = data.stock.vacios['45kg'];
+                // 1. STOCK TOTAL (EMPRESA)
+                document.getElementById('t-stock-l10').innerText = data.stockTotal.llenos['10kg'];
+                document.getElementById('t-stock-v10').innerText = data.stockTotal.vacios['10kg'];
+                document.getElementById('t-stock-l15').innerText = data.stockTotal.llenos['15kg'];
+                document.getElementById('t-stock-v15').innerText = data.stockTotal.vacios['15kg'];
+                document.getElementById('t-stock-l45').innerText = data.stockTotal.llenos['45kg'];
+                document.getElementById('t-stock-v45').innerText = data.stockTotal.vacios['45kg'];
+
+                // 2. STOCK PLANTA (FÍSICO)
+                document.getElementById('p-stock-l10').innerText = data.stockPlanta.llenos['10kg'];
+                document.getElementById('p-stock-v10').innerText = data.stockPlanta.vacios['10kg'];
+                document.getElementById('p-stock-l15').innerText = data.stockPlanta.llenos['15kg'];
+                document.getElementById('p-stock-v15').innerText = data.stockPlanta.vacios['15kg'];
+                document.getElementById('p-stock-l45').innerText = data.stockPlanta.llenos['45kg'];
+                document.getElementById('p-stock-v45').innerText = data.stockPlanta.vacios['45kg'];
+
+                let btnEstado = document.getElementById('estado-turno');
+                if(data.estadoTurno) {
+                    btnEstado.innerText = "Turno: " + data.estadoTurno;
+                    btnEstado.style.background = data.estadoTurno === 'ABIERTO' ? 'rgba(45,212,191,0.2)' : 'rgba(255,71,87,0.2)';
+                    btnEstado.style.color = data.estadoTurno === 'ABIERTO' ? 'var(--success)' : 'var(--danger)';
+                } else {
+                    btnEstado.innerText = "S/D";
+                }
 
                 document.getElementById('kpi-quiebre').innerText = data.diasQuiebre === 'S/D' ? 'S/D' : data.diasQuiebre + " Días";
                 document.getElementById('ind-stock').innerText = data.diasQuiebre === 'S/D' ? "⚫" : (data.diasQuiebre < 2 ? "🔴" : (data.diasQuiebre < 5 ? "🟡" : "🟢"));
 
+                // 3. FLOTA ACTIVA (CAMIONES)
+                let htmlFlota = '';
+                if (data.flotaActiva && data.flotaActiva.length > 0) {
+                    data.flotaActiva.forEach(f => {
+                        let colorViaje = f.tipo === 'COMPRA' ? 'var(--compra)' : 'var(--success)';
+                        htmlFlota += `
+                        <div class="block-calle" style="border-left: 3px solid ${colorViaje}; margin-bottom:10px;">
+                            <div class="block-calle-title" style="color: #fff; display:flex; justify-content:space-between; align-items:center;">
+                                <span>🚚 ${f.chofer} <span style="color:var(--text-sec); font-size:9px;">(${f.tipo})</span></span>
+                                <span style="font-size:9px; color:var(--text-sec); font-weight:normal;">Salió: ${f.hora}</span>
+                            </div>
+                            <div class="grid-3col" style="margin-top:8px;">
+                                <div class="stat-box" style="padding:6px;">
+                                    <div class="stat-lbl" style="font-size:9px; color:#2dd4bf;">10KG</div>
+                                    <div style="font-size:11px; margin-top:4px;"><span class="text-pos">L:${f.llenos['10kg']}</span> | <span class="text-neg">V:${f.vacios['10kg']}</span></div>
+                                </div>
+                                <div class="stat-box" style="padding:6px;">
+                                    <div class="stat-lbl" style="font-size:9px; color:#3b82f6;">15KG</div>
+                                    <div style="font-size:11px; margin-top:4px;"><span class="text-pos">L:${f.llenos['15kg']}</span> | <span class="text-neg">V:${f.vacios['15kg']}</span></div>
+                                </div>
+                                <div class="stat-box" style="padding:6px;">
+                                    <div class="stat-lbl" style="font-size:9px; color:#FFD700;">45KG</div>
+                                    <div style="font-size:11px; margin-top:4px;"><span class="text-pos">L:${f.llenos['45kg']}</span> | <span class="text-neg">V:${f.vacios['45kg']}</span></div>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                } else {
+                    htmlFlota = `<div style="text-align:center; color:var(--text-sec); padding:15px; font-size:12px; background:rgba(0,0,0,0.2); border-radius:8px;">Flota en base. Sin unidades en tránsito.</div>`;
+                }
+                document.getElementById('lista-flota').innerHTML = htmlFlota;
+
+                // 4. CLIENTES (FIJOS Y EVENTUALES)
                 let htmlCalle = `
                 <div class="block-calle"><div class="block-calle-title" style="color: var(--accent);">COMODATOS ACTIVOS (FIJOS)</div><div class="block-calle-data"><span>10kg: <b>${data.calle.comodato['10kg']}</b></span><span>15kg: <b>${data.calle.comodato['15kg']}</b></span><span>45kg: <b>${data.calle.comodato['45kg']}</b></span></div></div>
                 <div class="block-calle"><div class="block-calle-title" style="color: var(--compra);">CONSIGNACIONES (EVENTUALES)</div><div class="block-calle-data"><span>10kg: <b>${data.calle.consignacion['10kg']}</b></span><span>15kg: <b>${data.calle.consignacion['15kg']}</b></span><span>45kg: <b>${data.calle.consignacion['45kg']}</b></span></div></div>
@@ -1020,10 +1090,11 @@
                 };
             } else if (view === 'riesgo') {
                 return {
-                    stock: {
-                        llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' },
-                        vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }
-                    },
+                    estadoTurno: 'S/D',
+                    stockTotal: { llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }, vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' } },
+                    stockPlanta: { llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }, vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' } },
+                    flotaActiva: [],
+                    stock: { llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }, vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' } },
                     diasQuiebre: 'S/D',
                     calle: {
                         comodato: { '10kg': 0, '15kg': 0, '45kg': 0 },
