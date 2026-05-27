@@ -32,6 +32,16 @@
     
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; } .modal { background: #1a0b2e; border: 1px solid var(--accent); border-radius: 16px; padding: 25px; width: 90%; max-width: 350px; text-align: center; } .modal h3 { margin-top: 0; color: var(--accent); } .modal-input-group { text-align: center; margin-bottom: 15px; } .modal-input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; } .modal-input-group input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-weight: bold; text-align: center; font-size: 16px; } .modal-input-group input:focus { outline: none; border-color: var(--accent); } .modal-buttons { display: flex; gap: 10px; margin-top: 20px; } .modal-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; } .btn-cancel { background: transparent; border: 1px solid var(--error); color: var(--error); } .btn-confirm { background: var(--ok); color: #000; }
     .loading-text { text-align: center; color: var(--accent); font-weight: bold; margin-top: 50px; animation: pulse 1.5s infinite; }
+    
+    /* --- ESTILOS TABLA LOGS --- */
+    .log-panel { margin: 30px auto; max-width: 1000px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; backdrop-filter: blur(10px); }
+    .log-panel h3 { color: var(--accent); margin-top: 0; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+    .table-wrapper { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; border: 1px solid var(--glass-border); }
+    .glass-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; white-space: nowrap; }
+    .glass-table th { background: rgba(255,255,255,0.05); color: var(--text-muted); padding: 12px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--glass-border); }
+    .glass-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); color: var(--text-primary); font-weight: 600; }
+    .glass-table tbody tr:hover { background: rgba(255,255,255,0.05); }
+    .tag-patente { background: rgba(168, 85, 247, 0.2); color: var(--accent); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--accent); font-weight: 800; font-size: 10px; }
   </style>
 </head>
 <body>
@@ -56,8 +66,22 @@
     </div>
   </div>
 
-  <div class="grid-flota" id="flotaContainer">
+<div class="grid-flota" id="flotaContainer">
     <div class="loading-text">Conectando con la base de datos... 🛰️</div>
+  </div>
+
+  <div class="log-panel" id="logPanel" style="display: none;">
+    <h3>📋 Historial de Services</h3>
+    <div class="table-wrapper">
+      <table class="glass-table" id="tablaLogs">
+        <thead>
+          <tr id="logsHeaders"></tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr><td colspan="100%" style="text-align:center;">Cargando historial...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="modal-overlay" id="serviceModal">
@@ -257,9 +281,10 @@
         });
         const res = await req.json();
 
-        if(res.status === 'success') {
+       if(res.status === 'success') {
           cerrarModal();
-          cargarDatos(); // Recargar datos frescos del servidor
+          cargarDatos(); // Recargar tarjetas
+          cargarLogs();  // Recargar tabla de historial automáticamente
         } else { alert("Error al guardar: " + res.message); }
       } catch (err) { alert("Error de red."); }
       
@@ -267,8 +292,58 @@
       btn.disabled = false;
     }
 
+// --- 5. LÓGICA DE HISTORIAL (LOGS) ---
+    async function cargarLogs() {
+      try {
+        document.getElementById('logPanel').style.display = 'block';
+        const respuesta = await fetch(`${API}?action=getlogservices&k=${TOKEN}`);
+        const result = await respuesta.json();
+        
+        if (result.status === 'success') {
+          dibujarTablaLogs(result.data);
+        } else {
+          document.getElementById('logsBody').innerHTML = `<tr><td colspan="100%" style="color:var(--error); text-align:center;">Error: ${result.message}</td></tr>`;
+        }
+      } catch (e) {
+        document.getElementById('logsBody').innerHTML = `<tr><td colspan="100%" style="color:var(--error); text-align:center;">Error de conexión al obtener historial.</td></tr>`;
+      }
+    }
+
+    function dibujarTablaLogs(data) {
+      const tbody = document.getElementById('logsBody');
+      const thead = document.getElementById('logsHeaders');
+      
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="100%" style="text-align:center; color:var(--text-muted);">No hay historial de services registrado.</td></tr>`;
+        return;
+      }
+
+      const columnas = Object.keys(data[0]);
+      thead.innerHTML = columnas.map(col => `<th>${col}</th>`).join('');
+
+      let htmlFilas = '';
+      data.forEach(fila => {
+        htmlFilas += '<tr>';
+        columnas.forEach(col => {
+          let valor = fila[col];
+          // Formateo cosmético si detecta Patentes o números grandes (KMs)
+          if (col.toUpperCase() === 'PATENTE') {
+            valor = `<span class="tag-patente">${valor}</span>`;
+          } else if (!isNaN(valor) && valor !== '' && valor > 1000) {
+            valor = fmt(valor); 
+          }
+          htmlFilas += `<td>${valor}</td>`;
+        });
+        htmlFilas += '</tr>';
+      });
+      tbody.innerHTML = htmlFilas;
+    }
+
     // Arranque
-    window.onload = cargarDatos;
+    window.onload = () => {
+      cargarDatos();
+      cargarLogs();
+    };
   </script>
 </body>
 </html>

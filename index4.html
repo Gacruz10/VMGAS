@@ -943,20 +943,32 @@
 
         // 1. EL CRONÓMETRO IMPLACABLE HÍBRIDO
         let expireTime = Date.now() + 300000; // 5 minutos (300,000 ms)
-        function startTimer() {
+function startTimer() {
             const timerDisplay = document.getElementById('timerDisplay');
-            setInterval(() => {
+            
+            // Centralizamos la lógica de control para no repetir código (DRY)
+            const verificarTiempo = () => {
                 const timeLeft = Math.floor((expireTime - Date.now()) / 1000);
+                
                 if (timeLeft <= 0) {
-                    window.location.replace('index.html'); // Expiró posta, afuera.
-                } else {
-                    if (timerDisplay) {
-                        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-                        const s = (timeLeft % 60).toString().padStart(2, '0');
-                        timerDisplay.textContent = `${m}:${s}`;
-                    }
+                    window.location.replace('index.html'); // Te sacó del boliche
+                } else if (timerDisplay) {
+                    // Solo actualiza lo cosmético si todavía hay tiempo
+                    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                    const s = (timeLeft % 60).toString().padStart(2, '0');
+                    timerDisplay.textContent = `${m}:${s}`;
                 }
-            }, 1000);
+            };
+
+            // 1. El reloj visual: Corre cada segundo (se duerme si te vas a otra pestaña)
+            setInterval(verificarTiempo, 1000);
+
+            // 2. El Patovica: Salta instantáneamente cuando la pestaña vuelve a tener el foco
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") {
+                    verificarTiempo(); 
+                }
+            });
         }
 
         function obtenerUbicacionFantasma() {
