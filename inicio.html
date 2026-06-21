@@ -139,18 +139,18 @@
   /* ESTILOS DE LOS NUEVOS ICONOS */
   .tile-icon {
     font-size: 34px !important;
-    color: rgba(255, 255, 255, 0.85); /* Blanco monocromático */
+    color: rgba(255, 255, 255, 0.85); 
     z-index: 2;
     transition: transform 0.3s ease, color 0.3s ease;
   }
   
   .tile:hover .tile-icon { 
     transform: scale(1.15); 
-    color: var(--accent); /* Se pintan de dorado al pasar el mouse */
+    color: var(--accent); 
   }
 
   .tile.logout:hover .tile-icon {
-    color: var(--error); /* El de cerrar sesión se pinta rojo */
+    color: var(--error); 
   }
 
   .tile .title { 
@@ -161,8 +161,9 @@
 
   .tile.finance { border-color: rgba(50, 205, 50, 0.3); } 
   .tile.audit { border-color: rgba(138, 43, 226, 0.3); }   
-  .tile.flotantes { border-color: rgba(76, 175, 80, 0.3); } /* Verde sutil para flotantes */
-  .tile.treeview { border-color: rgba(255, 165, 0, 0.3); } /* Naranja para TreeView */
+  .tile.flotantes { border-color: rgba(76, 175, 80, 0.3); }
+  .tile.treeview { border-color: rgba(255, 165, 0, 0.3); } 
+  .tile.micaja { border-color: rgba(45, 212, 191, 0.4); } /* Color aqua para la billetera */
 
   .badge {
     position: absolute; top: -8px; right: -8px;
@@ -235,6 +236,11 @@
       <a class="tile" id="tileFormulario" onclick="navegar('index4.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">receipt_long</span>
           <span class="title">Formulario<br>de Venta</span>
+      </a>
+
+      <a class="tile micaja" id="tileMiCaja" onclick="navegar('micaja.html')" style="display:none">
+          <span class="material-symbols-rounded tile-icon">wallet</span>
+          <span class="title">Mi Caja</span>
       </a>
       
       <a class="tile" id="tileClientes"   onclick="navegar('clientes.html')" style="display:none">
@@ -365,10 +371,7 @@ async function iniciarSesion() {
 
         if (data.status === 'success') {
             renderizarInterfaz(data.nombre, data.perms);
-            
-            // ---> BUSCAMOS EL PIN (Llamada extra) <---
             buscarPin();
-            
         } else {
             throw new Error();
         }
@@ -428,6 +431,7 @@ function renderizarInterfaz(nombre, perms) {
 
     // VISIBILIDAD DE LOS MÓDULOS SEGÚN PERMISOS
     show('tileFormulario',  p.formulario);
+    show('tileMiCaja',      p.formulario); // Si tiene permiso para vender, tiene su caja.
     show('tileClientes',    p.clientes);
     show('tilePrecios',     p.precios);
     show('tileUsuarios',    p.usuarios);
@@ -437,9 +441,7 @@ function renderizarInterfaz(nombre, perms) {
     show('tileCarga',       p.carga);
     show('tileFinanzas',    p.finanzas);
     show('tileConFinanzas', p.confinanzas);
-    
-    // NUESTROS NUEVOS BOTONES
-    show('tileTreeView',    p.gastos); // Usamos el permiso "gastos" internamente
+    show('tileTreeView',    p.gastos); 
     show('tileFlotantes',   p.flotantes);
 
     initHoverEffects();
@@ -505,42 +507,6 @@ async function loadAlarmBadge(){
 }
 
 iniciarSesion();
-</script>
-<div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
-  <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
-  <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
-  <p style="max-width:400px; color:var(--dim); font-family:'Inter', sans-serif; margin-top:10px;">
-    Estamos procesando los cierres y auditorías del día. <br>
-    El sistema volverá a estar operativo a las <b>00:06 AM</b>.
-  </p>
-  <div style="margin-top:30px; padding:10px 20px; border:1px solid var(--border); border-radius:4px; font-size:12px; color:var(--warn);">
-    AGUARDE UN MOMENTO...
-  </div>
-</div>
-
-<script>
-  function controlPatovica() {
-    const ahora = new Date();
-    const hora = ahora.getHours();
-    const min = ahora.getMinutes();
-    const capa = document.getElementById('capaMantenimiento');
-
-    // Ventana de bloqueo: 23:45 hasta las 00:05
-    const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
-
-    if (estaEnBloqueo) {
-      capa.style.display = 'flex';
-      // Deshabilitamos cualquier interacción del teclado
-      document.onkeydown = function (e) { return false; };
-    } else {
-      capa.style.display = 'none';
-      document.onkeydown = null;
-    }
-  }
-
-  // Correr el control apenas carga y después cada 30 segundos
-  controlPatovica();
-  setInterval(controlPatovica, 30000);
 </script>
 </body>
 </html>
