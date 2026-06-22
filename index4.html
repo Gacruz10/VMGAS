@@ -719,6 +719,10 @@
             CATEGORÍA: <span id="tipoClienteSpan"></span>
         </div>
 
+        <div id="acuerdoDisplay" style="display:none; text-align:center; color:var(--success); font-weight:800; margin-bottom:15px; border:1px dashed var(--success); padding:8px; border-radius:10px; background: rgba(76, 175, 80, 0.1);">
+            ⭐ PRECIO ESPECIAL APLICADO
+        </div>
+
         <div class="checkbox-item"><input type="checkbox" id="nuevoCliente"><label for="nuevoCliente"
                 class="red-label">ALTA NUEVO CLIENTE</label></div>
 
@@ -941,9 +945,28 @@
         let recordingTimer;
         let recSeconds = 120; // 2 minutos
 
+        // NUEVA FUNCIÓN PARA VALIDAR ACUERDOS COMERCIALES (FECHA)
+        function esAcuerdoVigente(fechaStr) {
+            if (!fechaStr) return false;
+            try {
+                let d;
+                if (fechaStr.includes('-')) {
+                     let p = fechaStr.split('-');
+                     d = new Date(p[0], p[1]-1, p[2]);
+                } else if (fechaStr.includes('/')) {
+                     let p = fechaStr.split('/');
+                     d = new Date(p[2], p[1]-1, p[0]);
+                } else { return false; }
+                
+                let hoy = new Date();
+                hoy.setHours(0,0,0,0);
+                return d >= hoy;
+            } catch(e) { return false; }
+        }
+
         // 1. EL CRONÓMETRO IMPLACABLE HÍBRIDO
         let expireTime = Date.now() + 300000; // 5 minutos (300,000 ms)
-function startTimer() {
+        function startTimer() {
             const timerDisplay = document.getElementById('timerDisplay');
             
             // Centralizamos la lógica de control para no repetir código (DRY)
@@ -1077,7 +1100,7 @@ function startTimer() {
                 calentarGPS();
                 await cargarDatos();
                 iniciarManejadorAudio(); 
-                aplicarAutoFoco(); // <--- Aplicar la selección automática de texto
+                aplicarAutoFoco(); 
             } catch (e) { window.location.replace('index.html'); }
         }
 
@@ -1114,12 +1137,11 @@ function startTimer() {
         function aplicarAutoFoco() {
             document.querySelectorAll('input').forEach(input => {
                 input.addEventListener('focus', function() {
-                    // Esperar unos ms evita que el teclado de Android deseleccione todo
                     setTimeout(() => {
                         try {
                             this.select();
                             this.setSelectionRange(0, 9999);
-                        } catch(e) {} // Para inputs que no soportan esto (como checkbox)
+                        } catch(e) {} 
                     }, 50);
                 });
             });
@@ -1268,27 +1290,59 @@ function startTimer() {
         function obtenerCat() { return normalizarCategoriaUI(document.getElementById('nuevoCliente').checked ? document.getElementById('categoria').value : (clienteSeleccionado ? clienteSeleccionado.categoria : 'USUARIO (PUBLICO)')); }
         function obtenerPrecioEnvase(cat, tipo) { const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === tipo); return p ? p.precio : 0; }
 
+        // CEREBRO DE PRECIOS ACTUALIZADO (REGLA DE ACUERDOS)
         function actualizarPreciosAutomaticos() {
             const cat = obtenerCat();
+            const tieneAcuerdo = clienteSeleccionado && esAcuerdoVigente(clienteSeleccionado.vencimiento);
+
             [10, 15, 45].forEach((t, i) => {
                 if (!document.getElementById(`manualPriceCheck${i + 1}`).checked) {
-                    const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t.toString());
-                    document.getElementById(`precioGarrafa${i + 1}`).value = (p ? p.precio : 0).toLocaleString('es-AR');
+                    let precioFinal = 0;
+                    
+                    // 1. Verificamos si hay acuerdo comercial vigente para este producto
+                    if (tieneAcuerdo && clienteSeleccionado[`p_esp_${t}`]) {
+                        precioFinal = parseM(clienteSeleccionado[`p_esp_${t}`].toString());
+                    }
+                    
+                    // 2. Si no hay acuerdo (o dejaron ese campo vacío), aplica precio de lista normal
+                    if (precioFinal === 0) {
+                        const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t.toString());
+                        precioFinal = p ? p.precio : 0;
+                    }
+                    
+                    document.getElementById(`precioGarrafa${i + 1}`).value = precioFinal.toLocaleString('es-AR');
                 }
             });
 
             if (!document.getElementById('precioAutorizadoCheck').checked) {
-                document.getElementById('precioVentaEnv10').value = obtenerPrecioEnvase(cat, 'ENV10').toLocaleString('es-AR');
-                document.getElementById('precioVentaEnv15').value = obtenerPrecioEnvase(cat, 'ENV15').toLocaleString('es-AR');
-                document.getElementById('precioVentaEnv45').value = obtenerPrecioEnvase(cat, 'ENV45').toLocaleString('es-AR');
+                [10, 15, 45].forEach(t => {
+                    let precioEnv = 0;
+                    
+                    // 1. Verificamos acuerdo comercial vigente para envases
+                    if (tieneAcuerdo && clienteSeleccionado[`p_esp_env_${t}`]) {
+                        precioEnv = parseM(clienteSeleccionado[`p_esp_env_${t}`].toString());
+                    }
+                    
+                    // 2. Precio de lista por defecto
+                    if (precioEnv === 0) {
+                        precioEnv = obtenerPrecioEnvase(cat, `ENV${t}`);
+                    }
+                    
+                    document.getElementById(`precioVentaEnv${t}`).value = precioEnv.toLocaleString('es-AR');
+                });
             }
             actualizarTotales();
         }
 
-        function parseM(id) {
-            const el = document.getElementById(id);
-            if (!el) return 0;
-            const v = el.value !== undefined ? el.value : el.textContent;
+        function parseM(idOrValue) {
+            let v;
+            if (typeof idOrValue === 'string' && document.getElementById(idOrValue)) {
+                const el = document.getElementById(idOrValue);
+                v = el.value !== undefined ? el.value : el.textContent;
+            } else {
+                v = idOrValue; // Se pasó el valor directamente
+            }
+            
             if (!v) return 0;
             const clean = v.toString().replace(/[\$\s\.]/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
             return parseFloat(clean) || 0;
@@ -1349,6 +1403,7 @@ function startTimer() {
                     rowEnv.style.display = 'flex'; rowEnv.querySelector('span:first-child').textContent = "Subtotal Envases:";
                 } else if (modo === 'consignacion') {
                     const cat = obtenerCat();
+                    // Para deuda en consignación se usa SIEMPRE precio de lista oficial, no importa si tiene acuerdo.
                     v_env = ((parseInt(document.getElementById('comodato10').value) || 0) * obtenerPrecioEnvase(cat, 'ENV10')) +
                         ((parseInt(document.getElementById('comodato15').value) || 0) * obtenerPrecioEnvase(cat, 'ENV15')) +
                         ((parseInt(document.getElementById('comodato45').value) || 0) * obtenerPrecioEnvase(cat, 'ENV45'));
@@ -1422,6 +1477,7 @@ function startTimer() {
             clientesData.filter(c => c.zona === z).forEach(c => { const opt = document.createElement('option'); opt.value = JSON.stringify(c); opt.textContent = c.nombre; sel.appendChild(opt); });
 
             document.getElementById('clientInfoBox').style.display = 'none';
+            document.getElementById('acuerdoDisplay').style.display = 'none';
             document.getElementById('pagoDeudaContainer').style.display = 'none';
             document.getElementById('pagoDeuda').checked = false;
             document.getElementById('sectionPagoDeuda').style.display = 'none';
@@ -1432,6 +1488,7 @@ function startTimer() {
         document.getElementById('cliente').onchange = function () {
             if (!this.value) {
                 document.getElementById('clientInfoBox').style.display = 'none';
+                document.getElementById('acuerdoDisplay').style.display = 'none';
                 document.getElementById('pagoDeudaContainer').style.display = 'none';
                 document.getElementById('pagoDeuda').checked = false;
                 document.getElementById('sectionPagoDeuda').style.display = 'none';
@@ -1478,6 +1535,13 @@ function startTimer() {
             document.getElementById('tipoClienteSpan').textContent = clienteSeleccionado.categoria;
             document.getElementById('tipoClienteDisplay').style.display = 'block';
 
+            // CONTROL DEL CARTEL DE ACUERDO VIGENTE
+            if (esAcuerdoVigente(clienteSeleccionado.vencimiento)) {
+                document.getElementById('acuerdoDisplay').style.display = 'block';
+            } else {
+                document.getElementById('acuerdoDisplay').style.display = 'none';
+            }
+
             const containerPago = document.getElementById('pagoDeudaContainer');
             const inputDinero = document.getElementById('pagoDeudaDinero');
             const row10 = document.getElementById('rowDev10');
@@ -1519,6 +1583,7 @@ function startTimer() {
                 document.getElementById('cliente').value = "";
                 document.getElementById('clientInfoBox').style.display = 'none';
                 document.getElementById('tipoClienteDisplay').style.display = 'none';
+                document.getElementById('acuerdoDisplay').style.display = 'none'; // Se apaga si es nuevo
                 document.getElementById('pagoDeudaContainer').style.display = 'none';
                 document.getElementById('pagoDeuda').checked = false;
                 document.getElementById('sectionPagoDeuda').style.display = 'none';
@@ -1618,7 +1683,6 @@ function startTimer() {
         }
 
         async function guardar() {
-            // ---> NUEVA DEFENSA: Evitar que guarden si están grabando
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 showToast("⚠️ Debes detener la grabación antes de guardar.", "warning");
                 return;

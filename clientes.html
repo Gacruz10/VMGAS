@@ -74,8 +74,22 @@
   .card {
     background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px;
     padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative;
+    transition: border-color 0.3s;
   }
   .card:hover { border-color: rgba(255,255,255,0.3); }
+
+  /* ESTILO PARA TARJETA CON ACUERDO ACTIVO */
+  .card.acuerdo-activo {
+    border-color: rgba(76, 175, 80, 0.5);
+    box-shadow: inset 0 0 15px rgba(76, 175, 80, 0.1);
+  }
+  .badge-acuerdo {
+    position: absolute; top: -10px; right: 15px;
+    background: #4CAF50; color: white; font-size: 10px; font-weight: 800;
+    padding: 3px 8px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    display: none; letter-spacing: 1px;
+  }
+  .card.acuerdo-activo .badge-acuerdo { display: block; }
 
   .row { display: flex; align-items: center; gap: 10px; }
   .row label { flex: 0 0 70px; font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
@@ -97,6 +111,23 @@
 
   /* Selects con estilo oscuro */
   select option { background: #1a0b2e; color: white; }
+
+  /* CAJA DE ACUERDO COMERCIAL (NUEVO) */
+  .acuerdo-box {
+    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px; margin-top: 5px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .acuerdo-title { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;}
+  
+  .acuerdo-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
+  }
+  .acuerdo-grid label { font-size: 9px; text-align: center; color: var(--text-muted); display: block; margin-bottom: 2px;}
+  .acuerdo-grid input { padding: 5px; font-size: 12px; text-align: center;}
+  
+  .acuerdo-fecha { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+  .acuerdo-fecha label { flex: 0 0 auto; color: var(--text-primary); font-size: 11px;}
+  .acuerdo-fecha input[type="date"] { flex: 1; padding: 5px; }
 
   /* MODAL */
   .modal-overlay {
@@ -127,7 +158,6 @@
   }
 
   /* --- SISTEMA DE TOASTS --- */
-  /* Lo subimos un poco a 80px para que no choque con el footer flotante */
   #toast-container { position: fixed; bottom: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
   .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -315,6 +345,35 @@ let rows = [];
 const grid = document.getElementById('grid');
 const txtBuscar = document.getElementById('txtBuscar');
 
+// Formateador de fecha para los inputs (YYYY-MM-DD)
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    try {
+        let parts = dateStr.split('/');
+        if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        return dateStr;
+    } catch(e) { return ''; }
+}
+
+// Verifica si la fecha del acuerdo está vigente (mayor o igual a hoy)
+function esAcuerdoVigente(fechaStr) {
+    if (!fechaStr) return false;
+    try {
+        let d;
+        if (fechaStr.includes('-')) {
+             let p = fechaStr.split('-');
+             d = new Date(p[0], p[1]-1, p[2]);
+        } else if (fechaStr.includes('/')) {
+             let p = fechaStr.split('/');
+             d = new Date(p[2], p[1]-1, p[0]);
+        } else { return false; }
+        
+        let hoy = new Date();
+        hoy.setHours(0,0,0,0);
+        return d >= hoy;
+    } catch(e) { return false; }
+}
+
 // Obtener opciones desde la hoja DATOS (Backend)
 async function obtenerOpcionesBackend() {
     try {
@@ -363,8 +422,12 @@ function llenarSelect(selectEl, arrayOpciones, valorSeleccionado = "") {
 function makeCard(r, index) {
   const el = document.createElement('div'); el.className = 'card';
   
-  // ---> INYECCIÓN DE TRAZABILIDAD: Agregamos ID_CLIENTE (readonly) y CUIT_DNI
+  // Determinamos si tiene acuerdo vigente para pintar la tarjeta
+  const activo = esAcuerdoVigente(r.vencimiento);
+  if (activo) el.classList.add('acuerdo-activo');
+  
   el.innerHTML = `
+    <div class="badge-acuerdo">⭐ ACUERDO ACTIVO</div>
     <div class="row"><label style="color:var(--accent)">ID Cliente</label><input type="text" class="locked-id" value="${r.id_cliente||'Generando...'}" data-k="id_cliente" readonly title="Identificador único del cliente. No editable."></div>
     <div class="row"><label>CUIT/DNI</label><input type="text" value="${r.cuit_dni||''}" data-k="cuit_dni" placeholder="Ej: 20-12345678-9"></div>
     <div class="row"><label>Nombre</label><input type="text" value="${r.nombre||''}" data-k="nombre"></div>
@@ -373,6 +436,25 @@ function makeCard(r, index) {
     <div class="row"><label>Dirección</label><input type="text" value="${r.direccion||''}" data-k="direccion"></div>
     <div class="row"><label>Teléfono</label><input type="text" value="${r.telefono||''}" data-k="telefono"></div>
     <div class="row"><label>Mail</label><input type="text" value="${r.mail||''}" data-k="mail"></div>
+    
+    <div class="acuerdo-box">
+      <div class="acuerdo-title">ACUERDO COMERCIAL (Opcional)</div>
+      
+      <div class="acuerdo-grid">
+         <div><label>Solo Gas 10k</label><input type="number" placeholder="$" value="${r.p_esp_10||''}" data-k="p_esp_10"></div>
+         <div><label>Solo Gas 15k</label><input type="number" placeholder="$" value="${r.p_esp_15||''}" data-k="p_esp_15"></div>
+         <div><label>Solo Gas 45k</label><input type="number" placeholder="$" value="${r.p_esp_45||''}" data-k="p_esp_45"></div>
+         
+         <div><label>C/Envase 10k</label><input type="number" placeholder="$" value="${r.p_esp_env_10||''}" data-k="p_esp_env_10"></div>
+         <div><label>C/Envase 15k</label><input type="number" placeholder="$" value="${r.p_esp_env_15||''}" data-k="p_esp_env_15"></div>
+         <div><label>C/Envase 45k</label><input type="number" placeholder="$" value="${r.p_esp_env_45||''}" data-k="p_esp_env_45"></div>
+      </div>
+      
+      <div class="acuerdo-fecha">
+         <label>Vence el:</label>
+         <input type="date" value="${formatDateForInput(r.vencimiento)}" data-k="vencimiento">
+      </div>
+    </div>
   `;
 
   // Llenar Selects con las Globales
@@ -384,7 +466,16 @@ function makeCard(r, index) {
 
   // Listeners para sincronizar cambios al array 'rows'
   el.querySelectorAll('input, select').forEach(inp => {
-    inp.addEventListener('input', () => sync(index, el));
+    inp.addEventListener('input', () => {
+        sync(index, el);
+        
+        // Si cambió la fecha, actualizamos la pintura en vivo
+        if(inp.getAttribute('data-k') === 'vencimiento') {
+            const nv = inp.value;
+            if(esAcuerdoVigente(nv)) el.classList.add('acuerdo-activo');
+            else el.classList.remove('acuerdo-activo');
+        }
+    });
   });
 
   return el;
@@ -392,17 +483,31 @@ function makeCard(r, index) {
 
 function sync(i, el){
   const get = k => (el.querySelector(`[data-k="${k}"]`)?.value || '').trim();
+  
+  // Formateador inverso para mandar al excel como DD/MM/YYYY
+  let venc = get('vencimiento');
+  if(venc && venc.includes('-')) {
+      let p = venc.split('-');
+      venc = `${p[2]}/${p[1]}/${p[0]}`;
+  }
+
   rows[i] = {
-    // ---> INYECCIÓN: Recolectamos ID y CUIT para enviarlos al server
     id_cliente: get('id_cliente'),
     cuit_dni: get('cuit_dni'),
-    
     nombre: get('nombre'), 
     zona: get('zona'), 
     categoria: get('categoria'),
     telefono: get('telefono'), 
     direccion: get('direccion'), 
-    mail: get('mail')
+    mail: get('mail'),
+    // NUEVAS COLUMNAS
+    p_esp_10: get('p_esp_10'),
+    p_esp_15: get('p_esp_15'),
+    p_esp_45: get('p_esp_45'),
+    p_esp_env_10: get('p_esp_env_10'),
+    p_esp_env_15: get('p_esp_env_15'),
+    p_esp_env_45: get('p_esp_env_45'),
+    vencimiento: venc
   };
 }
 
@@ -477,14 +582,17 @@ document.getElementById('btnAddClient').onclick = () => {
     const newClient = {
         // Al crear uno nuevo, no le mandamos ID. El servidor se encarga (Codigo.gs - agregarNuevoCliente)
         id_cliente: '',
-        cuit_dni: '', // Lo dejamos vacío por defecto en el alta rápida
-        
+        cuit_dni: '', 
         nombre: document.getElementById('newNombre').value.trim().toUpperCase(),
         zona: document.getElementById('newZona').value,
         categoria: document.getElementById('newCategoria').value,
         direccion: document.getElementById('newDireccion').value.trim().toUpperCase(),
         telefono: document.getElementById('newTelefono').value.trim(),
-        mail: document.getElementById('newMail').value.trim().toLowerCase()
+        mail: document.getElementById('newMail').value.trim().toLowerCase(),
+        // NUEVAS COLUMNAS (Vacías al crear)
+        p_esp_10: '', p_esp_15: '', p_esp_45: '',
+        p_esp_env_10: '', p_esp_env_15: '', p_esp_env_45: '',
+        vencimiento: ''
     };
     
     // Agregamos al principio
