@@ -1022,8 +1022,8 @@
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,           
-                        maximumAge: 30000         
+                        timeout: 10000,            
+                        maximumAge: 30000          
                     }
                 );
             });
@@ -1231,22 +1231,37 @@
             if (clientesData.some(c => c.nombre.toLowerCase() === val)) showToast('⚠️ ATENCIÓN: Ya existe un cliente con este nombre en la base.', 'warning');
         });
 
+        // MODIFICACION: Retraso táctico para evitar parpadeos y problemas de foco con el DOM
         function pedirPinSiCorresponde(checkbox, inputId) {
             const input = document.getElementById(inputId);
-            if (checkbox.checked) { input.removeAttribute('readonly'); input.focus(); input.select(); }
-            else { input.setAttribute('readonly', true); actualizarPreciosAutomaticos(); }
-            verificarSiNecesitaPin();
+            verificarSiNecesitaPin(); // Actualiza DOM primero
+            if (checkbox.checked) { 
+                input.removeAttribute('readonly'); 
+                setTimeout(() => {
+                    input.focus(); 
+                    input.select(); 
+                }, 150); // Le damos 150ms al DOM para reaccionar antes de robar el foco
+            }
+            else { 
+                input.setAttribute('readonly', true); 
+                actualizarPreciosAutomaticos(); 
+            }
         }
 
+        // MODIFICACION: Retraso táctico para el control manual de envases
         function togglePreciosEnvasesManuales(checkbox) {
             const inputs = ['precioVentaEnv10', 'precioVentaEnv15', 'precioVentaEnv45'];
+            verificarSiNecesitaPin();
             inputs.forEach(id => {
                 const input = document.getElementById(id);
                 if (checkbox.checked) { input.removeAttribute('readonly'); }
                 else { input.setAttribute('readonly', true); }
             });
-            actualizarPreciosAutomaticos();
-            verificarSiNecesitaPin();
+            if (checkbox.checked) {
+                setTimeout(() => { document.getElementById('precioVentaEnv10').focus(); }, 150);
+            } else {
+                actualizarPreciosAutomaticos();
+            }
         }
 
         function verificarSiNecesitaPin() {
@@ -1362,9 +1377,26 @@
             verificarSiNecesitaPin(); actualizarTotales();
         });
 
-        ['cantVentaEnv10', 'cantVentaEnv15', 'cantVentaEnv45', 'comodato10', 'comodato15', 'comodato45', 'pagoDeudaDinero', 'dev10', 'dev15', 'dev45', 'plantaLlenos10', 'plantaLlenos15', 'plantaLlenos45', 'plantaVacios10', 'plantaVacios15', 'plantaVacios45'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.addEventListener('input', actualizarTotales);
+        // MODIFICACIÓN: Prevención de colapso de teclado (Gboard Bug)
+        document.querySelectorAll('input, select').forEach(el => { 
+            if (el.classList.contains('money-input')) {
+                // Formateo visual seguro AL SALIR del campo, no interrumpe el cursor del teclado
+                el.addEventListener('blur', function() {
+                    let v = this.value.replace(/\D/g, ""); 
+                    this.value = v ? parseInt(v).toLocaleString('es-AR') : "";
+                    actualizarTotales();
+                });
+                
+                // Mientras se escribe, solo se limpian letras extrañas, sin inyectar puntos
+                el.oninput = () => { 
+                    let clean = el.value.replace(/[^\d.,]/g, "");
+                    if (el.value !== clean) el.value = clean;
+                    actualizarTotales(); 
+                };
+            } else {
+                // Resto de los inputs normales
+                el.oninput = () => actualizarTotales(); 
+            }
         });
 
         function actualizarTotales() {
@@ -1592,8 +1624,6 @@
             checkVisibilidadCascada(); actualizarPreciosAutomaticos();
         };
         document.getElementById('categoria').onchange = () => actualizarPreciosAutomaticos();
-
-        document.querySelectorAll('input, select').forEach(el => { el.oninput = () => { if (el.classList.contains('money-input')) { let v = el.value.replace(/\D/g, ""); el.value = v ? parseInt(v).toLocaleString('es-AR') : ""; } actualizarTotales(); }; });
 
         function toggleMutuallyExclusive(clickedId) {
             const ids = ['entregaGas', 'ventaEnvases', 'declaracionGastos', 'ventaPlanta'];
