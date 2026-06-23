@@ -7,6 +7,109 @@
     <title>Registro de Entrega</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+/* ===== TEMA CLARO ===== */
+body.tema-claro {
+    background: #ffffff !important;
+    background-image: none !important;
+    background-attachment: unset !important;
+    --glass: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.2);
+    --input-bg: rgba(0, 0, 0, 0.05);
+    --text-primary: #111111;
+    --text-muted: rgba(0, 0, 0, 0.55);
+    --accent: #b8860b;
+    --error: #cc0000;
+    --success: #1a7a1a;
+    --info: #0a5fa0;
+    color: #111111;
+}
+body.tema-claro .form-container {
+    background: #fff;
+    border: 1.5px solid #bbb;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+body.tema-claro input,
+body.tema-claro select {
+    background: #fff;
+    border-color: #aaa;
+    color: #111;
+}
+body.tema-claro input:focus,
+body.tema-claro select:focus {
+    border-color: #b8860b;
+    background: #fffdf0;
+}
+body.tema-claro input[readonly] {
+    background: #f0f0f0;
+    color: #444;
+}
+body.tema-claro .search-results {
+    background: #fff;
+    border-color: #bbb;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+body.tema-claro .result-item:hover {
+    background: rgba(184,134,11,0.1);
+}
+body.tema-claro .r-detail { color: #555; }
+body.tema-claro .total-display {
+    background: #f5f5f5;
+    border-color: #bbb;
+}
+body.tema-claro .hidden-section {
+    background: #f8f8f8;
+    border-color: #ccc;
+}
+body.tema-claro .client-info-tag {
+    background: rgba(0,0,0,0.07);
+    color: #111;
+}
+body.tema-claro .loading-overlay {
+    background: rgba(255,255,255,0.97);
+}
+body.tema-claro .btn-volver {
+    color: #111;
+    border-color: #aaa;
+}
+body.tema-claro .timer-display {
+    background: #f0f0f0;
+    border-color: #ccc;
+    color: #b8860b;
+}
+body.tema-claro .audio-recorder-box {
+    background: #f5f5f5;
+    border-color: #bbb;
+}
+body.tema-claro .toast {
+    color: #fff;
+}
+body.tema-claro #chkVentaPlanta {
+    background: rgba(0, 140, 180, 0.08);
+    border-color: #0a5fa0;
+}
+/* Toggle button */
+#btnTema {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 9990;
+    background: rgba(0,0,0,0.45);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    color: #FFD700;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.4px;
+}
+body.tema-claro #btnTema {
+    background: #111;
+    border-color: #111;
+    color: #fff;
+}
         :root {
             --glass: rgba(0, 0, 0, 0.5);
             --glass-border: rgba(255, 255, 255, 0.15);
@@ -669,6 +772,7 @@
 
 <body>
 
+    <button id="btnTema" onclick="toggleTema()" title="Cambiar tema">☀️ Claro</button>
     <div class="modal-gps-overlay" id="modalGPS">
         <div class="modal-gps-box" id="modalGPSBox">
             <div class="gps-icon">📍</div>
@@ -1907,7 +2011,25 @@
     AGUARDE UN MOMENTO...
   </div>
 </div>
-
+<script>
+  (function() {
+    var temaGuardado = localStorage.getItem('tema_repartos');
+    if (temaGuardado === 'claro') {
+      document.body.classList.add('tema-claro');
+      document.getElementById('btnTema').textContent = '🌙 Oscuro';
+    }
+  })();
+  function toggleTema() {
+    var btn = document.getElementById('btnTema');
+    if (document.body.classList.toggle('tema-claro')) {
+      btn.textContent = '🌙 Oscuro';
+      localStorage.setItem('tema_repartos', 'claro');
+    } else {
+      btn.textContent = '☀️ Claro';
+      localStorage.setItem('tema_repartos', 'oscuro');
+    }
+  }
+</script>
 <script>
   function controlPatovica() {
     const ahora = new Date();
