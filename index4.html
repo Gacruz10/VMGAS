@@ -2014,7 +2014,7 @@ body.tema-claro #btnTema {
 <script>
   (function() {
     var temaGuardado = localStorage.getItem('tema_repartos');
-    if (temaGuardado === 'claro') {
+    if (temaGuardado !== 'oscuro') {
       document.body.classList.add('tema-claro');
       document.getElementById('btnTema').textContent = '🌙 Oscuro';
     }
