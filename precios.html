@@ -15,6 +15,7 @@
     --glass-border: rgba(255, 255, 255, 0.15);
     --accent: #FFD700; 
     --text-primary: #ffffff;
+    --text-muted: #aaaaaa;
     --success: #2dd4bf;
     --bg-color: #0d031a;
   }
@@ -24,39 +25,69 @@
     background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
                 radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%), #020617;
     background-attachment: fixed; min-height: 100vh; padding: 20px;
-    
-    /* BLINDAJE VISUAL: INICIA INVISIBLE */
     opacity: 0; 
     transition: opacity 0.5s ease;
   }
   
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
   h1 { font-size: 1.5rem; color: var(--accent); margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
   
-  .btn {
-    border: 1px solid var(--glass-border); padding: 10px 16px; border-radius: 12px;
-    background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-weight: 600;
-    transition: 0.3s;
+  /* BARRA DE ACCIONES STICKY */
+  .action-bar {
+    position: sticky; top: 10px; z-index: 90;
+    background: rgba(13, 3, 26, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--accent); border-radius: 16px; padding: 12px 15px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6); gap: 10px;
   }
-  .btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
-  .btn-add { background: var(--accent); color: #000; border: none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
 
-  /* CARDS DE PRECIOS */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-  
-  .card {
-    background: var(--glass); border: 1px solid var(--glass-border);
-    border-radius: 16px; padding: 15px; position: relative;
-    backdrop-filter: blur(10px); transition: transform 0.2s;
-    cursor: pointer;
+  .btn {
+    border: 1px solid var(--glass-border); padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.05); color: white; cursor: pointer; font-weight: 700;
+    transition: 0.3s; font-size: 13px; text-transform: uppercase;
   }
-  .card:active { transform: scale(0.98); }
-  .card-cat { font-size: 10px; text-transform: uppercase; color: #aaa; letter-spacing: 0.5px; }
-  .card-type { font-size: 1.1rem; font-weight: 800; margin: 5px 0; }
-  .card-price { font-size: 1.3rem; color: var(--accent); font-weight: 700; text-align: right; }
+  .btn:hover { background: rgba(255,255,255,0.1); }
+  .btn-add { background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn-save { background: var(--accent); color: #000; border: none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); font-weight: 800; }
+
+  /* CARDS CONDENSADAS */
+  .grid-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-bottom: 30px;
+  }
   
-  /* Diferenciar Envases */
-  .is-envase { border-color: rgba(45, 212, 191, 0.4); background: linear-gradient(180deg, rgba(45,212,191,0.05), transparent); }
+  .category-card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: 20px; padding: 20px; position: relative;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .category-title {
+    font-size: 1.2rem; color: var(--accent); font-weight: 800; margin-bottom: 15px;
+    text-transform: uppercase; letter-spacing: 1px; text-align: center;
+  }
+
+  /* SUB-BLOQUES DE COLORES */
+  .sub-block { border-radius: 12px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--glass-border); }
+  .block-carga { background: rgba(45, 212, 191, 0.05); border-color: rgba(45, 212, 191, 0.3); }
+  .block-envase { background: rgba(255, 215, 0, 0.05); border-color: rgba(255, 215, 0, 0.3); }
+  .block-comision { background: rgba(255, 94, 94, 0.05); border-color: rgba(255, 94, 94, 0.3); }
+  .block-otros { background: rgba(255, 255, 255, 0.05); }
+
+  .sub-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; color: var(--text-primary); text-align: center; opacity: 0.8;}
+
+  /* GRILLA INTERNA 3 COLUMNAS */
+  .items-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; }
+  
+  .item-col { display: flex; flex-direction: column; align-items: center; }
+  .item-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+
+  .price-input {
+    width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border);
+    border-radius: 8px; color: white; font-size: 14px; font-weight: 700;
+    padding: 8px 5px; outline: none; transition: all 0.3s; text-align: center;
+  }
+  .price-input:focus { border-color: var(--accent); }
+  .price-input.is-modified { border-color: var(--accent); background: rgba(255, 215, 0, 0.15); color: var(--accent); }
 
   /* MODAL FORMULARIO */
   .modal-overlay {
@@ -65,53 +96,44 @@
     z-index: 100; display: none; justify-content: center; align-items: center;
   }
   .modal-box {
-    background: #1a0b2e; border: 1px solid var(--glass-border);
-    width: 90%; max-width: 400px; padding: 25px; border-radius: 24px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    background: #1a0b2e; border: 1px solid var(--accent); width: 90%; max-width: 400px;
+    padding: 25px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
   }
-  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: white; text-align: center; }
+  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: var(--accent); text-align: center; text-transform: uppercase;}
   
   .form-group { margin-bottom: 15px; }
-  label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
-  select, input {
+  .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: bold;}
+  .modal-input {
     width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-    border-radius: 12px; color: white; font-size: 16px; outline: none;
+    border-radius: 12px; color: white; font-size: 15px; outline: none; font-weight: 600;
   }
-  select:focus, input:focus { border-color: var(--accent); }
-  
-  .btn-full { width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
+  .modal-input:focus { border-color: var(--accent); }
+  .btn-full { width: 100%; padding: 15px; font-size: 15px; margin-top: 10px; }
   .btn-close { background: transparent; color: #ff5e5e; border: 1px solid #ff5e5e; margin-top: 10px; }
 
-  /* --- SISTEMA DE TOASTS --- */
+  /* SISTEMA DE TOASTS Y LOADER MANTENIDOS INTACTOS */
   #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
+  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px;}
   .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.error { background: rgba(255, 94, 94, 0.9); backdrop-filter: blur(10px); }
-  .toast.success { background: rgba(0, 200, 81, 0.9); backdrop-filter: blur(10px); }
-  .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+  .toast.error { background: rgba(255, 94, 94, 0.9); }
+  .toast.success { background: rgba(0, 200, 81, 0.9); }
+  .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; }
 
-  /* --- ANIMACIÓN DE CARGA (OVERLAY) --- */
   .loading-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(13, 3, 26, 0.9); z-index: 999; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; 
-    opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9);
+    z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+    opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; backdrop-filter: blur(10px);
   }
   .loading-overlay.active { opacity: 1; visibility: visible; }
-  
   .spinner {
     width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
     border-left-color: var(--accent); border-radius: 50%;
-    animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
-    margin-bottom: 20px; transition: all 0.3s ease;
+    animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite; margin-bottom: 20px;
   }
   .spinner.success-mode { border-left-color: var(--success); }
-  
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
-
-  .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
+  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255,215,0,0.1); } 50% { box-shadow: 0 0 25px rgba(255,215,0,0.4); } 100% { box-shadow: 0 0 10px rgba(255,215,0,0.1); } }
+  .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
   .loading-text.success-mode { color: var(--success); }
 
 </style>
@@ -119,61 +141,55 @@
 <body>
 
   <div id="toast-container"></div>
-
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner" id="loaderSpinner"></div>
     <div class="loading-text" id="loaderText">CARGANDO...</div>
   </div>
 
   <div class="header">
-    <h1>Cambios de Precios</h1>
-    <div style="display:flex; gap:10px;">
-        <button class="btn" id="btnVolver">Volver</button>
-        <button class="btn btn-add" id="btnNuevo">+ Nuevo</button>
-    </div>
+    <h1>Precios & Envases</h1>
   </div>
 
-  <div id="grid" class="grid"></div>
+  <div class="action-bar">
+      <button class="btn" id="btnVolver">⬅ Volver</button>
+      <div style="display:flex; gap:10px;">
+          <button class="btn btn-add" id="btnNuevo">+ Nuevo</button>
+          <button class="btn btn-save" id="btnGuardarLote">GUARDAR</button>
+      </div>
+  </div>
+
+  <div id="cards-container" class="grid-cards"></div>
 
   <div class="modal-overlay" id="modal">
     <div class="modal-box">
-        <div class="modal-title" id="modalTitle">Editar Precio</div>
-        
+        <div class="modal-title">Agregar Precio / Nuevo</div>
         <div class="form-group">
-            <label>Categoría de Cliente</label>
-            <select id="selCategoria">
-                <option value="">Cargando...</option>
-            </select>
+            <label>Categoría (Elegir o escribir nueva)</label>
+            <input type="text" id="inpCategoria" class="modal-input" placeholder="Ej: COMERCIO..." list="listaCategorias">
+            <datalist id="listaCategorias"></datalist>
         </div>
-
         <div class="form-group">
-            <label>Producto / Envase</label>
-            <select id="selProducto">
-                <option value="">Cargando...</option>
-            </select>
+            <label>Producto / Tipo</label>
+            <input type="text" id="inpProducto" class="modal-input" placeholder="Ej: 10, ENV10, COMISION..." list="listaProductos">
+            <datalist id="listaProductos"></datalist>
         </div>
-
         <div class="form-group">
             <label>Precio ($)</label>
-            <input type="number" id="inpPrecio" placeholder="0" inputmode="numeric">
+            <input type="number" id="inpPrecio" class="modal-input" placeholder="0" inputmode="numeric">
         </div>
-
-        <button class="btn btn-add btn-full" id="btnGuardar">GUARDAR PRECIO</button>
+        <button class="btn btn-save btn-full" id="btnGuardarNuevo">GUARDAR EN BASE</button>
         <button class="btn btn-full btn-close" id="btnCancelar">CANCELAR</button>
     </div>
   </div>
 
 <script>
-// --- CONFIGURACIÓN DE SEGURIDAD ---
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
-const TIMEOUT_SESION = 180000; // 3 minutos (ms)
+const TIMEOUT_SESION = 180000;
 
-// Funciones visuales
 function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = msg;
+    toast.className = `toast ${type}`; toast.textContent = msg;
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
@@ -183,113 +199,53 @@ function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
     const overlay = document.getElementById('loadingOverlay');
     const loaderText = document.getElementById('loaderText');
     const spinner = document.getElementById('loaderSpinner');
-    
     loaderText.textContent = text;
-    
-    if (isSuccess) {
-        spinner.classList.add('success-mode');
-        loaderText.classList.add('success-mode');
-    } else {
-        spinner.classList.remove('success-mode');
-        loaderText.classList.remove('success-mode');
-    }
-
-    if (show) overlay.classList.add('active');
-    else overlay.classList.remove('active');
+    if (isSuccess) { spinner.classList.add('success-mode'); loaderText.classList.add('success-mode'); } 
+    else { spinner.classList.remove('success-mode'); loaderText.classList.remove('success-mode'); }
+    if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-// 1. GESTIÓN DE URL Y TOKEN (OCULTO)
 const params = new URLSearchParams(window.location.search);
 let k = params.get('k') || params.get('token');
 
-// Si hay token en URL, lo guardamos en memoria y limpiamos la URL
-if (k) {
-    if (window.history.replaceState) {
-       window.history.replaceState({}, document.title, window.location.pathname);
-    }
-} 
+if (k && window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
+if (!k) window.location.replace('index.html'); else init();
 
-// Si no hay token en ningún lado, expulsar
-if (!k) {
-    window.location.replace('index.html');
-} else {
-    // Iniciar validación
-    init();
-}
-
-// 2. TIMEOUT SILENCIOSO
 let tIdle;
-function resetTimer() {
-    clearTimeout(tIdle);
-    tIdle = setTimeout(() => {
-        // Expulsión silenciosa
-        window.location.replace('index.html');
-    }, TIMEOUT_SESION);
-}
-// Eventos para mantener viva la sesión
-['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => 
-    document.addEventListener(evt, resetTimer)
-);
-resetTimer(); // Arranca el timer
+function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => { window.location.replace('index.html'); }, TIMEOUT_SESION); }
+['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
+resetTimer();
 
-// 3. VARIABLES GLOBALES
 let preciosData = [];
 let categoriasList = [];
 let productosList = [];
+let preciosOriginales = {};   
+let preciosModificados = {};  
 
-// 4. INICIO BLINDADO
 async function init() {
     try {
-        // Mostramos el body de inmediato, pero cubierto por el Loader
         document.body.style.opacity = 1;
         toggleLoader(true, "VERIFICANDO SESIÓN...");
-
-        // Validar Sesión contra el servidor
-        const fd = new FormData(); 
-        fd.append('action', 'verificarsesion'); 
-        fd.append('k', k);
-        
+        const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
         const r = await fetch(API, { method:'POST', body:fd });
         const d = await r.json();
-        
-        if(d.status !== 'success') {
-            throw new Error("Sesión inválida");
-        }
+        if(d.status !== 'success') throw new Error("Sesión inválida");
 
-        // SI PASA: MOSTRAR CARGA DE DATOS
-        toggleLoader(true, "DESCARGANDO CUADRO TARIFARIO...");
-
-        // Cargar datos
+        toggleLoader(true, "ARMANDO TARJETAS...");
         await cargarOpciones();
         await cargarPrecios();
-
-    } catch(e) { 
-        // Si falla algo crítico, volver al login
-        window.location.replace('index.html'); 
-    }
+    } catch(e) { window.location.replace('index.html'); }
 }
 
 async function cargarOpciones() {
     try {
         const r = await fetch(`${API}?action=getoptions`);
         const d = await r.json();
-        categoriasList = d.categorias || [];
-        productosList = d.productos || [];
-        
-        // Llenar selects del modal
-        const selCat = document.getElementById('selCategoria');
-        const selProd = document.getElementById('selProducto');
-        
-        selCat.innerHTML = '<option value="">-- Seleccione Categoría --</option>';
-        categoriasList.forEach(c => {
-            selCat.innerHTML += `<option value="${c}">${c}</option>`;
-        });
-
-        selProd.innerHTML = '<option value="">-- Seleccione Producto --</option>';
-        productosList.forEach(p => {
-            selProd.innerHTML += `<option value="${p}">${p}</option>`;
-        });
-    } catch(e) { console.error("Error cargando opciones"); }
+        const dlCat = document.getElementById('listaCategorias');
+        const dlProd = document.getElementById('listaProductos');
+        dlCat.innerHTML = ''; d.categorias.forEach(c => dlCat.innerHTML += `<option value="${c}">`);
+        dlProd.innerHTML = ''; d.productos.forEach(p => dlProd.innerHTML += `<option value="${p}">`);
+    } catch(e) { console.error(e); }
 }
 
 async function cargarPrecios() {
@@ -297,97 +253,146 @@ async function cargarPrecios() {
         const r = await fetch(`${API}?action=listprecios`);
         const d = await r.json();
         preciosData = d.precios || [];
-
-        toggleLoader(false); // Ocultar animación al terminar
-        renderGrid();
-    } catch(e) {
+        preciosOriginales = {}; preciosModificados = {};
+        renderCards();
         toggleLoader(false);
-        showToast("Error de conexión al cargar datos", "error");
-    }
+    } catch(e) { toggleLoader(false); showToast("Error de conexión", "error"); }
 }
 
-function renderGrid() {
-    const grid = document.getElementById('grid');
-    grid.innerHTML = '';
+// ORDENADOR LÓGICO DE TAMAÑOS (Para que siempre salga 10 - 15 - 45 en ese orden)
+const obtenerPesoOrden = (tipo) => {
+    if(tipo.includes('10')) return 10;
+    if(tipo.includes('15')) return 15;
+    if(tipo.includes('45')) return 45;
+    return 99; // Otros al final
+};
 
+function renderCards() {
+    const container = document.getElementById('cards-container');
+    container.innerHTML = '';
+
+    const mapaCategorias = {};
     preciosData.forEach(p => {
-        const div = document.createElement('div');
-        const isEnv = (p.tipo.includes('ENV') || p.tipo.includes('VACIO'));
-        div.className = `card ${isEnv ? 'is-envase' : ''}`;
-        div.innerHTML = `
-            <div class="card-cat">${p.categoria}</div>
-            <div class="card-type">${p.tipo}</div>
-            <div class="card-price">$ ${p.precio.toLocaleString('es-AR')}</div>
-        `;
-        div.onclick = () => abrirModal(p.categoria, p.tipo, p.precio);
-        grid.appendChild(div);
+        if(!mapaCategorias[p.categoria]) mapaCategorias[p.categoria] = { carga: [], envase: [], comision: [], otros: [] };
+        
+        // Clasificador Inteligente
+        if(['10','15','45'].includes(p.tipo)) mapaCategorias[p.categoria].carga.push(p);
+        else if(['ENV10','ENV15','ENV45'].includes(p.tipo)) mapaCategorias[p.categoria].envase.push(p);
+        else if(p.tipo.toUpperCase().includes('COM')) mapaCategorias[p.categoria].comision.push(p);
+        else mapaCategorias[p.categoria].otros.push(p);
+    });
+
+    Object.keys(mapaCategorias).forEach(cat => {
+        const catData = mapaCategorias[cat];
+        const card = document.createElement('div');
+        card.className = 'category-card';
+        
+        let htmlCard = `<div class="category-title">${cat}</div>`;
+
+        // Función generadora de bloques HTML
+        const generarBloque = (items, titulo, claseColor) => {
+            if(items.length === 0) return '';
+            
+            // Ordenar por tamaño (10, 15, 45)
+            items.sort((a,b) => obtenerPesoOrden(a.tipo) - obtenerPesoOrden(b.tipo));
+
+            let inputsHtml = '';
+            items.forEach(item => {
+                const idUnico = `${item.categoria}_|_${item.tipo}`;
+                preciosOriginales[idUnico] = item.precio;
+                
+                // Formatear etiqueta (ej: ENV15 -> 15KG)
+                let label = item.tipo.replace('ENV', '').replace('COM', '').replace('ISION', '');
+                if(label === '10' || label === '15' || label === '45') label += 'KG';
+                if(label === '') label = 'Gral'; // Por si es una comisión única
+
+                inputsHtml += `
+                    <div class="item-col">
+                        <span class="item-label">${label}</span>
+                        <input type="number" class="price-input" data-id="${idUnico}" data-cat="${item.categoria}" data-tipo="${item.tipo}" value="${item.precio}" inputmode="numeric">
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="sub-block ${claseColor}">
+                    <div class="sub-title">${titulo}</div>
+                    <div class="items-grid">${inputsHtml}</div>
+                </div>
+            `;
+        };
+
+        htmlCard += generarBloque(catData.carga, "Solo Carga", "block-carga");
+        htmlCard += generarBloque(catData.envase, "Carga + Envase", "block-envase");
+        htmlCard += generarBloque(catData.comision, "Comisión", "block-comision");
+        htmlCard += generarBloque(catData.otros, "Otros", "block-otros");
+
+        card.innerHTML = htmlCard;
+        container.appendChild(card);
+    });
+
+    document.querySelectorAll('.price-input').forEach(inp => {
+        inp.addEventListener('input', manejarCambioPrecio);
     });
 }
 
-// --- LÓGICA MODAL ---
-const modal = document.getElementById('modal');
-const selCat = document.getElementById('selCategoria');
-const selProd = document.getElementById('selProducto');
-const inpPrecio = document.getElementById('inpPrecio');
-
-function abrirModal(cat, tipo, precio) {
-    if(cat && tipo) {
-        // Modo Edición
-        document.getElementById('modalTitle').textContent = "Editar Precio";
-        selCat.value = cat;
-        selProd.value = tipo;
-        inpPrecio.value = precio;
+function manejarCambioPrecio(e) {
+    const input = e.target;
+    const idUnico = input.getAttribute('data-id');
+    const valorActual = parseInt(input.value) || 0;
+    
+    if (valorActual !== preciosOriginales[idUnico]) {
+        input.classList.add('is-modified');
+        preciosModificados[idUnico] = { categoria: input.getAttribute('data-cat'), tipo: input.getAttribute('data-tipo'), precio: valorActual };
     } else {
-        // Modo Nuevo
-        document.getElementById('modalTitle').textContent = "Nuevo Precio";
-        selCat.value = "";
-        selProd.value = "";
-        inpPrecio.value = "";
+        input.classList.remove('is-modified');
+        delete preciosModificados[idUnico];
     }
-    modal.style.display = 'flex';
 }
 
-document.getElementById('btnNuevo').onclick = () => abrirModal();
+document.getElementById('btnGuardarLote').onclick = async () => {
+    const actualizaciones = Object.values(preciosModificados);
+    if(actualizaciones.length === 0) return showToast("No hay precios modificados.", "info");
+
+    toggleLoader(true, `GUARDANDO ${actualizaciones.length} CAMBIOS...`);
+    try {
+        const promesas = actualizaciones.map(u => {
+            const fd = new FormData();
+            fd.append('action', 'saveprice_single'); fd.append('k', k);
+            fd.append('categoria', u.categoria); fd.append('tipo', u.tipo); fd.append('precio', u.precio);
+            return fetch(API, { method:'POST', body:fd }).then(r => r.json());
+        });
+        await Promise.all(promesas);
+        toggleLoader(true, "¡TODO ACTUALIZADO!", true);
+        preciosModificados = {}; 
+        setTimeout(() => cargarPrecios(), 1200);
+    } catch(e) { toggleLoader(false); showToast("Error al guardar.", "error"); }
+};
+
+const modal = document.getElementById('modal');
+document.getElementById('btnNuevo').onclick = () => {
+    document.getElementById('inpCategoria').value = ""; document.getElementById('inpProducto').value = ""; document.getElementById('inpPrecio').value = "";
+    modal.style.display = 'flex';
+};
 document.getElementById('btnCancelar').onclick = () => modal.style.display = 'none';
 
-document.getElementById('btnGuardar').onclick = async () => {
-    const cat = selCat.value;
-    const tip = selProd.value;
-    const pre = inpPrecio.value;
+document.getElementById('btnGuardarNuevo').onclick = async () => {
+    const cat = document.getElementById('inpCategoria').value.trim().toUpperCase();
+    const tip = document.getElementById('inpProducto').value.trim().toUpperCase();
+    const pre = document.getElementById('inpPrecio').value;
 
-    if(!cat || !tip || pre === '') {
-        return showToast("Complete todos los campos", "error");
-    }
-
-    modal.style.display = 'none'; // Ocultamos el modal para mostrar la carga
-    toggleLoader(true, "GUARDANDO...");
+    if(!cat || !tip || pre === '') return showToast("Complete todos los campos", "error");
+    modal.style.display = 'none'; toggleLoader(true, "REGISTRANDO NUEVO...");
 
     const fd = new FormData();
-    fd.append('action', 'saveprice_single');
-    fd.append('k', k);
-    fd.append('categoria', cat);
-    fd.append('tipo', tip);
-    fd.append('precio', pre);
-
+    fd.append('action', 'saveprice_single'); fd.append('k', k); fd.append('categoria', cat); fd.append('tipo', tip); fd.append('precio', pre);
     try {
-        const r = await fetch(API, { method:'POST', body:fd });
-        const d = await r.json();
-        
+        const r = await fetch(API, { method:'POST', body:fd }); const d = await r.json();
         if(d.status === 'success') {
-            toggleLoader(true, "¡PRECIO ACTUALIZADO!", true);
-            setTimeout(() => {
-                window.location.replace(`inicio.html?k=${k}`);
-            }, 800);
-        } else {
-            toggleLoader(false);
-            showToast("Error: " + d.message, "error");
-            modal.style.display = 'flex'; // Volvemos a mostrar si falló
-        }
-    } catch(e) {
-        toggleLoader(false);
-        showToast("Error de conexión", "error");
-        modal.style.display = 'flex'; // Volvemos a mostrar si falló
-    }
+            toggleLoader(true, "¡REGISTRADO!", true);
+            setTimeout(() => { cargarOpciones(); cargarPrecios(); }, 1000);
+        } else { toggleLoader(false); showToast("Error: " + d.message, "error"); }
+    } catch(e) { toggleLoader(false); showToast("Error de conexión", "error"); }
 };
 
 document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
