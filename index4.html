@@ -1049,6 +1049,18 @@ body.tema-claro #btnTema {
         let recordingTimer;
         let recSeconds = 120; // 2 minutos
 
+        // FUNCION CÁLCULO COMISIONES
+        function getComisionPorEnvase(categoria, tipoStr) {
+            const catNorm = normalizarCategoriaUI(categoria);
+            const tabla = {
+                'USUARIO (PUBLICO)': { '10': 1000, '15': 1500, '45': 2400 },
+                'COMERCIO': { '10': 500, '15': 750, '45': 1200 },
+                'ROT. Y PAN.': { '10': 500, '15': 750, '45': 1200 },
+                'SUBDISTRIBUIDOR': { '10': 250, '15': 400, '45': 500 }
+            };
+            return (tabla[catNorm] && tabla[catNorm][tipoStr]) ? tabla[catNorm][tipoStr] : 0;
+        }
+
         // NUEVA FUNCIÓN PARA VALIDAR ACUERDOS COMERCIALES (FECHA)
         function esAcuerdoVigente(fechaStr) {
             if (!fechaStr) return false;
@@ -1579,6 +1591,23 @@ body.tema-claro #btnTema {
 
             if (hayVenta && !clienteSeleccionado && !esNuevo) { el.textContent = "FALTA CLIENTE"; el.className = "payment-counter pending"; btn.disabled = true; return; }
 
+            // NUEVA VALIDACIÓN ALTA CLIENTE OBLIGATORIA
+            if (esNuevo) {
+                const nom = document.getElementById('nombreCliente').value.trim();
+                const dir = document.getElementById('nuevaDireccion').value.trim();
+                const tel = document.getElementById('nuevoTelefono').value.trim();
+                document.getElementById('nombreCliente').classList.toggle('input-error', !nom);
+                document.getElementById('nuevaDireccion').classList.toggle('input-error', !dir);
+                document.getElementById('nuevoTelefono').classList.toggle('input-error', !tel);
+                
+                if (!nom || !dir || !tel) {
+                    el.textContent = "FALTAN DATOS DEL CLIENTE";
+                    el.className = "payment-counter pending";
+                    btn.disabled = true;
+                    return;
+                }
+            }
+
             const hayGasto = document.getElementById('declaracionGastos').checked; const montoGasto = parseM('montoGastos'); const descGasto = document.getElementById('descripcionGastos').value.trim();
             if (hayGasto) {
                 const inputDesc = document.getElementById('descripcionGastos');
@@ -1724,6 +1753,11 @@ body.tema-claro #btnTema {
                 document.getElementById('pagoDeuda').checked = false;
                 document.getElementById('sectionPagoDeuda').style.display = 'none';
                 idClienteSeleccionado = '';
+            } else {
+                // Limpiamos los errores si desmarca la casilla
+                document.getElementById('nombreCliente').classList.remove('input-error');
+                document.getElementById('nuevaDireccion').classList.remove('input-error');
+                document.getElementById('nuevoTelefono').classList.remove('input-error');
             }
             checkVisibilidadCascada(); actualizarPreciosAutomaticos();
         };
@@ -1878,6 +1912,11 @@ body.tema-claro #btnTema {
             let objetivoGas = (q10 * parseM('precioGarrafa1')) + (q15 * parseM('precioGarrafa2')) + (q45 * parseM('precioGarrafa3'));
             let deudaGeneradaPlanta = (isPlanta && objetivoGas > pagado) ? (objetivoGas - pagado) : 0;
 
+            // CÁLCULO DE COMISIÓN EXACTA
+            const comisionTotal = (q10 * getComisionPorEnvase(cat, '10')) +
+                                  (q15 * getComisionPorEnvase(cat, '15')) +
+                                  (q45 * getComisionPorEnvase(cat, '45'));
+
             const payload = {
                 action: 'guardarregistro', k: k, USUARIO: document.getElementById('welcomeMessage').textContent.replace('Usuario: ','').toLowerCase().trim(),
                 TIPO: tipoOp, FECHA: now.toLocaleDateString('es-AR'), HORA: hora24, C: nombreC, N: generarID(),
@@ -1894,7 +1933,8 @@ body.tema-claro #btnTema {
                 [`${pfx}45`]: q45, [`${pfx}45$`]: parseM('precioGarrafa3') * q45,
                 ID_CLIENTE: idClienteSeleccionado,
                 cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : '',
-                UBICACION: ubicacionActual 
+                UBICACION: ubicacionActual,
+                COMISION_TOTAL: comisionTotal // ACÁ VIAJA LA COMISIÓN
             };
 
             if (!isPlanta && operandoEnvase && modoEnv === 'venta') {
@@ -1940,6 +1980,7 @@ body.tema-claro #btnTema {
                         if (jAudio.status === 'success') {
                             const notaActual = payload.G || '';
                             payload.G = notaActual ? `${notaActual} | Audio: ${jAudio.url}` : `Audio: ${jAudio.url}`;
+                            payload.AUDIO_URL = jAudio.url; // SE MANDA LIMPIO ACÁ PARA EL HIPERVÍNCULO
                         } else {
                             showToast("⚠️ Falló la subida de audio: " + jAudio.message, "warning");
                         }
@@ -2014,7 +2055,7 @@ body.tema-claro #btnTema {
 <script>
   (function() {
     var temaGuardado = localStorage.getItem('tema_repartos');
-    if (temaGuardado !== 'oscuro') {
+    if (temaGuardado === 'claro') {
       document.body.classList.add('tema-claro');
       document.getElementById('btnTema').textContent = '🌙 Oscuro';
     }
