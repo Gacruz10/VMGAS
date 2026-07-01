@@ -323,13 +323,14 @@
           <button type="button" class="btn-cancel" onclick="document.getElementById('pinModal').style.display='none'">CANCELAR</button>
       </div>
   </div>
-
+  <script src="config3.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
-    const TIMEOUT_SESION = 180000;
+
+<script>
+
+const TIMEOUT_SESION = 18000; 
     const params = new URLSearchParams(window.location.search);
     const k = params.get('k') || params.get('token');
     if (!k) window.location.replace('index.html');
