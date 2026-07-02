@@ -459,6 +459,13 @@ body.tema-claro #btnTema {
         .payment-counter.pending {
             color: var(--error);
         }
+        
+        .payment-counter.clickable {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-style: dashed;
+            text-underline-offset: 4px;
+        }
 
         .submit-btn {
             width: 100%;
@@ -702,7 +709,7 @@ body.tema-claro #btnTema {
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
             z-index: 10005;
-            display: flex;
+            display: none; /* <--- ESTO ROMPE EL VIDRIO INVISIBLE */
             justify-content: center;
             align-items: center;
             opacity: 0;
@@ -744,7 +751,7 @@ body.tema-claro #btnTema {
             display: inline-block;
         }
 
-        /* --- ESTILOS NUEVOS PARA GRABADOR DE VOZ --- */
+        /* --- ESTILOS GRABADOR DE VOZ --- */
         @keyframes recordingPulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(255, 68, 68, 0); }
@@ -807,7 +814,7 @@ body.tema-claro #btnTema {
             <div id="resultadosBusqueda" class="search-results"></div>
         </div>
 
-        <div class="flex-row">
+        <div class="flex-row" id="selectoresPrincipales">
             <div class="form-group small-col"><label>Zona</label><select id="zona">
                     <option value="">Cargando...</option>
                 </select></div>
@@ -833,12 +840,15 @@ body.tema-claro #btnTema {
         <div id="nuevoClienteSection" class="hidden-section">
             <input type="text" id="nombreCliente" placeholder="Nombre Local / Cliente" style="margin-bottom:10px">
             <input type="text" id="nuevoCuit" placeholder="CUIT / DNI (Ej: 20-12345678-9)" style="margin-bottom:10px">
-            <select id="categoria" style="margin-bottom:10px">
-                <option value="USUARIO (PUBLICO)">USUARIO (PUBLICO)</option>
-                <option value="COMERCIO">COMERCIO</option>
-                <option value="SUBDISTRIBUIDOR">SUBDISTRIBUIDOR</option>
-                <option value="ROT. Y PAN.">ROT. Y PAN.</option>
+            
+            <select id="nuevaZona" style="margin-bottom:10px">
+                <option value="">Seleccione Zona (Obligatorio)...</option>
             </select>
+            
+            <select id="categoria" style="margin-bottom:10px">
+                <option value="">Seleccione Categoría (Obligatorio)...</option>
+            </select>
+            
             <input type="text" id="nuevaDireccion" placeholder="Dirección" style="margin-bottom:10px">
             <input type="tel" id="nuevoTelefono" placeholder="Teléfono" style="margin-bottom:10px">
             <input type="email" id="nuevoMail" placeholder="Email (Opcional)">
@@ -847,7 +857,7 @@ body.tema-claro #btnTema {
 
         <div id="seccionesOperativas" style="display:none;">
 
-            <div class="checkbox-item" id="chkVentaPlanta" style="background: rgba(0, 188, 212, 0.1); padding: 10px; border-radius: 10px; border: 1px dashed var(--info); margin-bottom: 15px;">
+            <div class="checkbox-item" id="chkVentaPlanta" style="background: rgba(0, 188, 212, 0.1); padding: 10px; border-radius: 10px; border: 1px dashed var(--info); margin-bottom: 15px; margin-top: 25px;">
                 <input type="checkbox" id="ventaPlanta">
                 <label for="ventaPlanta" style="color: var(--info) !important; font-weight: 800; font-size: 14px;">🏢 VENTA DIRECTA DESDE PLANTA</label>
             </div>
@@ -993,7 +1003,7 @@ body.tema-claro #btnTema {
             <div id="transferenciaInput" class="payment-input"><input type="text" id="montoTransferencia"
                     class="money-input" placeholder="Monto Transf."></div>
 
-            <div class="payment-counter pending" id="pagoEstado">INGRESE DATOS</div>
+            <div class="payment-counter pending" id="pagoEstado" onclick="autocompletarFaltante()">INGRESE DATOS</div>
 
             <div id="globalPinContainer"
                 style="display:none; margin-top: 15px; background: rgba(255, 215, 0, 0.1); padding: 10px; border-radius: 12px; border: 1px solid var(--accent);">
@@ -1038,30 +1048,51 @@ body.tema-claro #btnTema {
         window.addEventListener('pageshow', function (event) { if (event.persisted) window.location.reload(); actualizarIndicadorOffline(); });
 
         let clientesData = []; let preciosData = []; let zonasActivas = []; let clienteSeleccionado = null;
+        let comisionesData = []; 
         let sessionTimeout = 180;
         let idClienteSeleccionado = '';
         let deudasData = {};
+        let mediaRecorder= null;
+        let audioChunks= [];
+        let audioBase64= null;
+        let recordingTimer= null;
+        let recSeconds= 0;
 
-        // Variables Globales del Audio
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBase64 = null;
-        let recordingTimer;
-        let recSeconds = 120; // 2 minutos
+        function autocompletarFaltante() {
+            const el = document.getElementById('pagoEstado');
+            if (!el.classList.contains('clickable')) return;
+            
+            const faltante = Number(el.dataset.faltante);
+            if (!faltante || faltante <= 0) return;
 
-        // FUNCION CÁLCULO COMISIONES
-        function getComisionPorEnvase(categoria, tipoStr) {
-            const catNorm = normalizarCategoriaUI(categoria);
-            const tabla = {
-                'USUARIO (PUBLICO)': { '10': 1000, '15': 1500, '45': 2400 },
-                'COMERCIO': { '10': 500, '15': 750, '45': 1200 },
-                'ROT. Y PAN.': { '10': 500, '15': 750, '45': 1200 },
-                'SUBDISTRIBUIDOR': { '10': 250, '15': 400, '45': 500 }
-            };
-            return (tabla[catNorm] && tabla[catNorm][tipoStr]) ? tabla[catNorm][tipoStr] : 0;
+            const chkEfectivo = document.getElementById('pagoEfectivo');
+            const chkTransferencia = document.getElementById('pagoTransferencia');
+            const inputEfectivo = document.getElementById('montoEfectivo');
+            const inputTransferencia = document.getElementById('montoTransferencia');
+
+            let valEfec = parseM('montoEfectivo');
+            let valTransf = parseM('montoTransferencia');
+
+            if (chkEfectivo.checked && valEfec === 0 && (!chkTransferencia.checked || valTransf > 0)) {
+                inputEfectivo.value = faltante.toLocaleString('es-AR');
+            } else if (chkTransferencia.checked && valTransf === 0 && (!chkEfectivo.checked || valEfec > 0)) {
+                inputTransferencia.value = faltante.toLocaleString('es-AR');
+            } else if (chkEfectivo.checked && valEfec === 0 && chkTransferencia.checked && valTransf === 0) {
+                inputEfectivo.value = faltante.toLocaleString('es-AR');
+            }
+            actualizarTotales();
         }
 
-        // NUEVA FUNCIÓN PARA VALIDAR ACUERDOS COMERCIALES (FECHA)
+        function getComisionPorRango(precioUnitario, tipoStr) {
+            if (!comisionesData || comisionesData.length === 0) return 0;
+            const p = Number(precioUnitario) || 0;
+            const rango = comisionesData.find(r => p >= Number(r.RANGO_MENOR) && p <= Number(r.RANGO_MAYOR));
+            if (rango) {
+                return Number(rango[`COMISION_${tipoStr}`]) || 0;
+            }
+            return 0;
+        }
+
         function esAcuerdoVigente(fechaStr) {
             if (!fechaStr) return false;
             try {
@@ -1080,29 +1111,24 @@ body.tema-claro #btnTema {
             } catch(e) { return false; }
         }
 
-        // 1. EL CRONÓMETRO IMPLACABLE HÍBRIDO
-        let expireTime = Date.now() + 300000; // 5 minutos (300,000 ms)
+        let expireTime = Date.now() + 300000; 
         function startTimer() {
             const timerDisplay = document.getElementById('timerDisplay');
             
-            // Centralizamos la lógica de control para no repetir código (DRY)
             const verificarTiempo = () => {
                 const timeLeft = Math.floor((expireTime - Date.now()) / 1000);
                 
                 if (timeLeft <= 0) {
-                    window.location.replace('index.html'); // Te sacó del boliche
+                    window.location.replace('index.html'); 
                 } else if (timerDisplay) {
-                    // Solo actualiza lo cosmético si todavía hay tiempo
                     const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
                     const s = (timeLeft % 60).toString().padStart(2, '0');
                     timerDisplay.textContent = `${m}:${s}`;
                 }
             };
 
-            // 1. El reloj visual: Corre cada segundo (se duerme si te vas a otra pestaña)
             setInterval(verificarTiempo, 1000);
 
-            // 2. El Patovica: Salta instantáneamente cuando la pestaña vuelve a tener el foco
             document.addEventListener("visibilitychange", () => {
                 if (document.visibilityState === "visible") {
                     verificarTiempo(); 
@@ -1147,36 +1173,11 @@ body.tema-claro #btnTema {
 
         async function calentarGPS() {
             if (!navigator.geolocation) return;
-
-            try {
-                const perm = await navigator.permissions.query({ name: 'geolocation' });
-                if (perm.state === 'granted') {
-                    navigator.geolocation.getCurrentPosition(() => { }, () => { }, { enableHighAccuracy: true, maximumAge: 30000 });
-                    return;
-                }
-            } catch (e) { }
-
-            const overlay = document.getElementById('modalGPS');
-            const box = document.getElementById('modalGPSBox');
-
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'all';
-            box.style.transform = 'scale(1)';
-
+            // Calentamiento silencioso: si ya tiene permiso, lo toma. Si no, le pregunta al SO en segundo plano.
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    overlay.style.opacity = '0';
-                    box.style.transform = 'scale(0.9)';
-                    setTimeout(() => overlay.style.display = 'none', 400);
-                    showToast("📍 GPS Activado correctamente.", "success");
-                },
-                (err) => {
-                    overlay.style.opacity = '0';
-                    box.style.transform = 'scale(0.9)';
-                    setTimeout(() => overlay.style.display = 'none', 400);
-                    showToast("⚠️ GPS Denegado o sin señal. Se informará en auditoría.", "warning");
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+                () => { }, 
+                () => { }, 
+                { enableHighAccuracy: true, maximumAge: 30000, timeout: 5000 }
             );
         }
 
@@ -1230,13 +1231,25 @@ body.tema-claro #btnTema {
 
                 updateLoader("SINCRONIZANDO DB", "Descargando clientes y cuadro tarifario...");
                 const rDatos = await fetch(`${SCRIPT_URL}?action=getDatos&k=${k}`);
-                const dDatos = await rDatos.json(); clientesData = dDatos.clientes; preciosData = dDatos.precios;
+                const dDatos = await rDatos.json(); 
+                clientesData = dDatos.clientes; 
+                preciosData = dDatos.precios;
                 deudasData = dDatos.deudas || {};
+                comisionesData = dDatos.comisiones || []; 
 
                 updateLoader("CONFIGURANDO", "Procesando interfaz de usuario...");
 
                 const selZona = document.getElementById('zona'); selZona.innerHTML = '<option value="">Zona...</option>';
                 zonasActivas.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; selZona.appendChild(opt); });
+
+                const selNuevaZona = document.getElementById('nuevaZona'); 
+                selNuevaZona.innerHTML = '<option value="">Seleccione Zona (Obligatorio)...</option>';
+                zonasActivas.forEach(z => { const opt = document.createElement('option'); opt.value = z; opt.textContent = z; selNuevaZona.appendChild(opt); });
+
+                const selCat = document.getElementById('categoria');
+                selCat.innerHTML = '<option value="">Seleccione Categoría (Obligatorio)...</option>';
+                const categoriasUnicas = [...new Set(preciosData.map(p => p.categoria ? p.categoria.trim().toUpperCase() : ''))].filter(c => c !== '');
+                categoriasUnicas.forEach(c => { const opt = document.createElement('option'); opt.value = c; opt.textContent = c; selCat.appendChild(opt); });
 
                 cerrarLoader(); showToast('Sistema Sincronizado', 'success');
             } catch (e) { cerrarLoader(); showToast('Error cargando datos. Modo Offline activado.', 'error'); }
@@ -1247,9 +1260,6 @@ body.tema-claro #btnTema {
             setTimeout(() => { overlay.style.visibility = 'hidden'; overlay.style.display = 'none'; document.getElementById('formContainer').classList.remove('is-loading'); }, 150);
         }
 
-        // ==========================================
-        // AUTO-SELECCIÓN DE TEXTO (FOCO)
-        // ==========================================
         function aplicarAutoFoco() {
             document.querySelectorAll('input').forEach(input => {
                 input.addEventListener('focus', function() {
@@ -1263,9 +1273,6 @@ body.tema-claro #btnTema {
             });
         }
 
-        // ==========================================
-        // LOGICA DEL GRABADOR DE VOZ (MEJORADO)
-        // ==========================================
         function iniciarManejadorAudio() {
             const btnMic = document.getElementById('btnMic');
             const audioStatus = document.getElementById('audioStatus');
@@ -1301,14 +1308,14 @@ body.tema-claro #btnTema {
                         btnMic.innerHTML = '⏹️';
                         btnMic.classList.add('recording-pulse');
                         
-                        recSeconds = 120; // Empezar en 2 minutos (120s)
+                        recSeconds = 120; 
                         audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... 02:00</span>`;
                         recordingTimer = setInterval(() => {
                             recSeconds--;
                             let m = Math.floor(recSeconds / 60).toString().padStart(2, '0');
                             let s = (recSeconds % 60).toString().padStart(2, '0');
                             audioStatus.innerHTML = `<span style="color:var(--error); font-weight:bold;">Grabando... ${m}:${s}</span>`;
-                            if (recSeconds <= 0) btnMic.click(); // Corte a los 0 segundos
+                            if (recSeconds <= 0) btnMic.click(); 
                         }, 1000);
 
                     } catch (err) {
@@ -1347,16 +1354,15 @@ body.tema-claro #btnTema {
             if (clientesData.some(c => c.nombre.toLowerCase() === val)) showToast('⚠️ ATENCIÓN: Ya existe un cliente con este nombre en la base.', 'warning');
         });
 
-        // MODIFICACION: Retraso táctico para evitar parpadeos y problemas de foco con el DOM
         function pedirPinSiCorresponde(checkbox, inputId) {
             const input = document.getElementById(inputId);
-            verificarSiNecesitaPin(); // Actualiza DOM primero
+            verificarSiNecesitaPin(); 
             if (checkbox.checked) { 
                 input.removeAttribute('readonly'); 
                 setTimeout(() => {
                     input.focus(); 
                     input.select(); 
-                }, 150); // Le damos 150ms al DOM para reaccionar antes de robar el foco
+                }, 150); 
             }
             else { 
                 input.setAttribute('readonly', true); 
@@ -1364,7 +1370,6 @@ body.tema-claro #btnTema {
             }
         }
 
-        // MODIFICACION: Retraso táctico para el control manual de envases
         function togglePreciosEnvasesManuales(checkbox) {
             const inputs = ['precioVentaEnv10', 'precioVentaEnv15', 'precioVentaEnv45'];
             verificarSiNecesitaPin();
@@ -1412,16 +1417,20 @@ body.tema-claro #btnTema {
         }
         document.addEventListener('click', (e) => { if (!buscador.contains(e.target)) resultadosBox.style.display = 'none'; });
 
+        // MOTOR DE NORMALIZACIÓN MEJORADO CON SOPORTE COMPATIBLE E INTELIGENTE
         function normalizarCategoriaUI(c) {
-            if (!c) return 'USUARIO (PUBLICO)'; const u = c.toUpperCase();
+            if (!c) return 'USUARIO (PUBLICO)';
+            const u = c.trim().toUpperCase();
+            if (u === 'PLANTA SIN COMISION') return 'PLANTA SIN COMISION';
             if (u.includes('ROT') || u.includes('PAN')) return 'ROT. Y PAN.';
-            if (u.includes('SUB')) return 'SUBDISTRIBUIDOR'; if (u.includes('COM')) return 'COMERCIO'; return 'USUARIO (PUBLICO)';
+            if (u.includes('SUB')) return 'SUBDISTRIBUIDOR';
+            if (u.includes('COMERCIO') || u === 'COM') return 'COMERCIO';
+            return 'USUARIO (PUBLICO)';
         }
 
-        function obtenerCat() { return normalizarCategoriaUI(document.getElementById('nuevoCliente').checked ? document.getElementById('categoria').value : (clienteSeleccionado ? clienteSeleccionado.categoria : 'USUARIO (PUBLICO)')); }
+        function obtenerCat() { return normalizarCategoriaUI(document.getElementById('nuevoCliente').checked ? document.getElementById('categoria').value : (clienteSeleccionado ? clienteSeleccionado.categoria : '')); }
         function obtenerPrecioEnvase(cat, tipo) { const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === tipo); return p ? p.precio : 0; }
 
-        // CEREBRO DE PRECIOS ACTUALIZADO (REGLA DE ACUERDOS)
         function actualizarPreciosAutomaticos() {
             const cat = obtenerCat();
             const tieneAcuerdo = clienteSeleccionado && esAcuerdoVigente(clienteSeleccionado.vencimiento);
@@ -1430,12 +1439,10 @@ body.tema-claro #btnTema {
                 if (!document.getElementById(`manualPriceCheck${i + 1}`).checked) {
                     let precioFinal = 0;
                     
-                    // 1. Verificamos si hay acuerdo comercial vigente para este producto
                     if (tieneAcuerdo && clienteSeleccionado[`p_esp_${t}`]) {
                         precioFinal = parseM(clienteSeleccionado[`p_esp_${t}`].toString());
                     }
                     
-                    // 2. Si no hay acuerdo (o dejaron ese campo vacío), aplica precio de lista normal
                     if (precioFinal === 0) {
                         const p = preciosData.find(x => normalizarCategoriaUI(x.categoria) === cat && x.tipo === t.toString());
                         precioFinal = p ? p.precio : 0;
@@ -1449,12 +1456,10 @@ body.tema-claro #btnTema {
                 [10, 15, 45].forEach(t => {
                     let precioEnv = 0;
                     
-                    // 1. Verificamos acuerdo comercial vigente para envases
                     if (tieneAcuerdo && clienteSeleccionado[`p_esp_env_${t}`]) {
                         precioEnv = parseM(clienteSeleccionado[`p_esp_env_${t}`].toString());
                     }
                     
-                    // 2. Precio de lista por defecto
                     if (precioEnv === 0) {
                         precioEnv = obtenerPrecioEnvase(cat, `ENV${t}`);
                     }
@@ -1471,7 +1476,7 @@ body.tema-claro #btnTema {
                 const el = document.getElementById(idOrValue);
                 v = el.value !== undefined ? el.value : el.textContent;
             } else {
-                v = idOrValue; // Se pasó el valor directamente
+                v = idOrValue; 
             }
             
             if (!v) return 0;
@@ -1493,24 +1498,20 @@ body.tema-claro #btnTema {
             verificarSiNecesitaPin(); actualizarTotales();
         });
 
-        // MODIFICACIÓN: Prevención de colapso de teclado (Gboard Bug)
         document.querySelectorAll('input, select').forEach(el => { 
             if (el.classList.contains('money-input')) {
-                // Formateo visual seguro AL SALIR del campo, no interrumpe el cursor del teclado
                 el.addEventListener('blur', function() {
                     let v = this.value.replace(/\D/g, ""); 
                     this.value = v ? parseInt(v).toLocaleString('es-AR') : "";
                     actualizarTotales();
                 });
                 
-                // Mientras se escribe, solo se limpian letras extrañas, sin inyectar puntos
                 el.oninput = () => { 
                     let clean = el.value.replace(/[^\d.,]/g, "");
                     if (el.value !== clean) el.value = clean;
                     actualizarTotales(); 
                 };
             } else {
-                // Resto de los inputs normales
                 el.oninput = () => actualizarTotales(); 
             }
         });
@@ -1551,7 +1552,6 @@ body.tema-claro #btnTema {
                     rowEnv.style.display = 'flex'; rowEnv.querySelector('span:first-child').textContent = "Subtotal Envases:";
                 } else if (modo === 'consignacion') {
                     const cat = obtenerCat();
-                    // Para deuda en consignación se usa SIEMPRE precio de lista oficial, no importa si tiene acuerdo.
                     v_env = ((parseInt(document.getElementById('comodato10').value) || 0) * obtenerPrecioEnvase(cat, 'ENV10')) +
                         ((parseInt(document.getElementById('comodato15').value) || 0) * obtenerPrecioEnvase(cat, 'ENV15')) +
                         ((parseInt(document.getElementById('comodato45').value) || 0) * obtenerPrecioEnvase(cat, 'ENV45'));
@@ -1587,22 +1587,28 @@ body.tema-claro #btnTema {
             const isPlanta = document.getElementById('ventaPlanta').checked;
             
             const hayVenta = objetivo > 0 || document.getElementById('entregaGas').checked || document.getElementById('ventaEnvases').checked || document.getElementById('pagoDeuda').checked || isPlanta;
-            const clienteSeleccionado = document.getElementById('cliente').value; const esNuevo = document.getElementById('nuevoCliente').checked;
+            const selectClienteValue = document.getElementById('cliente').value; const esNuevo = document.getElementById('nuevoCliente').checked;
 
-            if (hayVenta && !clienteSeleccionado && !esNuevo) { el.textContent = "FALTA CLIENTE"; el.className = "payment-counter pending"; btn.disabled = true; return; }
+            if (hayVenta && !selectClienteValue && !esNuevo) { el.textContent = "FALTA CLIENTE"; el.className = "payment-counter pending"; el.classList.remove('clickable'); btn.disabled = true; return; }
 
-            // NUEVA VALIDACIÓN ALTA CLIENTE OBLIGATORIA
+            // VALIDACIÓN ALTA CLIENTE OBLIGATORIA CON ZONA Y CATEGORÍA
             if (esNuevo) {
                 const nom = document.getElementById('nombreCliente').value.trim();
                 const dir = document.getElementById('nuevaDireccion').value.trim();
                 const tel = document.getElementById('nuevoTelefono').value.trim();
+                const nZona = document.getElementById('nuevaZona').value;
+                const nCat = document.getElementById('categoria').value;
+
                 document.getElementById('nombreCliente').classList.toggle('input-error', !nom);
                 document.getElementById('nuevaDireccion').classList.toggle('input-error', !dir);
                 document.getElementById('nuevoTelefono').classList.toggle('input-error', !tel);
+                document.getElementById('nuevaZona').classList.toggle('input-error', !nZona);
+                document.getElementById('categoria').classList.toggle('input-error', !nCat);
                 
-                if (!nom || !dir || !tel) {
+                if (!nom || !dir || !tel || !nZona || !nCat) {
                     el.textContent = "FALTAN DATOS DEL CLIENTE";
                     el.className = "payment-counter pending";
+                    el.classList.remove('clickable');
                     btn.disabled = true;
                     return;
                 }
@@ -1611,8 +1617,8 @@ body.tema-claro #btnTema {
             const hayGasto = document.getElementById('declaracionGastos').checked; const montoGasto = parseM('montoGastos'); const descGasto = document.getElementById('descripcionGastos').value.trim();
             if (hayGasto) {
                 const inputDesc = document.getElementById('descripcionGastos');
-                if (!descGasto) { el.textContent = "FALTA MOTIVO GASTO"; el.className = "payment-counter pending"; inputDesc.classList.add('input-error'); btn.disabled = true; return; } else { inputDesc.classList.remove('input-error'); }
-                if (montoGasto <= 0) { el.textContent = "INGRESE MONTO GASTO"; el.className = "payment-counter pending"; btn.disabled = true; return; }
+                if (!descGasto) { el.textContent = "FALTA MOTIVO GASTO"; el.className = "payment-counter pending"; el.classList.remove('clickable'); inputDesc.classList.add('input-error'); btn.disabled = true; return; } else { inputDesc.classList.remove('input-error'); }
+                if (montoGasto <= 0) { el.textContent = "INGRESE MONTO GASTO"; el.className = "payment-counter pending"; el.classList.remove('clickable'); btn.disabled = true; return; }
             }
 
             let pagado = 0; if (document.getElementById('pagoEfectivo').checked) pagado += parseM('montoEfectivo'); if (document.getElementById('pagoTransferencia').checked) pagado += parseM('montoTransferencia');
@@ -1631,10 +1637,22 @@ body.tema-claro #btnTema {
                     el.textContent = "✓ LISTO PARA GUARDAR"; 
                     el.className = "payment-counter complete";
                 }
+                el.classList.remove('clickable');
                 btn.disabled = false;
             } else if (!hayVenta && !hayGasto) {
-                el.textContent = "INGRESE DATOS"; el.className = "payment-counter pending"; btn.disabled = true;
-            } else { el.textContent = dif > 0 ? `FALTAN: $${dif.toLocaleString('es-AR')}` : `SOBRAN: $${Math.abs(dif).toLocaleString('es-AR')}`; el.className = "payment-counter pending"; btn.disabled = true; }
+                el.textContent = "INGRESE DATOS"; el.className = "payment-counter pending"; el.classList.remove('clickable'); btn.disabled = true;
+            } else { 
+                if (dif > 0) {
+                    el.textContent = `FALTAN: $${dif.toLocaleString('es-AR')}`; 
+                    el.className = "payment-counter pending clickable"; 
+                    el.dataset.faltante = dif; 
+                } else {
+                    el.textContent = `SOBRAN: $${Math.abs(dif).toLocaleString('es-AR')}`; 
+                    el.className = "payment-counter pending"; 
+                    el.classList.remove('clickable');
+                }
+                btn.disabled = true; 
+            }
         }
 
         document.getElementById('zona').onchange = function () {
@@ -1700,7 +1718,6 @@ body.tema-claro #btnTema {
             document.getElementById('tipoClienteSpan').textContent = clienteSeleccionado.categoria;
             document.getElementById('tipoClienteDisplay').style.display = 'block';
 
-            // CONTROL DEL CARTEL DE ACUERDO VIGENTE
             if (esAcuerdoVigente(clienteSeleccionado.vencimiento)) {
                 document.getElementById('acuerdoDisplay').style.display = 'block';
             } else {
@@ -1743,24 +1760,35 @@ body.tema-claro #btnTema {
         };
 
         document.getElementById('nuevoCliente').onchange = function () {
-            document.getElementById('nuevoClienteSection').style.display = this.checked ? 'block' : 'none';
-            if (this.checked) {
+            const isChecked = this.checked;
+            document.getElementById('nuevoClienteSection').style.display = isChecked ? 'block' : 'none';
+            document.getElementById('selectoresPrincipales').style.display = isChecked ? 'none' : 'flex';
+
+            if (isChecked) {
                 document.getElementById('cliente').value = "";
                 document.getElementById('clientInfoBox').style.display = 'none';
                 document.getElementById('tipoClienteDisplay').style.display = 'none';
-                document.getElementById('acuerdoDisplay').style.display = 'none'; // Se apaga si es nuevo
+                document.getElementById('acuerdoDisplay').style.display = 'none';
                 document.getElementById('pagoDeudaContainer').style.display = 'none';
                 document.getElementById('pagoDeuda').checked = false;
                 document.getElementById('sectionPagoDeuda').style.display = 'none';
                 idClienteSeleccionado = '';
-            } else {
-                // Limpiamos los errores si desmarca la casilla
+                
                 document.getElementById('nombreCliente').classList.remove('input-error');
                 document.getElementById('nuevaDireccion').classList.remove('input-error');
                 document.getElementById('nuevoTelefono').classList.remove('input-error');
+                document.getElementById('nuevaZona').classList.remove('input-error');
+                document.getElementById('categoria').classList.remove('input-error');
+            } else {
+                document.getElementById('nombreCliente').classList.remove('input-error');
+                document.getElementById('nuevaDireccion').classList.remove('input-error');
+                document.getElementById('nuevoTelefono').classList.remove('input-error');
+                document.getElementById('nuevaZona').classList.remove('input-error');
+                document.getElementById('categoria').classList.remove('input-error');
             }
             checkVisibilidadCascada(); actualizarPreciosAutomaticos();
         };
+        
         document.getElementById('categoria').onchange = () => actualizarPreciosAutomaticos();
 
         function toggleMutuallyExclusive(clickedId) {
@@ -1856,17 +1884,50 @@ body.tema-claro #btnTema {
                 return;
             }
 
-            const btn = document.getElementById('btnGuardar'); const pinContainer = document.getElementById('globalPinContainer'); const pinInput = document.getElementById('globalPinInput'); let pinParaEnviar = "";
-            if (pinContainer.style.display !== 'none') { const val = pinInput.value.trim(); if (val.length < 4) { showToast("⚠️ FALTA AUTORIZACIÓN: Ingrese el PIN de 4 dígitos.", "error"); pinInput.focus(); return; } pinParaEnviar = val; }
+            const btn = document.getElementById('btnGuardar'); 
+            const pinContainer = document.getElementById('globalPinContainer'); 
+            const pinInput = document.getElementById('globalPinInput'); 
+            let pinParaEnviar = "";
+            
+            if (pinContainer.style.display !== 'none') { 
+                const val = pinInput.value.trim(); 
+                if (val.length < 4) { 
+                    showToast("⚠️ FALTA AUTORIZACIÓN: Ingrese el PIN de 4 dígitos.", "error"); 
+                    pinInput.focus(); 
+                    return; 
+                } 
+                pinParaEnviar = val; 
+            }
             
             btn.disabled = true; 
-            btn.textContent = "PROCESANDO OPERACIÓN...";
+            btn.textContent = "OBTENIENDO GPS...";
 
             const ubicacionActual = await obtenerUbicacionFantasma();
 
             if (ubicacionActual.includes("SIN_GPS")) {
-                showToast("⚠️ Venta guardada SIN UBICACIÓN GPS. Motivo: " + ubicacionActual, "warning");
+                btn.disabled = false;
+                btn.textContent = "GUARDAR REGISTRO";
+                
+                const overlay = document.getElementById('modalGPS');
+                const box = document.getElementById('modalGPSBox');
+                overlay.style.display = 'flex';
+                setTimeout(() => { 
+                    overlay.style.opacity = '1'; 
+                    overlay.style.pointerEvents = 'all';
+                    box.style.transform = 'scale(1)'; 
+                }, 10);
+                
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    box.style.transform = 'scale(0.9)';
+                    setTimeout(() => overlay.style.display = 'none', 400);
+                }, 5000);
+                
+                showToast("⛔ SIN GPS NO PODÉS GUARDAR. Activá la ubicación.", "error");
+                return;
             }
+
+            btn.textContent = "PROCESANDO OPERACIÓN...";
 
             const cat = obtenerCat(); const esNuevo = document.getElementById('nuevoCliente').checked; const esGasto = document.getElementById('declaracionGastos').checked; const pfx = { 'SUBDISTRIBUIDOR': 'VS', 'COMERCIO': 'VC', 'ROT. Y PAN.': 'VRP', 'USUARIO (PUBLICO)': 'VU' }[cat] || 'VU';
             let nombreC = esNuevo ? document.getElementById('nombreCliente').value : (clienteSeleccionado ? clienteSeleccionado.nombre : ''); if (!nombreC && esGasto) nombreC = 'GASTO'; 
@@ -1912,10 +1973,9 @@ body.tema-claro #btnTema {
             let objetivoGas = (q10 * parseM('precioGarrafa1')) + (q15 * parseM('precioGarrafa2')) + (q45 * parseM('precioGarrafa3'));
             let deudaGeneradaPlanta = (isPlanta && objetivoGas > pagado) ? (objetivoGas - pagado) : 0;
 
-            // CÁLCULO DE COMISIÓN EXACTA
-            const comisionTotal = (q10 * getComisionPorEnvase(cat, '10')) +
-                                  (q15 * getComisionPorEnvase(cat, '15')) +
-                                  (q45 * getComisionPorEnvase(cat, '45'));
+            const comisionTotal = (q10 * getComisionPorRango(parseM('precioGarrafa1'), '10')) +
+                                  (q15 * getComisionPorRango(parseM('precioGarrafa2'), '15')) +
+                                  (q45 * getComisionPorRango(parseM('precioGarrafa3'), '45'));
 
             const payload = {
                 action: 'guardarregistro', k: k, USUARIO: document.getElementById('welcomeMessage').textContent.replace('Usuario: ','').toLowerCase().trim(),
@@ -1923,7 +1983,7 @@ body.tema-claro #btnTema {
                 'E$': parseM('montoEfectivo'), 'T$': parseM('montoTransferencia'), TOTAL: pagado,
                 G: esGasto ? document.getElementById('descripcionGastos').value : '', GASTO_TOTAL: esGasto ? parseM('montoGastos') : 0,
                 declaracionGastos: esGasto, garrafas: JSON.stringify(garrafasArray), pin: pinParaEnviar, esClienteNuevo: esNuevo, clienteNombre: esNuevo ? document.getElementById('nombreCliente').value : '',
-                clienteZona: document.getElementById('zona').value, clienteCategoria: cat, clienteDireccion: document.getElementById('nuevaDireccion').value, clienteTelefono: document.getElementById('nuevoTelefono').value, clienteMail: document.getElementById('nuevoMail').value,
+                clienteZona: esNuevo ? document.getElementById('nuevaZona').value : document.getElementById('zona').value, clienteCategoria: cat, clienteDireccion: document.getElementById('nuevaDireccion').value, clienteTelefono: document.getElementById('nuevoTelefono').value, clienteMail: document.getElementById('nuevoMail').value,
                 operacionEnvase: modoEnv,
                 ventaDesdePlanta: isPlanta, deudaGeneradaPlanta: deudaGeneradaPlanta,
                 ALL10: q10, ALL15: q15, ALL45: q45, 
@@ -1934,7 +1994,7 @@ body.tema-claro #btnTema {
                 ID_CLIENTE: idClienteSeleccionado,
                 cuit_dni: esNuevo ? document.getElementById('nuevoCuit').value : '',
                 UBICACION: ubicacionActual,
-                COMISION_TOTAL: comisionTotal // ACÁ VIAJA LA COMISIÓN
+                COMISION_TOTAL: comisionTotal
             };
 
             if (!isPlanta && operandoEnvase && modoEnv === 'venta') {
@@ -1980,7 +2040,7 @@ body.tema-claro #btnTema {
                         if (jAudio.status === 'success') {
                             const notaActual = payload.G || '';
                             payload.G = notaActual ? `${notaActual} | Audio: ${jAudio.url}` : `Audio: ${jAudio.url}`;
-                            payload.AUDIO_URL = jAudio.url; // SE MANDA LIMPIO ACÁ PARA EL HIPERVÍNCULO
+                            payload.AUDIO_URL = jAudio.url; 
                         } else {
                             showToast("⚠️ Falló la subida de audio: " + jAudio.message, "warning");
                         }
@@ -2045,7 +2105,7 @@ body.tema-claro #btnTema {
   <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
   <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
   <p style="max-width:400px; color:var(--dim); font-family:'Inter', sans-serif; margin-top:10px;">
-    Estamos procesando los cierres y auditorías del día. <br>
+    Estamos procesando los closures y auditorías del día. <br>
     El sistema volverá a estar operativo a las <b>00:06 AM</b>.
   </p>
   <div style="margin-top:30px; padding:10px 20px; border:1px solid var(--border); border-radius:4px; font-size:12px; color:var(--warn);">
