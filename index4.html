@@ -2152,6 +2152,15 @@ body.tema-claro #btnTema {
   controlPatovica();
   setInterval(controlPatovica, 30000);
 </script>
+    
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+    
 </body>
 
 </html>
