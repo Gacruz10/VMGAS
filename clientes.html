@@ -319,6 +319,12 @@ window.addEventListener('pageshow', (e) => { if (e.persisted) window.location.re
 async function validarSesion() {
   try {
     document.body.style.opacity = 1;
+    
+    if (!navigator.onLine) {
+        iniciarCargaDatos();
+        return;
+    }
+
     toggleLoader(true, "VERIFICANDO SESIÓN...");
     
     const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
@@ -377,6 +383,7 @@ function esAcuerdoVigente(fechaStr) {
 // Obtener opciones desde la hoja DATOS (Backend)
 async function obtenerOpcionesBackend() {
     try {
+        if (!navigator.onLine) throw new Error("Offline");
         const r = await fetch(`${API}?action=getoptions`);
         const d = await r.json();
         
@@ -391,7 +398,7 @@ async function obtenerOpcionesBackend() {
 }
 
 async function iniciarCargaDatos() {
-    toggleLoader(true, "DESCARGANDO CLIENTES...");
+    toggleLoader(true, "CARGANDO CLIENTES...");
     
     // 1. Primero traemos las opciones
     await obtenerOpcionesBackend();
@@ -513,13 +520,50 @@ function sync(i, el){
 
 async function loadClientes(){
   try {
-    const r = await fetch(`${API}?action=listclientes`);
-    const j = await r.json();
-    rows = j.clientes || [];
-    render();
+    // --- INICIO LÓGICA OFFLINE-FIRST ---
+    if (!navigator.onLine) {
+        const cache = localStorage.getItem('vm_clientes_data');
+        if (cache) { 
+            rows = JSON.parse(cache); 
+            render(); 
+            showToast('Trabajando sin conexión (Caché)', 'info'); 
+            return; 
+        }
+    } else {
+        const rTs = await fetch(`${API}?action=gettimestamps`, { method: 'POST' }); // <-- CORRECCIÓN ACÁ (POST)
+        const tsData = await rTs.json();
+        const serverTs = tsData.TS_CLIENTES;
+        const localTs = localStorage.getItem('TS_CLIENTES');
+        
+        if (serverTs && localTs && serverTs === localTs) {
+            const cache = localStorage.getItem('vm_clientes_data');
+            if (cache) { 
+                rows = JSON.parse(cache); 
+                render(); 
+                return; 
+            }
+        }
+        
+        const r = await fetch(`${API}?action=listclientes`);
+        const j = await r.json();
+        rows = j.clientes || [];
+        
+        localStorage.setItem('vm_clientes_data', JSON.stringify(rows));
+        if (serverTs) localStorage.setItem('TS_CLIENTES', serverTs);
+        
+        render();
+        return;
+    }
   } catch(e) {
-    showToast("Error de conexión al cargar clientes", "error");
-    grid.innerHTML = '<div style="text-align:center; color:var(--error);">Error de conexión</div>';
+    const cache = localStorage.getItem('vm_clientes_data');
+    if (cache) { 
+        rows = JSON.parse(cache); 
+        render(); 
+        showToast('Error de red. Usando caché local.', 'warning'); 
+    } else {
+        showToast("Error de conexión al cargar clientes", "error");
+        grid.innerHTML = '<div style="text-align:center; color:var(--error);">Error de conexión</div>';
+    }
   }
 }
 
@@ -534,7 +578,6 @@ function filter(){
   const term = txtBuscar.value.toLowerCase().trim();
   const cards = grid.querySelectorAll('.card');
   cards.forEach(card => {
-    // Buscamos en inputs y en selects
     const allText = Array.from(card.querySelectorAll('input, select')).map(i => i.value).join(' ').toLowerCase();
     card.style.display = allText.includes(term) ? '' : 'none';
   });
@@ -543,11 +586,9 @@ function filter(){
 // ---------------- MODAL LOGIC ----------------
 
 function initFormLogic() {
-    // Llenar los selects del Modal con las mismas opciones globales
     llenarSelect(document.getElementById('newZona'), GLOBAL_ZONAS);
     llenarSelect(document.getElementById('newCategoria'), GLOBAL_CATEGORIAS);
     
-    // Validación continua
     const modal = document.getElementById('modalNuevo');
     const inputs = modal.querySelectorAll('input, select');
     inputs.forEach(i => i.addEventListener('input', validateModal));
@@ -555,8 +596,8 @@ function initFormLogic() {
 
 function validateModal() {
     const nombre = document.getElementById('newNombre').value.trim();
-    const zona = document.getElementById('newZona').value; // Valor del select
-    const cat = document.getElementById('newCategoria').value; // Valor del select
+    const zona = document.getElementById('newZona').value; 
+    const cat = document.getElementById('newCategoria').value; 
     const dir = document.getElementById('newDireccion').value.trim();
     const tel = document.getElementById('newTelefono').value.trim();
     
@@ -566,7 +607,6 @@ function validateModal() {
 
 function abrirModal() {
     document.getElementById('modalNuevo').style.display = 'flex';
-    // Limpiar campos
     document.querySelectorAll('#modalNuevo input').forEach(i => i.value = '');
     document.getElementById('newZona').value = "";
     document.getElementById('newCategoria').value = "";
@@ -580,7 +620,6 @@ function cerrarModal() {
 
 document.getElementById('btnAddClient').onclick = () => {
     const newClient = {
-        // Al crear uno nuevo, no le mandamos ID. El servidor se encarga (Codigo.gs - agregarNuevoCliente)
         id_cliente: '',
         cuit_dni: '', 
         nombre: document.getElementById('newNombre').value.trim().toUpperCase(),
@@ -589,13 +628,11 @@ document.getElementById('btnAddClient').onclick = () => {
         direccion: document.getElementById('newDireccion').value.trim().toUpperCase(),
         telefono: document.getElementById('newTelefono').value.trim(),
         mail: document.getElementById('newMail').value.trim().toLowerCase(),
-        // NUEVAS COLUMNAS (Vacías al crear)
         p_esp_10: '', p_esp_15: '', p_esp_45: '',
         p_esp_env_10: '', p_esp_env_15: '', p_esp_env_45: '',
         vencimiento: ''
     };
     
-    // Agregamos al principio
     rows.unshift(newClient);
     render();
     cerrarModal();
@@ -616,9 +653,14 @@ async function save(){
   
   try {
     await fetch(API, {method: 'POST', body});
+    
+    // --- CORRECCIÓN ACÁ (POST) ---
+    await fetch(`${API}?action=marcarupdate&clave=TS_CLIENTES`, { method: 'POST' });
+    localStorage.setItem('vm_clientes_data', JSON.stringify(rows));
+    localStorage.setItem('TS_CLIENTES', new Date().getTime().toString()); 
+
     toggleLoader(true, "¡BASE ACTUALIZADA!", true);
     
-    // REDIRECCIÓN SOLICITADA
     setTimeout(() => {
         window.location.replace(`inicio.html?k=${k}`);
     }, 1000);

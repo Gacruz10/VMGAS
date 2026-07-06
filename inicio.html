@@ -354,12 +354,49 @@ window.addEventListener('pageshow', function(event) {
   if (event.persisted) window.location.reload();
 });
 
+// ================= VIGILANCIA SILENCIOSA (EL PATOVICA INTERNO) =================
+async function verificarSeguridadSilenciosa() {
+    if (!navigator.onLine) return; // Si no hay internet, confiamos en la caché.
+    try {
+        const r = await fetch(`${API}?action=gettimestamps`); // <-- CAMBIO QUIRÚRGICO ACÁ
+        const data = await r.json();
+        
+        if (data.status === 'success' && data.TS_USUARIOS) {
+            const localTS = localStorage.getItem('TS_USUARIOS');
+            if (!localTS) {
+                localStorage.setItem('TS_USUARIOS', data.TS_USUARIOS);
+            } else if (localTS !== data.TS_USUARIOS) {
+                // ALERTA: El administrador modificó los usuarios o contraseñas.
+                // Aquí SÍ destruimos la bóveda completa por seguridad.
+                localStorage.clear();
+                showToast("⚠️ SEGURIDAD: Se actualizaron los accesos. Por favor, vuelva a iniciar sesión.", "error");
+                setTimeout(() => window.location.replace('index.html'), 2500);
+            }
+        }
+    } catch (e) {
+        console.log("No se pudo verificar versiones silenciosamente.");
+    }
+}
+
 // ================= LÓGICA PRINCIPAL =================
 let pinReal = null;
 
 async function iniciarSesion() {
     try {
         document.body.style.opacity = 1;
+        
+        // Si estamos offline, cargamos el menú asumiendo que el token del index era válido.
+        if (!navigator.onLine) {
+            const usuarioGuardado = localStorage.getItem('vm_usuario') || 'USUARIO';
+            // Pasamos un objeto perms vacío o por defecto si quisieras manejar permisos offline, 
+            // pero lo más seguro es usar los que se puedan guardar en caché si existieran.
+            // Para mantener compatibilidad, habilitamos todo temporalmente o lo que requiera el rol.
+            // Por ahora, asumimos que tiene los permisos básicos (puedes ajustar esto si guardas permisos en local).
+            renderizarInterfaz(usuarioGuardado, { formulario: true, clientes: false }); 
+            showToast("MODO OFFLINE", "warning");
+            return;
+        }
+
         toggleLoader(true, "VERIFICANDO CREDENCIALES...");
         
         const fd = new FormData();
@@ -372,6 +409,7 @@ async function iniciarSesion() {
         if (data.status === 'success') {
             renderizarInterfaz(data.nombre, data.perms);
             buscarPin();
+            verificarSeguridadSilenciosa(); // Ejecutamos la vigilancia de versiones
         } else {
             throw new Error();
         }
@@ -430,8 +468,8 @@ function renderizarInterfaz(nombre, perms) {
     };
 
     // VISIBILIDAD DE LOS MÓDULOS SEGÚN PERMISOS
-    show('tileFormulario',  p.formulario);
-    show('tileMiCaja',      p.formulario); // Si tiene permiso para vender, tiene su caja.
+    show('tileFormulario',  p.formulario !== false); // Default true for offline form access
+    show('tileMiCaja',      p.formulario !== false); 
     show('tileClientes',    p.clientes);
     show('tilePrecios',     p.precios);
     show('tileUsuarios',    p.usuarios);
@@ -472,6 +510,7 @@ function navegar(pagina) {
 
 function expulsar() {
     sessionStorage.clear();
+    // NOTA: NO borramos localStorage para permitir reingreso offline como "Bloqueo de Pantalla".
     window.location.replace('index.html');
 }
 

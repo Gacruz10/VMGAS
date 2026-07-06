@@ -226,6 +226,16 @@ let preciosModificados = {};
 async function init() {
     try {
         document.body.style.opacity = 1;
+        
+        // --- INICIO LÓGICA OFFLINE ---
+        if (!navigator.onLine) {
+            toggleLoader(true, "ARMANDO TARJETAS (OFFLINE)...");
+            await cargarOpciones();
+            await cargarPrecios();
+            return;
+        }
+        // --- FIN LÓGICA OFFLINE ---
+
         toggleLoader(true, "VERIFICANDO SESIÓN...");
         const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
         const r = await fetch(API, { method:'POST', body:fd });
@@ -240,24 +250,86 @@ async function init() {
 
 async function cargarOpciones() {
     try {
+        if (!navigator.onLine) throw new Error("Offline");
         const r = await fetch(`${API}?action=getoptions`);
         const d = await r.json();
+        
+        // Guardamos las opciones en caché por si perdemos señal
+        localStorage.setItem('vm_precios_opciones', JSON.stringify(d));
+        
         const dlCat = document.getElementById('listaCategorias');
         const dlProd = document.getElementById('listaProductos');
         dlCat.innerHTML = ''; d.categorias.forEach(c => dlCat.innerHTML += `<option value="${c}">`);
         dlProd.innerHTML = ''; d.productos.forEach(p => dlProd.innerHTML += `<option value="${p}">`);
-    } catch(e) { console.error(e); }
+    } catch(e) { 
+        // Fallback a caché local
+        const cache = localStorage.getItem('vm_precios_opciones');
+        if (cache) {
+            const d = JSON.parse(cache);
+            const dlCat = document.getElementById('listaCategorias');
+            const dlProd = document.getElementById('listaProductos');
+            dlCat.innerHTML = ''; d.categorias.forEach(c => dlCat.innerHTML += `<option value="${c}">`);
+            dlProd.innerHTML = ''; d.productos.forEach(p => dlProd.innerHTML += `<option value="${p}">`);
+        }
+    }
 }
 
 async function cargarPrecios() {
     try {
-        const r = await fetch(`${API}?action=listprecios`);
-        const d = await r.json();
-        preciosData = d.precios || [];
-        preciosOriginales = {}; preciosModificados = {};
-        renderCards();
-        toggleLoader(false);
-    } catch(e) { toggleLoader(false); showToast("Error de conexión", "error"); }
+        // --- INICIO LÓGICA OFFLINE-FIRST ---
+        if (!navigator.onLine) {
+            const cache = localStorage.getItem('vm_precios_data');
+            if (cache) { 
+                preciosData = JSON.parse(cache); 
+                preciosOriginales = {}; preciosModificados = {};
+                renderCards(); 
+                toggleLoader(false);
+                showToast('Trabajando sin conexión (Caché)', 'info'); 
+                return; 
+            }
+        } else {
+            const rTs = await fetch(`${API}?action=gettimestamps`, { method: 'POST' });
+            const tsData = await rTs.json();
+            const serverTs = tsData.TS_PRECIOS;
+            const localTs = localStorage.getItem('TS_PRECIOS');
+            
+            if (serverTs && localTs && serverTs === localTs) {
+                const cache = localStorage.getItem('vm_precios_data');
+                if (cache) { 
+                    preciosData = JSON.parse(cache); 
+                    preciosOriginales = {}; preciosModificados = {};
+                    renderCards(); 
+                    toggleLoader(false);
+                    return; 
+                }
+            }
+            
+            const r = await fetch(`${API}?action=listprecios`);
+            const d = await r.json();
+            preciosData = d.precios || [];
+            
+            localStorage.setItem('vm_precios_data', JSON.stringify(preciosData));
+            if (serverTs) localStorage.setItem('TS_PRECIOS', serverTs);
+            
+            preciosOriginales = {}; preciosModificados = {};
+            renderCards();
+            toggleLoader(false);
+            return;
+        }
+        // --- FIN LÓGICA OFFLINE-FIRST ---
+    } catch(e) { 
+        const cache = localStorage.getItem('vm_precios_data');
+        if (cache) { 
+            preciosData = JSON.parse(cache); 
+            preciosOriginales = {}; preciosModificados = {};
+            renderCards(); 
+            toggleLoader(false);
+            showToast('Error de red. Usando caché local.', 'warning'); 
+        } else {
+            toggleLoader(false); 
+            showToast("Error de conexión", "error"); 
+        }
+    }
 }
 
 // ORDENADOR LÓGICO DE TAMAÑOS (Para que siempre salga 10 - 15 - 45 en ese orden)
@@ -364,8 +436,16 @@ document.getElementById('btnGuardarLote').onclick = async () => {
             return fetch(API, { method:'POST', body:fd }).then(r => r.json());
         });
         await Promise.all(promesas);
+        
+        // --- INICIO TOQUE DE CAMPANA PARA SINCRONIZAR ---
+        await fetch(`${API}?action=marcarupdate&clave=TS_PRECIOS`, { method: 'POST' });
+        localStorage.setItem('TS_PRECIOS', new Date().getTime().toString());
+        // --- FIN TOQUE DE CAMPANA ---
+
         toggleLoader(true, "¡TODO ACTUALIZADO!", true);
         preciosModificados = {}; 
+        
+        // Forzamos una recarga limpia para actualizar la caché de paso
         setTimeout(() => cargarPrecios(), 1200);
     } catch(e) { toggleLoader(false); showToast("Error al guardar.", "error"); }
 };
@@ -390,6 +470,12 @@ document.getElementById('btnGuardarNuevo').onclick = async () => {
     try {
         const r = await fetch(API, { method:'POST', body:fd }); const d = await r.json();
         if(d.status === 'success') {
+            
+            // --- INICIO TOQUE DE CAMPANA PARA SINCRONIZAR ---
+            await fetch(`${API}?action=marcarupdate&clave=TS_PRECIOS`, { method: 'POST' });
+            localStorage.setItem('TS_PRECIOS', new Date().getTime().toString());
+            // --- FIN TOQUE DE CAMPANA ---
+            
             toggleLoader(true, "¡REGISTRADO!", true);
             setTimeout(() => { cargarOpciones(); cargarPrecios(); }, 1000);
         } else { toggleLoader(false); showToast("Error: " + d.message, "error"); }

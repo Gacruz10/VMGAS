@@ -175,8 +175,6 @@
       box-shadow: none;
     }
 
-    /* ELIMINAMOS .error-msg ORIGINAL PARA USAR LOS TOASTS */
-
     /* --- SISTEMA DE TOASTS (NUEVO) --- */
     #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
@@ -239,7 +237,6 @@
   </div>
 
   <script>
-    // URL DE TU APP SCRIPT
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
 
     function togglePassword() {
@@ -247,7 +244,6 @@
       passwordField.type = passwordField.type === "password" ? "text" : "password";
     }
 
-    // Funciones visuales nuevas (Toast y Loader)
     function showToast(msg, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -287,9 +283,53 @@
       }
 
       const btn = document.querySelector(".login-btn");
-      const originalText = btn.textContent;
       btn.disabled = true;
-      toggleLoader(true, "AUTENTICANDO...");
+
+      // Creamos un sello local combinando usuario y contraseña
+      const inputHash = btoa(username.toLowerCase() + ':' + password);
+
+      // --- FLUJO OFFLINE ---
+      if (!navigator.onLine) {
+          toggleLoader(true, "VERIFICANDO LOCALMENTE...");
+          
+          setTimeout(() => {
+              const savedHash = localStorage.getItem('vm_auth_hash');
+              const token = localStorage.getItem('vm_token');
+              const expiry = localStorage.getItem('vm_token_expiry');
+
+              if (!savedHash || !token || !expiry) {
+                  toggleLoader(false);
+                  showToast("⛔ Sin internet. No hay credenciales previas para ingresar.", "error");
+                  btn.disabled = false;
+                  return;
+              }
+
+              if (Date.now() > parseInt(expiry)) {
+                  toggleLoader(false);
+                  localStorage.clear(); // Limpiamos porque expiró
+                  showToast("⏳ Tu pase offline expiró (5 hs). Necesitás internet.", "error");
+                  btn.disabled = false;
+                  return;
+              }
+
+              if (inputHash === savedHash) {
+                  toggleLoader(true, "¡ACCESO OFFLINE CONCEDIDO!", true);
+                  setTimeout(() => {
+                      const target = new URL('inicio.html', window.location.href);
+                      target.searchParams.set('k', token); 
+                      window.location.replace(target.toString());
+                  }, 800);
+              } else {
+                  toggleLoader(false);
+                  showToast("Credenciales incorrectas.", "error");
+                  btn.disabled = false;
+              }
+          }, 600); // Simulamos el tiempo de carga para el feedback visual
+          return;
+      }
+
+      // --- FLUJO ONLINE ---
+      toggleLoader(true, "AUTENTICANDO CON SERVIDOR...");
 
       const formData = new URLSearchParams();
       formData.append('action', 'login');
@@ -309,17 +349,19 @@
           return;
         }
 
-        // ÉXITO: Cambiamos el loader a verde
+        // ÉXITO: Guardamos las credenciales y el token para uso offline (5 HORAS)
+        localStorage.setItem('vm_auth_hash', inputHash);
+        localStorage.setItem('vm_token', data.k);
+        localStorage.setItem('vm_usuario', username);
+        localStorage.setItem('vm_token_expiry', Date.now() + (5 * 60 * 60 * 1000));
+        
         toggleLoader(true, "¡ACCESO CONCEDIDO!", true);
         
         setTimeout(() => {
             const target = new URL('inicio.html', window.location.href);
-            // Backend devuelve 'k', no 'token'
             target.searchParams.set('k', data.k); 
-            
-            // Usamos replace para borrar historial
             window.location.replace(target.toString());
-        }, 800); // 800ms de delay para ver la animación verde
+        }, 800);
 
       })
       .catch((e) => {
@@ -330,6 +372,7 @@
       });
     }
   </script>
+
 <div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
   <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
   <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
