@@ -1,11 +1,31 @@
-const CACHE_NAME = 'vm-gas-v3';
+const CACHE_NAME = 'vm-gas-v5';
+
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/inicio.html',
+  '/index4.html',
+  '/icon.png' // Importante para que no falte el logo offline
+];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Guardamos la base. IMPORTANTE: Si index4.html es tu página, debe estar aquí.
-      return cache.addAll(['/', '/index4.html']);
+      return cache.addAll(ASSETS);
+    })
+  );
+});
+
+// Esta parte borra los cachés viejos (v2, v3, v4) para que no hagan conflicto
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keyList) => {
+      return Promise.all(keyList.map((key) => {
+        if (key !== CACHE_NAME) {
+          return caches.delete(key);
+        }
+      }));
     })
   );
 });
@@ -13,14 +33,14 @@ self.addEventListener('install', (e) => {
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then((response) => {
-      // Si está en el caché, lo devuelve (ignoreSearch: true ignora el ?k=...)
+      // 1. Si el archivo está en caché (ignorando el ?k=), lo devuelve
       if (response) return response;
 
-      // Si no, intenta buscar en la red
+      // 2. Si no está en caché, intenta ir a internet
       return fetch(e.request).catch(() => {
-        // Fallback: si falla la red, devuelve el index4.html si es una navegación
+        // 3. Si no hay internet y es una navegación, te manda al Login (index.html)
         if (e.request.mode === 'navigate') {
-          return caches.match('/index4.html');
+          return caches.match('/index.html');
         }
       });
     })
