@@ -1285,45 +1285,79 @@
 
         async function cargarDatos() {
             try {
-                // 1. Intentamos obtener los datos
-                let datos;
                 if (navigator.onLine) {
-                    updateLoader("SINCRONIZANDO", "Actualizando base de datos...");
-                    const rDatos = await fetch(`${SCRIPT_URL}?action=getDatos&k=${k}`);
-                    datos = await rDatos.json();
+                    updateLoader("MAPEO DE ZONAS", "Descargando rutas activas...");
+                    const rZonas = await fetch(`${SCRIPT_URL}?action=getactivezones`);
+                    const dataZ = await rZonas.json();
+                    // Evitamos el undefined forzando a que sea un array sí o sí
+                    zonasActivas = dataZ.zonas ? dataZ.zonas : (Array.isArray(dataZ) ? dataZ : []);
 
-                    // Guardamos en LocalStorage para el futuro
-                    localStorage.setItem('cache_datos_vm', JSON.stringify(datos));
-                    localStorage.setItem('cache_zonas_vm', JSON.stringify(datos.zonas));
+                    updateLoader("SINCRONIZANDO DB", "Descargando clientes y cuadro tarifario...");
+                    const rDatos = await fetch(`${SCRIPT_URL}?action=getDatos&k=${k}`);
+                    const datos = await rDatos.json();
+
+                    // 💥 EL SECRETO: Guardamos absolutamente TODO en una sola caja fuerte
+                    const paqueteOffline = {
+                        zonas: zonasActivas,
+                        clientes: datos.clientes || [],
+                        precios: datos.precios || [],
+                        deudas: datos.deudas || {},
+                        comisiones: datos.comisiones || []
+                    };
+
+                    localStorage.setItem('vm_paquete_offline', JSON.stringify(paqueteOffline));
+
+                    clientesData = paqueteOffline.clientes;
+                    preciosData = paqueteOffline.precios;
+                    deudasData = paqueteOffline.deudas;
+                    comisionesData = paqueteOffline.comisiones;
+
                 } else {
-                    // 2. Si no hay red, buscamos en la memoria local
-                    const cacheDatos = localStorage.getItem('cache_datos_vm');
-                    if (cacheDatos) {
-                        datos = JSON.parse(cacheDatos);
+                    // Leer memoria local del paquete único
+                    const cache = localStorage.getItem('vm_paquete_offline');
+
+                    if (cache) {
+                        const paquete = JSON.parse(cache);
+
+                        zonasActivas = paquete.zonas || [];
+                        clientesData = paquete.clientes || [];
+                        preciosData = paquete.precios || [];
+                        deudasData = paquete.deudas || {};
+                        comisionesData = paquete.comisiones || [];
+
                         showToast('Modo Offline: Usando datos en memoria', 'warning');
                     } else {
-                        throw new Error("No hay datos en caché");
+                        throw new Error("El paquete offline no existe o está corrupto");
                     }
                 }
 
-                // 3. Procesamos los datos (vengan de la red o del caché)
-                clientesData = datos.clientes;
-                preciosData = datos.precios;
-                deudasData = datos.deudas || {};
-                comisionesData = datos.comisiones || [];
-                zonasActivas = datos.zonas || [];
-
-                // Llenar los selects
+                // Llenar Select de Zonas
                 const selZona = document.getElementById('zona');
                 selZona.innerHTML = '<option value="">Zona...</option>';
                 zonasActivas.forEach(z => {
                     const opt = document.createElement('option'); opt.value = z; opt.textContent = z; selZona.appendChild(opt);
                 });
 
+                // Llenar Select de Nueva Zona
+                const selNuevaZona = document.getElementById('nuevaZona');
+                selNuevaZona.innerHTML = '<option value="">Seleccione Zona (Obligatorio)...</option>';
+                zonasActivas.forEach(z => {
+                    const opt = document.createElement('option'); opt.value = z; opt.textContent = z; selNuevaZona.appendChild(opt);
+                });
+
+                // Llenar Select de Categorías
+                const selCat = document.getElementById('categoria');
+                selCat.innerHTML = '<option value="">Seleccione Categoría (Obligatorio)...</option>';
+                const categoriasUnicas = [...new Set(preciosData.map(p => p.categoria ? p.categoria.trim().toUpperCase() : ''))].filter(c => c !== '');
+                categoriasUnicas.forEach(c => {
+                    const opt = document.createElement('option'); opt.value = c; opt.textContent = c; selCat.appendChild(opt);
+                });
+
                 cerrarLoader();
             } catch (e) {
                 cerrarLoader();
-                showToast('No se pudieron cargar datos. Verifica tu conexión.', 'error');
+                console.error("Fallo crítico en cargarDatos:", e);
+                showToast('Error cargando datos. Verifica tu conexión inicial.', 'error');
             }
         }
 
