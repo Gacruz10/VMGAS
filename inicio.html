@@ -356,9 +356,9 @@ window.addEventListener('pageshow', function(event) {
 
 // ================= VIGILANCIA SILENCIOSA (EL PATOVICA INTERNO) =================
 async function verificarSeguridadSilenciosa() {
-    if (!navigator.onLine) return; // Si no hay internet, confiamos en la caché.
+    if (!navigator.onLine) return; 
     try {
-        const r = await fetch(`${API}?action=gettimestamps`); // <-- CAMBIO QUIRÚRGICO ACÁ
+        const r = await fetch(`${API}?action=gettimestamps`); 
         const data = await r.json();
         
         if (data.status === 'success' && data.TS_USUARIOS) {
@@ -366,8 +366,6 @@ async function verificarSeguridadSilenciosa() {
             if (!localTS) {
                 localStorage.setItem('TS_USUARIOS', data.TS_USUARIOS);
             } else if (localTS !== data.TS_USUARIOS) {
-                // ALERTA: El administrador modificó los usuarios o contraseñas.
-                // Aquí SÍ destruimos la bóveda completa por seguridad.
                 localStorage.clear();
                 showToast("⚠️ SEGURIDAD: Se actualizaron los accesos. Por favor, vuelva a iniciar sesión.", "error");
                 setTimeout(() => window.location.replace('index.html'), 2500);
@@ -385,14 +383,11 @@ async function iniciarSesion() {
     try {
         document.body.style.opacity = 1;
         
-        // Si estamos offline, cargamos el menú asumiendo que el token del index era válido.
+        // Si arrancamos directamente sin red
         if (!navigator.onLine) {
             const usuarioGuardado = localStorage.getItem('vm_usuario') || 'USUARIO';
-            // Pasamos un objeto perms vacío o por defecto si quisieras manejar permisos offline, 
-            // pero lo más seguro es usar los que se puedan guardar en caché si existieran.
-            // Para mantener compatibilidad, habilitamos todo temporalmente o lo que requiera el rol.
-            // Por ahora, asumimos que tiene los permisos básicos (puedes ajustar esto si guardas permisos en local).
-            renderizarInterfaz(usuarioGuardado, { formulario: true, clientes: false }); 
+            const permsGuardados = JSON.parse(localStorage.getItem('vm_perms') || '{"formulario": true}');
+            renderizarInterfaz(usuarioGuardado, permsGuardados); 
             showToast("MODO OFFLINE", "warning");
             return;
         }
@@ -407,14 +402,27 @@ async function iniciarSesion() {
         const data = await r.json();
 
         if (data.status === 'success') {
+            // Guardamos todo en la caja fuerte para cuando corten el WiFi
+            localStorage.setItem('vm_usuario', data.nombre);
+            localStorage.setItem('vm_perms', JSON.stringify(data.perms || {}));
+
             renderizarInterfaz(data.nombre, data.perms);
             buscarPin();
-            verificarSeguridadSilenciosa(); // Ejecutamos la vigilancia de versiones
+            verificarSeguridadSilenciosa(); 
         } else {
-            throw new Error();
+            throw new Error("Credenciales inválidas");
         }
     } catch (e) {
-        expulsar();
+        // Si hay red pero falla (ej. servidor caído o mala señal), intentamos rescatar la caché
+        const usuarioGuardado = localStorage.getItem('vm_usuario');
+        const permsGuardados = localStorage.getItem('vm_perms');
+        
+        if (usuarioGuardado && permsGuardados) {
+            renderizarInterfaz(usuarioGuardado, JSON.parse(permsGuardados));
+            showToast("CONEXIÓN INESTABLE: Modo offline activo", "warning");
+        } else {
+            expulsar();
+        }
     }
 }
 
@@ -468,7 +476,7 @@ function renderizarInterfaz(nombre, perms) {
     };
 
     // VISIBILIDAD DE LOS MÓDULOS SEGÚN PERMISOS
-    show('tileFormulario',  p.formulario !== false); // Default true for offline form access
+    show('tileFormulario',  p.formulario !== false); 
     show('tileMiCaja',      p.formulario !== false); 
     show('tileClientes',    p.clientes);
     show('tilePrecios',     p.precios);
@@ -510,7 +518,6 @@ function navegar(pagina) {
 
 function expulsar() {
     sessionStorage.clear();
-    // NOTA: NO borramos localStorage para permitir reingreso offline como "Bloqueo de Pantalla".
     window.location.replace('index.html');
 }
 
@@ -547,5 +554,14 @@ async function loadAlarmBadge(){
 
 iniciarSesion();
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js');
+    });
+  }
+</script>
+
 </body>
 </html>
