@@ -1923,7 +1923,17 @@
         document.getElementById('pagoEfectivo').onclick = () => { document.getElementById('efectivoInput').style.display = document.getElementById('pagoEfectivo').checked ? 'block' : 'none'; actualizarTotales(); };
         document.getElementById('pagoTransferencia').onclick = () => { document.getElementById('transferenciaInput').style.display = document.getElementById('pagoTransferencia').checked ? 'block' : 'none'; actualizarTotales(); };
 
-        function guardarEnCola(payload) { let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]'); payload._offline_ts = new Date().getTime(); cola.push(payload); localStorage.setItem('cola_ventas', JSON.stringify(cola)); showToast("📡 SIN CONEXIÓN: Datos guardados localmente.", "warning"); actualizarIndicadorOffline(); setTimeout(() => window.location.replace(`inicio.html?k=${k}`), 2000); }
+        function guardarEnCola(payload) {
+            let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]');
+            payload._offline_ts = new Date().getTime();
+            cola.push(payload);
+            localStorage.setItem('cola_ventas', JSON.stringify(cola));
+            showToast("📡 SIN CONEXIÓN: Datos guardados localmente.", "warning");
+            actualizarIndicadorOffline();
+            // En vez de ir a inicio.html (que seguro no está en caché offline), recargamos esta misma página
+            setTimeout(() => window.location.reload(), 2000);
+        }
+
         function actualizarIndicadorOffline() { let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]'); const btnSync = document.getElementById('btn-sync'); if (cola.length > 0) { btnSync.style.display = 'block'; btnSync.innerText = `🔄 SINCRONIZAR (${cola.length} PENDIENTES)`; } else { btnSync.style.display = 'none'; } }
 
         async function sincronizarCola() {
@@ -2009,30 +2019,41 @@
             btn.disabled = true;
             btn.textContent = "OBTENIENDO GPS...";
 
+            // ... (viene de btn.textContent = "OBTENIENDO GPS...";)
             const ubicacionActual = await obtenerUbicacionFantasma();
 
             if (ubicacionActual.includes("SIN_GPS")) {
-                btn.disabled = false;
-                btn.textContent = "GUARDAR REGISTRO";
+                if (!navigator.onLine) {
+                    // Si estamos offline, dejamos pasar el error de GPS porque en PC es normal que falle sin red.
+                    showToast("⚠️ Modo Offline: Guardando sin posición GPS.", "warning");
+                } else {
+                    // Si hay internet y no hay GPS, bloqueamos como siempre.
+                    btn.disabled = false;
+                    btn.textContent = "GUARDAR REGISTRO";
 
-                const overlay = document.getElementById('modalGPS');
-                const box = document.getElementById('modalGPSBox');
-                overlay.style.display = 'flex';
-                setTimeout(() => {
-                    overlay.style.opacity = '1';
-                    overlay.style.pointerEvents = 'all';
-                    box.style.transform = 'scale(1)';
-                }, 10);
+                    const overlay = document.getElementById('modalGPS');
+                    const box = document.getElementById('modalGPSBox');
+                    overlay.style.display = 'flex';
+                    setTimeout(() => {
+                        overlay.style.opacity = '1';
+                        overlay.style.pointerEvents = 'all';
+                        box.style.transform = 'scale(1)';
+                    }, 10);
 
-                setTimeout(() => {
-                    overlay.style.opacity = '0';
-                    box.style.transform = 'scale(0.9)';
-                    setTimeout(() => overlay.style.display = 'none', 400);
-                }, 5000);
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                        box.style.transform = 'scale(0.9)';
+                        setTimeout(() => overlay.style.display = 'none', 400);
+                    }, 5000);
 
-                showToast("⛔ SIN GPS NO PODÉS GUARDAR. Activá la ubicación.", "error");
-                return;
+                    showToast("⛔ SIN GPS NO PODÉS GUARDAR. Activá la ubicación.", "error");
+                    return;
+                }
             }
+
+            btn.textContent = "PROCESANDO OPERACIÓN...";
+            // ... (sigue con const cat = obtenerCat();)
+
 
             btn.textContent = "PROCESANDO OPERACIÓN...";
 
