@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vm-gas-v2';
+const CACHE_NAME = 'vm-gas-v3';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
