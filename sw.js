@@ -1,14 +1,28 @@
-const CACHE_NAME = 'vm-gas-v1';
-const ASSETS = [
-  '/',
-  '/index4.html', // o el nombre de tu archivo principal
-  // Agregá aquí tus archivos CSS y JS críticos
-];
+const CACHE_NAME = 'vm-gas-v2';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      // Guardamos la base. IMPORTANTE: Si index4.html es tu página, debe estar aquí.
+      return cache.addAll(['/', '/index4.html']);
+    })
+  );
 });
 
 self.addEventListener('fetch', (e) => {
-  e.respondWith(caches.match(e.request).then((response) => response || fetch(e.request)));
+  e.respondWith(
+    caches.match(e.request, { ignoreSearch: true }).then((response) => {
+      // Si está en el caché, lo devuelve (ignoreSearch: true ignora el ?k=...)
+      if (response) return response;
+
+      // Si no, intenta buscar en la red
+      return fetch(e.request).catch(() => {
+        // Fallback: si falla la red, devuelve el index4.html si es una navegación
+        if (e.request.mode === 'navigate') {
+          return caches.match('/index4.html');
+        }
+      });
+    })
+  );
 });
