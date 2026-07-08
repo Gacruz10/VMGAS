@@ -2054,9 +2054,6 @@
             btn.textContent = "PROCESANDO OPERACIÓN...";
             // ... (sigue con const cat = obtenerCat();)
 
-
-            btn.textContent = "PROCESANDO OPERACIÓN...";
-
             const cat = obtenerCat(); const esNuevo = document.getElementById('nuevoCliente').checked; const esGasto = document.getElementById('declaracionGastos').checked; const pfx = { 'SUBDISTRIBUIDOR': 'VS', 'COMERCIO': 'VC', 'ROT. Y PAN.': 'VRP', 'USUARIO (PUBLICO)': 'VU' }[cat] || 'VU';
             let nombreC = esNuevo ? document.getElementById('nombreCliente').value : (clienteSeleccionado ? clienteSeleccionado.nombre : ''); if (!nombreC && esGasto) nombreC = 'GASTO';
 
