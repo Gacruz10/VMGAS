@@ -323,6 +323,14 @@ async function init() {
         if (selectedOption.dataset.ocupado === "true") {
              showToast(`⛔ ESTE VEHÍCULO YA ESTÁ EN RUTA.`, "error");
              this.value = ""; 
+             document.getElementById('txtKmSalida').value = "";
+        } else {
+             // AUTOCOMPLETAR KILOMETRAJE
+             if (selectedOption.dataset.kmActual) {
+                 document.getElementById('txtKmSalida').value = selectedOption.dataset.kmActual;
+             } else {
+                 document.getElementById('txtKmSalida').value = "";
+             }
         }
     });
 
@@ -478,6 +486,7 @@ async function loadVehiculos() {
                 const o = document.createElement('option');
                 o.value = v.patente; 
                 o.text = `${v.vehiculo} (${v.patente})`; 
+                o.dataset.kmActual = v.kmActual || v.km || '';
                 sel.add(o);
             });
         }
