@@ -53,20 +53,30 @@
     .gas-col { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
     .gas-divider { width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px; }
     .gas-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #ccc; }
+    
+    /* INPUTS DE CANTIDAD */
+    .inp-unidad { width: 45px; padding: 2px 5px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); border-radius: 4px; color: white; text-align: center; font-weight: bold; font-size: 11px; outline: none; transition: 0.3s;}
+    .inp-unidad:focus { border-color: var(--compra); background: rgba(168,85,247,0.15); }
+
     .kg-rojo { background: rgba(255,68,68,0.15); color: #ff4444; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255,68,68,0.3); font-weight: 800; font-size: 11px;}
     .kg-verde { background: rgba(45,212,191,0.15); color: #2dd4bf; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(45,212,191,0.3); font-weight: 800; font-size: 11px;}
 
     /* ESTRUCTURA COMPACTA DE INPUTS */
     .compact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .input-group { margin-bottom: 0; }
+    .input-group { margin-bottom: 0; position: relative;}
     .input-group label { display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
     input[type="text"], input[type="number"] { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
     input[type="text"]:focus, input[type="number"]:focus { border-color: var(--compra); background: rgba(168,85,247,0.05); }
 
     .precios-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;}
+    .lbl-costo-final { display: block; font-size: 9px; color: var(--ok); text-align: center; margin-top: 4px; font-weight: bold; }
+    
+    /* CAJAS DE PAGO */
+    .pay-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;}
+    .pay-box h5 { margin: 0; font-size: 11px; color: var(--compra); text-transform: uppercase; grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;}
     
     /* BLOQUE FINAL (BOTON + TOTAL) */
-    .action-row { display: flex; gap: 10px; align-items: stretch; margin-top: 5px; }
+    .action-row { display: flex; gap: 10px; align-items: stretch; margin-top: 15px; }
     .total-box { flex: 1; text-align: center; padding: 10px; background: rgba(45,212,191,0.1); border: 1px dashed var(--ok); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; }
     .total-box span { display: block; font-size: 10px; color: var(--ok); font-weight: 800; }
     .total-box h2 { margin: 2px 0 0 0; color: white; font-size: 20px; }
@@ -157,7 +167,7 @@ function resetTimer() {
 resetTimer(); 
 
 // ==========================================
-// 2. CONFIGURACIÓN DE FECHAS (MES ACTUAL POR DEFECTO)
+// 2. CONFIGURACIÓN DE FECHAS
 // ==========================================
 function setFechasDefault() {
     const hoy = new Date();
@@ -218,7 +228,6 @@ async function fetchRemitos(start = '', end = '') {
     toggleLoader(false);
 }
 
-// Carga Inicial
 fetchRemitos(document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
 
 function buscarHistorial() {
@@ -232,46 +241,125 @@ function toggleCard(id) {
     card.classList.toggle('expanded');
 }
 
-function calcularTotal(idViaje, isHistorial = false) {
-    const arrayTarget = isHistorial ? datosCompras.historial : datosCompras.pendientes;
-    const compra = arrayTarget.find(x => x.idViaje === idViaje);
-    if(!compra) return;
+// CÁLCULO MÁGICO EN TIEMPO REAL
+function calcularTotal(idViaje) {
+    // 1. Leer Unidades
+    const ll10 = Number(document.getElementById(`u10-${idViaje}`).value) || 0;
+    const ll15 = Number(document.getElementById(`u15-${idViaje}`).value) || 0;
+    const ll45 = Number(document.getElementById(`u45-${idViaje}`).value) || 0;
+
+    // Actualizar visual de kilos
+    document.getElementById(`kg10-${idViaje}`).textContent = `${ll10 * 10} kg`;
+    document.getElementById(`kg15-${idViaje}`).textContent = `${ll15 * 15} kg`;
+    document.getElementById(`kg45-${idViaje}`).textContent = `${ll45 * 45} kg`;
+    document.getElementById(`kgButano-${idViaje}`).textContent = `${(ll10 * 10) + (ll15 * 15)} kg`;
+    document.getElementById(`kgPropano-${idViaje}`).textContent = `${ll45 * 45} kg`;
+
+    // 2. Leer Precios e Impuestos (%)
+    const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
+    const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
+    const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
+    const ivaPorc = Number(document.getElementById(`iva-${idViaje}`).value) || 0;
+    const percPorc = Number(document.getElementById(`perc-${idViaje}`).value) || 0;
+
+    // 3. Cálculos
+    const subtotal = (p10 * ll10) + (p15 * ll15) + (p45 * ll45);
+    const ivaMonto = subtotal * (ivaPorc / 100);
+    const percMonto = subtotal * (percPorc / 100);
+    const total = subtotal + ivaMonto + percMonto;
+    
+    // 4. Mostrar Costos Finales
+    const factorImp = subtotal > 0 ? 1 + ((ivaMonto + percMonto) / subtotal) : 1;
+    document.getElementById(`lblCost10-${idViaje}`).textContent = `Final: $${(p10 * factorImp).toFixed(2)}`;
+    document.getElementById(`lblCost15-${idViaje}`).textContent = `Final: $${(p15 * factorImp).toFixed(2)}`;
+    document.getElementById(`lblCost45-${idViaje}`).textContent = `Final: $${(p45 * factorImp).toFixed(2)}`;
+
+    document.getElementById(`lblTotal-${idViaje}`).textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+    
+    // 5. Autocompletar Transferencia (si se ingresa Deposito)
+    const depoInput = document.getElementById(`depo-${idViaje}`);
+    const transInput = document.getElementById(`trans-${idViaje}`);
+    
+    // Si el usuario escribe en Depósito, ajustamos Transferencia
+    if (document.activeElement === depoInput) {
+        const valDepo = Number(depoInput.value) || 0;
+        let resto = total - valDepo;
+        if (resto < 0) resto = 0;
+        transInput.value = resto > 0 ? resto.toFixed(2) : '';
+    } else if (document.activeElement === transInput) {
+        // O viceversa
+        const valTrans = Number(transInput.value) || 0;
+        let resto = total - valTrans;
+        if (resto < 0) resto = 0;
+        depoInput.value = resto > 0 ? resto.toFixed(2) : '';
+    } else {
+        // Si no está tocando los inputs de pago, forzamos que Transferencia asuma el total
+        // solo si ambos están vacíos
+        if(!depoInput.value && !transInput.value && total > 0) {
+            transInput.value = total.toFixed(2);
+        }
+    }
+}
+
+async function procesarPago(idViaje, actionName) {
+    const fac = document.getElementById(`fac-${idViaje}`).value.trim();
+    
+    const ll10 = Number(document.getElementById(`u10-${idViaje}`).value) || 0;
+    const ll15 = Number(document.getElementById(`u15-${idViaje}`).value) || 0;
+    const ll45 = Number(document.getElementById(`u45-${idViaje}`).value) || 0;
     
     const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
     const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
     const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
+    
+    const ivaPorc = Number(document.getElementById(`iva-${idViaje}`).value) || 0;
+    const percPorc = Number(document.getElementById(`perc-${idViaje}`).value) || 0;
+    
+    const pagoDepo = Number(document.getElementById(`depo-${idViaje}`).value) || 0;
+    const opDepo = document.getElementById(`opDepo-${idViaje}`).value.trim();
+    const pagoTrans = Number(document.getElementById(`trans-${idViaje}`).value) || 0;
+    const opTrans = document.getElementById(`opTrans-${idViaje}`).value.trim();
 
-    const total = (p10 * compra.ll10) + (p15 * compra.ll15) + (p45 * compra.ll45);
-    document.getElementById(`lblTotal-${idViaje}`).textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
-}
+    if(!fac) return showToast('⚠️ Falta ingresar el N° de Factura', 'error');
+    if(p10 === 0 && p15 === 0 && p45 === 0) return showToast('⚠️ Ingrese precio de costo base', 'error');
+    if(pagoDepo === 0 && pagoTrans === 0) return showToast('⚠️ Debe declarar cómo se pagó la factura', 'error');
 
-async function procesarPago(idViaje, actionName) {
-    const factura = document.getElementById(`fac-${idViaje}`).value.trim();
-    const comprobante = document.getElementById(`comp-${idViaje}`).value.trim();
-    const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
-    const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
-    const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
+    // EL PATOVICA FINANCIERO
+    const subtotal = (p10 * ll10) + (p15 * ll15) + (p45 * ll45);
+    const totalFactura = subtotal + (subtotal * (ivaPorc/100)) + (subtotal * (percPorc/100));
+    const totalPagado = pagoDepo + pagoTrans;
+    
+    // Comparamos con tolerancia de 1 centavo por los redondeos
+    if (Math.abs(totalFactura - totalPagado) > 0.05) {
+        return showToast(`⛔ DESCUADRE: La factura es de $${totalFactura.toFixed(2)} pero pagaste $${totalPagado.toFixed(2)}`, 'error');
+    }
 
-    if(!factura) return showToast('⚠️ Falta ingresar el N° de Factura', 'error');
-    if(!comprobante) return showToast('⚠️ Falta comprobante/método', 'error');
-    if(p10 === 0 && p15 === 0 && p45 === 0) return showToast('⚠️ Ingrese precio de costo', 'error');
-
-    if(!confirm('¿Confirmar esta operación?')) return;
+    if(!confirm('¿Confirmar esta operación? Asegurate que los montos cuadren.')) return;
 
     toggleLoader(true, "GUARDANDO...");
     const fd = new FormData();
-    fd.append('action', actionName); // 'conciliarcompra' o 'modificarcompra'
+    fd.append('action', actionName);
     fd.append('k', k);
     fd.append('idViaje', idViaje);
-    fd.append('factura', factura);
-    fd.append('comprobante', comprobante);
+    fd.append('factura', fac);
+    
+    // Unidades
+    fd.append('ll10', ll10); fd.append('ll15', ll15); fd.append('ll45', ll45);
+    // Precios
     fd.append('precio10', p10); fd.append('precio15', p15); fd.append('precio45', p45);
+    // Impuestos %
+    fd.append('ivaPorc', ivaPorc); fd.append('percPorc', percPorc);
+    // Pagos
+    fd.append('pagoDepo', pagoDepo); fd.append('opDepo', opDepo);
+    fd.append('pagoTransf', pagoTrans); fd.append('opTransf', opTrans);
+    
+    // Compatibilidad vieja (comprobante) por si acaso
+    fd.append('comprobante', (opDepo ? 'Dep:'+opDepo : '') + ' ' + (opTrans ? 'Tr:'+opTrans : ''));
 
     try {
         const r = await fetch(API, {method:'POST', body:fd}); const j = await r.json();
         if(j.status === 'success') { 
             showToast("¡Guardado correctamente!", "success");
-            // Recargamos manteniendo el filtro
             buscarHistorial();
         } else { throw new Error(j.message); }
     } catch(e) { toggleLoader(false); showToast('Error: ' + e.message, 'error'); }
@@ -283,19 +371,17 @@ function renderPendientes() {
     if(datosCompras.pendientes.length === 0) return list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa;">No hay remitos pendientes. ¡Todo al día! 🎉</div>`;
 
     // Rescatamos el ÚLTIMO precio para autocompletar
-    let lastP10 = '', lastP15 = '', lastP45 = '';
+    let lastP10 = '', lastP15 = '', lastP45 = '', lastIva = '', lastPerc = '';
     if (datosCompras.historial.length > 0) {
-        // Ordenamos temporalmente para agarrar el más nuevo real
         const tempSort = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
         lastP10 = tempSort[0].p10 || '';
         lastP15 = tempSort[0].p15 || '';
         lastP45 = tempSort[0].p45 || '';
+        lastIva = tempSort[0].ivaPorc || '';
+        lastPerc = tempSort[0].percPorc || '';
     }
 
     datosCompras.pendientes.forEach(c => {
-        const kg10 = c.ll10 * 10; const kg15 = c.ll15 * 15; const kg45 = c.ll45 * 45;
-        const totalButano = kg10 + kg15; const totalPropano = kg45;
-
         const card = document.createElement('div'); 
         card.className = 'trip-card'; card.id = `card-${c.idViaje}`;
         card.innerHTML = `
@@ -310,27 +396,46 @@ function renderPendientes() {
             <div class="trip-body">
                 <div class="resumen-gas-container">
                     <div class="gas-col">
-                        <div class="gas-row"><span>10kg (${c.ll10}u):</span><span class="kg-rojo">${kg10} kg</span></div>
-                        <div class="gas-row"><span>15kg (${c.ll15}u):</span><span class="kg-rojo">${kg15} kg</span></div>
-                        <div class="gas-row"><span>45kg (${c.ll45}u):</span><span class="kg-rojo">${kg45} kg</span></div>
+                        <div class="gas-row"><span>10kg (U):</span> <input type="number" class="inp-unidad" id="u10-${c.idViaje}" value="${c.ll10}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg10-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>15kg (U):</span> <input type="number" class="inp-unidad" id="u15-${c.idViaje}" value="${c.ll15}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg15-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>45kg (U):</span> <input type="number" class="inp-unidad" id="u45-${c.idViaje}" value="${c.ll45}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg45-${c.idViaje}">0 kg</span></div>
                     </div>
                     <div class="gas-divider"></div>
                     <div class="gas-col" style="justify-content: center;">
-                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde">${totalButano} kg</span></div>
-                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde">${totalPropano} kg</span></div>
+                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde" id="kgButano-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde" id="kgPropano-${c.idViaje}">0 kg</span></div>
                     </div>
                 </div>
 
-                <div class="compact-row">
-                    <div class="input-group"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" placeholder="0001-1234"></div>
-                    <div class="input-group"><label>Comprobante / Método</label><input type="text" id="comp-${c.idViaje}" placeholder="Transf #987"></div>
-                </div>
+                <div class="input-group" style="margin-bottom:12px;"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" placeholder="0001-12345678"></div>
 
                 <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario (Sugerido Últ. Compra)</label>
                 <div class="precios-row">
-                    <input type="number" id="p10-${c.idViaje}" placeholder="10 Kg" value="${lastP10}" oninput="calcularTotal('${c.idViaje}')">
-                    <input type="number" id="p15-${c.idViaje}" placeholder="15 Kg" value="${lastP15}" oninput="calcularTotal('${c.idViaje}')">
-                    <input type="number" id="p45-${c.idViaje}" placeholder="45 Kg" value="${lastP45}" oninput="calcularTotal('${c.idViaje}')">
+                    <div>
+                        <input type="number" id="p10-${c.idViaje}" placeholder="Base 10Kg" value="${lastP10}" oninput="calcularTotal('${c.idViaje}')">
+                        <span class="lbl-costo-final" id="lblCost10-${c.idViaje}">Final: $0.00</span>
+                    </div>
+                    <div>
+                        <input type="number" id="p15-${c.idViaje}" placeholder="Base 15Kg" value="${lastP15}" oninput="calcularTotal('${c.idViaje}')">
+                        <span class="lbl-costo-final" id="lblCost15-${c.idViaje}">Final: $0.00</span>
+                    </div>
+                    <div>
+                        <input type="number" id="p45-${c.idViaje}" placeholder="Base 45Kg" value="${lastP45}" oninput="calcularTotal('${c.idViaje}')">
+                        <span class="lbl-costo-final" id="lblCost45-${c.idViaje}">Final: $0.00</span>
+                    </div>
+                </div>
+                
+                <div class="compact-row">
+                    <div class="input-group"><label>IVA Inscripto (%)</label><input type="number" id="iva-${c.idViaje}" placeholder="21" value="${lastIva}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>Percepción IVA (%)</label><input type="number" id="perc-${c.idViaje}" placeholder="1.75" value="${lastPerc}" oninput="calcularTotal('${c.idViaje}')"></div>
+                </div>
+
+                <div class="pay-box">
+                    <h5>💰 Medios de Pago</h5>
+                    <div class="input-group"><label>Depósito ($)</label><input type="number" id="depo-${c.idViaje}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>N° Op. Depósito</label><input type="text" id="opDepo-${c.idViaje}" placeholder="Comas si son varios"></div>
+                    <div class="input-group"><label>Transferencia ($)</label><input type="number" id="trans-${c.idViaje}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>N° Op. Transf</label><input type="text" id="opTrans-${c.idViaje}" placeholder="ID Transf"></div>
                 </div>
 
                 <div class="action-row">
@@ -340,7 +445,8 @@ function renderPendientes() {
             </div>
         `;
         list.appendChild(card);
-        if (lastP10 || lastP15 || lastP45) calcularTotal(c.idViaje);
+        // Disparar cálculo inicial
+        setTimeout(() => calcularTotal(c.idViaje), 50);
     });
 }
 
@@ -353,15 +459,11 @@ function renderHistorial() {
         return;
     }
 
-    // Ordenar de más nuevo a más viejo
     const sorted = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
-    
-    // Nombres de los meses en español para los separadores
     const mesesNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     let mesActualRenderizado = '';
 
     sorted.forEach(c => {
-        // Agrupación por Mes/Año
         const d = new Date(c.tsLlegada);
         const mesTag = `${mesesNombres[d.getMonth()]} ${d.getFullYear()}`;
         
@@ -373,16 +475,10 @@ function renderHistorial() {
             mesActualRenderizado = mesTag;
         }
 
-        const kg10 = c.ll10 * 10; const kg15 = c.ll15 * 15; const kg45 = c.ll45 * 45;
-        const totalButano = kg10 + kg15; const totalPropano = kg45;
-
-        // Tags de auditoría
         let tagsHTML = `<div class="audit-box">
             <div class="audit-tag">🚚 <b>Viaje Planta:</b> ${c.fecha} - ${c.horaLlegada}</div>
             <div class="audit-tag">✅ <b>Conciliado:</b> ${c.fConc || 'S/D'} por ${c.uConc || 'S/D'}</div>`;
-        if (c.fMod) {
-            tagsHTML += `<div class="audit-tag">✏️ <b>Modificado:</b> ${c.fMod} por ${c.uMod}</div>`;
-        }
+        if (c.fMod) tagsHTML += `<div class="audit-tag">✏️ <b>Modificado:</b> ${c.fMod} por ${c.uMod}</div>`;
         tagsHTML += `</div>`;
 
         const card = document.createElement('div'); 
@@ -392,39 +488,49 @@ function renderHistorial() {
                 <div class="trip-title">
                     <h4>${c.chofer}</h4>
                     <div style="font-size:11px; color:#ccc;">Remito: ${c.remito || 'S/N'} | Factura: ${c.factura}</div>
-                    <div class="badge-ok" style="margin-top: 5px;">Comprobante: ${c.comprobante}</div>
+                    <div class="badge-ok" style="margin-top: 5px;">Depósito: $${c.pagoDepo||0} | Transf: $${c.pagoTransf||0}</div>
                 </div>
                 <div class="icon-expand">▼</div>
             </div>
             <div class="trip-body">
                 <div class="resumen-gas-container">
                     <div class="gas-col">
-                        <div class="gas-row"><span>10kg (${c.ll10}u):</span><span class="kg-rojo">${kg10} kg</span></div>
-                        <div class="gas-row"><span>15kg (${c.ll15}u):</span><span class="kg-rojo">${kg15} kg</span></div>
-                        <div class="gas-row"><span>45kg (${c.ll45}u):</span><span class="kg-rojo">${kg45} kg</span></div>
+                        <div class="gas-row"><span>10kg (U):</span> <input type="number" class="inp-unidad" id="u10-${c.idViaje}" value="${c.ll10}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg10-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>15kg (U):</span> <input type="number" class="inp-unidad" id="u15-${c.idViaje}" value="${c.ll15}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg15-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>45kg (U):</span> <input type="number" class="inp-unidad" id="u45-${c.idViaje}" value="${c.ll45}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg45-${c.idViaje}">0 kg</span></div>
                     </div>
                     <div class="gas-divider"></div>
                     <div class="gas-col" style="justify-content: center;">
-                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde">${totalButano} kg</span></div>
-                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde">${totalPropano} kg</span></div>
+                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde" id="kgButano-${c.idViaje}">0 kg</span></div>
+                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde" id="kgPropano-${c.idViaje}">0 kg</span></div>
                     </div>
                 </div>
 
-                <div class="compact-row">
-                    <div class="input-group"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" value="${c.factura}"></div>
-                    <div class="input-group"><label>Comprobante / Método</label><input type="text" id="comp-${c.idViaje}" value="${c.comprobante}"></div>
-                </div>
+                <div class="input-group" style="margin-bottom:12px;"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" value="${c.factura}"></div>
 
                 <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario ($)</label>
                 <div class="precios-row">
-                    <input type="number" id="p10-${c.idViaje}" value="${c.p10}" oninput="calcularTotal('${c.idViaje}', true)">
-                    <input type="number" id="p15-${c.idViaje}" value="${c.p15}" oninput="calcularTotal('${c.idViaje}', true)">
-                    <input type="number" id="p45-${c.idViaje}" value="${c.p45}" oninput="calcularTotal('${c.idViaje}', true)">
+                    <div><input type="number" id="p10-${c.idViaje}" value="${c.p10}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost10-${c.idViaje}"></span></div>
+                    <div><input type="number" id="p15-${c.idViaje}" value="${c.p15}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost15-${c.idViaje}"></span></div>
+                    <div><input type="number" id="p45-${c.idViaje}" value="${c.p45}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost45-${c.idViaje}"></span></div>
+                </div>
+
+                <div class="compact-row">
+                    <div class="input-group"><label>IVA Inscripto (%)</label><input type="number" id="iva-${c.idViaje}" value="${c.ivaPorc || ''}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>Percepción IVA (%)</label><input type="number" id="perc-${c.idViaje}" value="${c.percPorc || ''}" oninput="calcularTotal('${c.idViaje}')"></div>
+                </div>
+
+                <div class="pay-box">
+                    <h5>💰 Medios de Pago</h5>
+                    <div class="input-group"><label>Depósito ($)</label><input type="number" id="depo-${c.idViaje}" value="${c.pagoDepo||''}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>N° Op. Depósito</label><input type="text" id="opDepo-${c.idViaje}" value="${c.opDepo||''}"></div>
+                    <div class="input-group"><label>Transferencia ($)</label><input type="number" id="trans-${c.idViaje}" value="${c.pagoTransf||''}" oninput="calcularTotal('${c.idViaje}')"></div>
+                    <div class="input-group"><label>N° Op. Transf</label><input type="text" id="opTrans-${c.idViaje}" value="${c.opTransf||''}"></div>
                 </div>
 
                 <div class="action-row">
                     <div class="total-box" style="background: rgba(59,130,246,0.1); border-color: #3b82f6;">
-                        <span style="color: #3b82f6;">TOTAL PAGADO</span>
+                        <span style="color: #3b82f6;">TOTAL CALCULADO</span>
                         <h2 id="lblTotal-${c.idViaje}">$ 0.00</h2>
                     </div>
                     <button class="btn-main btn-update" onclick="procesarPago('${c.idViaje}', 'modificarcompra')">✏️ ACTUALIZAR DATOS</button>
@@ -434,10 +540,9 @@ function renderHistorial() {
             </div>
         `;
         list.appendChild(card);
-        calcularTotal(c.idViaje, true);
+        setTimeout(() => calcularTotal(c.idViaje), 50);
     });
 }
-
 </script>
 <div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
   <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
@@ -458,20 +563,16 @@ function renderHistorial() {
     const min = ahora.getMinutes();
     const capa = document.getElementById('capaMantenimiento');
 
-    // Ventana de bloqueo: 23:45 hasta las 00:05
     const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
 
     if (estaEnBloqueo) {
       capa.style.display = 'flex';
-      // Deshabilitamos cualquier interacción del teclado
       document.onkeydown = function (e) { return false; };
     } else {
       capa.style.display = 'none';
       document.onkeydown = null;
     }
   }
-
-  // Correr el control apenas carga y después cada 30 segundos
   controlPatovica();
   setInterval(controlPatovica, 30000);
 </script>
