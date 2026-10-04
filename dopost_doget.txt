@@ -1,0 +1,364 @@
+function doGet(e) {
+  const action = (e?.parameter?.action || '').toLowerCase();
+  const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+
+  try {
+    if (esHorarioMantenimiento()) {
+      if (action) {
+        return output({ 
+          status: 'error', 
+          message: 'Sistema en mantenimiento (23:45 a 00:05). Aguarde unos minutos.' 
+        });
+      } else {
+        return HtmlService.createHtmlOutput(
+          "<body style='background:#060a10;color:white;text-align:center;padding-top:100px;font-family:sans-serif;'>" +
+          "<h2> SISTEMA EN MANTENIMIENTO</h2>" +
+          "<p>Estamos procesando datos de auditoría. Volvé a intentar después de las 00:06 AM.</p>" +
+          "</body>"
+        );
+      }
+    }
+
+    const usuarioReq = e?.parameter?.usuario || 'SISTEMA';
+    const apiKeyValida = (e?.parameter?.api_key === 'VM_Seguridad_2026');
+
+    switch (action) {
+      
+      // ========================================================
+      // 🔥 RUTA UNIFICADA DE ARRANQUE (MÁS RÁPIDA + CACHÉ) 🔥
+      // ========================================================
+      case 'initapp': {
+        const cache = CacheService.getScriptCache();
+        const cachedData = cache.get('INIT_APP_DATA');
+
+        if (cachedData) {
+          return ContentService.createTextOutput(cachedData).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        const payload = {
+          status: 'success',
+          zonas: obtenerZonasDeClientes(),
+          clientes: obtenerClientes(),
+          precios: obtenerPrecios(),
+          deudas: obtenerDeudasPendientes(),
+          comisiones: obtenerRangosComision()
+        };
+
+        const stringPayload = JSON.stringify(payload);
+
+        if (stringPayload.length < 100000) {
+          cache.put('INIT_APP_DATA', stringPayload, 300);
+        }
+
+        return ContentService.createTextOutput(stringPayload).setMimeType(ContentService.MimeType.JSON);
+      }
+      // ========================================================
+
+      case 'getdatos': return output({ 
+       status: 'success', 
+       clientes: obtenerClientes(), 
+       precios: obtenerPrecios(),
+       deudas: obtenerDeudasPendientes(),
+       comisiones: obtenerRangosComision()
+      });
+      case 'getversiones': {
+        inicializarVersionesSiEstanVacias();
+        const props = PropertiesService.getScriptProperties();
+        return output({
+          status: 'success',
+          TS_PRECIOS: props.getProperty('TS_PRECIOS'),
+          TS_CLIENTES: props.getProperty('TS_CLIENTES'),
+          TS_SALDOS: props.getProperty('TS_SALDOS')
+        });
+      }
+      case 'getdata': { const d = obtenerDatosFormulario(); return output({ status: 'success', zonas: d.zonas, garrafas: d.garrafas }); }
+      case 'getdatosplanta': return output(getDatosPlanta(e.parameter.k));
+      case 'listusuarios': return output(listUsuarios());
+      case 'getdrivers': return output({ status: 'success', drivers: obtenerEstadoChoferes() });
+      case 'getpendingtrips': return output({ status: 'success', trips: getPendingTrips_Carga() });
+      case 'getflota': return output(obtenerFlota()); 
+      case 'listclientes': return output(listClientes());
+      case 'getoptions': return output(getOptionsData());
+      case 'getactivezones': return output(obtenerZonasDeClientes());
+      
+      case 'getlogservices':
+      return ContentService.createTextOutput(JSON.stringify(getLogServices(e.parameter.k))).setMimeType(ContentService.MimeType.JSON);
+      case 'getflotadetalle': {
+          if (!apiKeyValida && !obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
+          return output({ status: 'success', data: obtenerFlotaDetalle() });
+      }
+      case 'getcomisiones_choferes': return output({ status: 'success', data: obtenerChoferesComision() });
+      case 'getcomisiones_detalle': return output({ status: 'success', data: obtenerDetalleComision(e.parameter.chofer) });
+      case 'listprecios': return output(listPrecios());
+      case 'getcauciones': return output(obtenerCaucionesActivas());
+      case 'gettreeview': {
+          // Pase VIP temporal para el frontend de Firebase
+          return output(getDatosTreeview(e.parameter.start, e.parameter.end));
+      }
+      case 'gettransferencias': {
+          return output({ status: 'success', data: getTransferencias(e.parameter.modo, e.parameter.start, e.parameter.end) });
+      }
+
+      case 'getcomprasauditar': {
+          return output({ status: 'success', compras: getComprasAuditar() });
+      }
+
+      case 'getauditoriafinanzas': {
+          if (!apiKeyValida && !obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
+          return output(getAuditoriaFinanzas(e.parameter.start, e.parameter.end));
+      }
+
+      case 'usuarioinfo': {
+        if (e.parameter.k) {
+           const sesion = obtenerDatosPorToken(e.parameter.k);
+           if (sesion.valido) {
+               const pin = verificarPermisoYObtenerPin(sesion.usuario);
+               return output({ 
+                   status: 'success', 
+                   nombre: sesion.nombre, 
+                   perms: sesion.perms,
+                   pin_dinamico: pin
+               });
+           }
+        }
+
+        const usuarioParam = (e?.parameter?.usuario || '').toString().trim();
+        if (usuarioParam) {
+            const info = getUserInfo(usuarioParam);
+            return info ? output({ status: 'success', ...info }) : output({ status: 'error', message: 'User not found' });
+        }
+
+        return output({ status: 'error', message: 'Faltan parámetros (k o usuario)' });
+      }
+
+      case 'alarmascount': return output({ status: 'success', pendientes: alarmasCount() });
+      case 'listalarmas': return output({ status: 'success', alarmas: listAlarmas(e?.parameter?.onlyPending === 'true', Number(e?.parameter?.limit || 0)) });
+      case 'getfinanzas': {
+         if (!apiKeyValida && !obtenerDatosPorToken(e.parameter.k).valido) return output({ status: 'error', message: 'Sesión inválida' });
+         return output({ status: 'success', ...obtenerResumenFinanciero(e.parameter.chofer) });
+      }
+      case 'getstockstatus': return output(obtenerEstadoStock());
+
+      case 'getfinancetree': {
+         return output(getDataTree(e.parameter.start, e.parameter.end));
+      }
+
+      case 'getmicaja': {
+         // Eliminamos validación vieja, el token de Firebase delega la identidad en usuarioReq
+         return output(getDatosMiCaja(usuarioReq));
+      }
+
+      default: return HtmlService.createHtmlOutput('OK');
+    }
+  } catch (err) { return output({ status: 'error', message: err.message }); }
+}
+
+function doPost(e) {
+  const output = (data) => ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+
+  try {
+    const action = (e?.parameter?.action || '').toLowerCase();
+    
+    // ---> ACÁ TOMAMOS EL ID QUE MANDÓ EL HTML DIRECTO (ESQUIVAMOS A LA PLANILLA) <---
+    const usuarioReq = e?.parameter?.USUARIO || e?.parameter?.usuario || 'SISTEMA';
+    const apiKeyValida = (e?.parameter?.api_key === 'VM_Seguridad_2026');
+
+    if (action === 'gettablerodata') {
+      try {
+        const payload = obtenerDatosTablero(e.parameter.start, e.parameter.end, e.parameter.view);
+        return ContentService.createTextOutput(JSON.stringify({ status: 'success', payload: payload })).setMimeType(ContentService.MimeType.JSON);
+      } catch (error) {
+        return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    if (action === 'login') {
+      const result = loginYGenerarToken(e.parameter.usuario, e.parameter.clave);
+      
+      if (result && result.status === 'success') {
+        const props = PropertiesService.getScriptProperties();
+        let tsUsr = props.getProperty('TS_USUARIOS');
+        if (!tsUsr) {
+          tsUsr = new Date().getTime().toString();
+          props.setProperty('TS_USUARIOS', tsUsr);
+        }
+        result.TS_USUARIOS = tsUsr;
+      }
+      return output(result);
+    }
+    
+    if (action === 'gettimestamps') return output({ status: 'success', ...getTimestamps() });
+    if (action === 'marcarupdate') {
+      marcarActualizacion(e.parameter.clave);
+      return output({ status: 'success' });
+    }
+    
+    const k = e.parameter.k || e.parameter.token;
+    
+    // ---> SI ES GUARDAR REGISTRO, ACCIÓN DE FIREBASE O TIENE API KEY VÁLIDA, NOS SALTEAMOS EL BLOQUEO DEL TOKEN <---
+    if (!apiKeyValida && action !== 'guardarregistro' && action !== 'savetransporte' && action !== 'getremanente' && 
+        action !== 'savestock' && action !== 'crearcaucion' && action !== 'cerrarcaucion' && action !== 'anularcaucion' &&
+        action !== 'savearqueo' && action !== 'conciliarlotecompras' && action !== 'savecomisiones' &&
+        action !== 'ajustartransferencia' && action !== 'verifytransferenciabatch' && action !== 'saveclientes' &&
+        action !== 'saveexpense' && action !== 'modify' && action !== 'changepin') {
+        
+        const sesion = obtenerDatosPorToken(k);
+        if (!sesion.valido && action !== 'verificarsesion') {
+           return output({ status: 'error', message: 'Sesión expirada' });
+        }
+        if (action === 'verificarsesion') return output({ status: sesion.valido ? 'success' : 'error', ...sesion });
+    }
+
+    if (action === 'getremanente') {
+        return output({
+            status: 'success',
+            sugerencia: { 
+                10: {L: 0, V: 0}, 
+                15: {L: 0, V: 0}, 
+                45: {L: 0, V: 0} 
+            },
+            totalEntregas: 0
+        });
+    }
+
+    if (action === 'get_compras') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const sh = ss.getSheetByName('COMPRAS');
+      if(!sh) return output({status:'error', message:'Falta hoja COMPRAS'});
+      const data = sh.getDataRange().getValues();
+      let transito = [], recibidos = [];
+      let p10 = 0, p15 = 0, p45 = 0;
+      
+      for(let i = data.length - 1; i > 0; i--) {
+         if(data[i][2] === 'FACTURADO') {
+             p10 = data[i][14] || 0; p15 = data[i][15] || 0; p45 = data[i][16] || 0;
+             break;
+         }
+      }
+
+      for(let i = 1; i < data.length; i++) {
+         const r = data[i];
+         const obj = { row: i+1, id: r[0], fecha: r[1], estado: r[2], chofer: r[3], e10: r[4], e15: r[5], e45: r[6] };
+         if(r[2] === 'EN TRÁNSITO') transito.push(obj);
+         if(r[2] === 'RECIBIDO') recibidos.push({...obj, r10: r[8], r15: r[9], r45: r[10]});
+      }
+      return output({status: 'success', transito, recibidos, precios: {p10, p15, p45}});
+    }
+
+
+    // =======================================================
+    // ZONA VIP: ACCIONES CRÍTICAS (Con Patovica / LockService)
+    // =======================================================
+    
+    var lock = LockService.getScriptLock();
+    try { 
+      lock.waitLock(30000); 
+    } catch (err) { 
+      return output({ status: 'error', message: 'El servidor está ocupado. Intenta guardar de nuevo.' }); 
+    }
+    
+    try {
+      switch (action) {
+        
+        case 'salida_compra': {
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          const sh = ss.getSheetByName('COMPRAS');
+          const id = "CMP-" + new Date().getTime();
+          sh.appendRow([id, e.parameter.fecha, 'EN TRÁNSITO', e.parameter.chofer, e.parameter.e10, e.parameter.e15, e.parameter.e45, '', '', '', '', '', '', '', '', '', '']);
+          return output({status: 'success'});
+        }
+        case 'ingreso_compra': {
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          const sh = ss.getSheetByName('COMPRAS');
+          const row = parseInt(e.parameter.row);
+          sh.getRange(row, 3).setValue('RECIBIDO'); 
+          sh.getRange(row, 8).setValue(e.parameter.fecha); 
+          sh.getRange(row, 9).setValue(e.parameter.r10);
+          sh.getRange(row, 10).setValue(e.parameter.r15);
+          sh.getRange(row, 11).setValue(e.parameter.r45);
+          return output({status: 'success'});
+        }
+        case 'facturar_compra': {
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
+          const sh = ss.getSheetByName('COMPRAS');
+          const row = parseInt(e.parameter.row);
+          sh.getRange(row, 3).setValue('FACTURADO'); 
+          sh.getRange(row, 12).setValue(e.parameter.remito);
+          sh.getRange(row, 13).setValue(e.parameter.factura);
+          sh.getRange(row, 14).setValue(e.parameter.fecha_fact);
+          sh.getRange(row, 15).setValue(e.parameter.p10);
+          sh.getRange(row, 16).setValue(e.parameter.p15);
+          sh.getRange(row, 17).setValue(e.parameter.p45);
+          return output({status: 'success'});
+        }
+
+        case 'conciliarcompra': return output(conciliarCompra(e.parameter, usuarioReq));
+        case 'modificarcompra': return output(modificarCompra(e.parameter, usuarioReq)); 
+        case 'saveservice': return output(registrarService(e.parameter, usuarioReq));
+        case 'savecomisiones': return output(guardarPagoComision(e.parameter, usuarioReq));
+        case 'ajustartransferencia': 
+          return output(ajustarMontosTransferencia(e.parameter.row, e.parameter.nuevoE, e.parameter.nuevoT, usuarioReq));
+        case 'conciliarlotecompras': 
+          return output(conciliarLoteCompras(e.parameter, usuarioReq));
+        
+        case 'saveprice_single': {
+            CacheService.getScriptCache().remove('INIT_APP_DATA'); // Rompemos caché al cambiar precio individual
+            return output(guardarPrecioIndividual(e.parameter));
+        }
+        
+        // ---> ACÁ USAMOS EL USUARIO QUE MANDA EL FRONTEND DIRECTAMENTE <---
+        case 'guardarregistro': { 
+            e.parameter.USUARIO = usuarioReq; 
+            return output(procesarRegistro(e.parameter)); 
+        }
+        
+        case 'registrar': return output({status:'success'}); 
+        case 'saveusuarios': { 
+            const res = saveUsuarios(e.parameter.rows); 
+            if (res && res.status === 'success') marcarActualizacion('TS_USUARIOS');
+            return output(res); 
+        }
+        case 'saveclientes': return output(saveClientes(e.parameter.rows));
+        case 'upload_audio': return output(guardarAudioEnDrive(e.parameter.audioBase64, e.parameter.fileName));
+        case 'saveprecios': {
+            CacheService.getScriptCache().remove('INIT_APP_DATA'); // Rompemos caché si cambian los precios en bloque
+            return output(savePrecios(e.parameter.rows));
+        }
+        case 'checkalarma': return output({ status: marcarAlarma(Number(e?.parameter?.row)) ? 'success' : 'error' });
+        case 'clearallalarmas': marcarTodasAlarmas(); return output({ status: 'success' });
+        case 'ingresoflotante': return output(registrarIngresoFlotante(e.parameter));
+        case 'savealarmas': return output({ status: saveAlarmasBatch(JSON.parse(e.parameter.rows || '[]')) ? 'success' : 'error' });
+        case 'verifytransferenciabatch': return output(updateTransferenciaBatch(e.parameter.rowsData, e.parameter.accion, usuarioReq));
+        case 'crearcaucion': return output(crearCaucion(e.parameter, usuarioReq));
+        case 'cerrarcaucion': return output(cerrarCaucion(e.parameter, usuarioReq));
+        case 'anularcaucion': return output(anularCaucion(e.parameter, usuarioReq));
+        case 'getcauciones': return output(obtenerCaucionesActivas());
+        case 'savestock': { e.parameter.usuario = usuarioReq; return output(nuevaSaveStock(e)); }  
+        case 'savetransporte': return output(procesarTransporte(e.parameter, usuarioReq));
+        case 'savearqueo': return output(guardarArqueo(e.parameter, usuarioReq));
+
+        case 'saveexpense': {
+            const body = JSON.parse(e.parameter.data || '{}');
+            body.usuario = usuarioReq;
+            saveExpense(body);
+            return output({ status: 'success' });
+        }
+        case 'modify': {
+            CacheService.getScriptCache().remove('INIT_APP_DATA'); // Rompemos caché al modificar ventas/caja
+            const d = JSON.parse(e.parameter.data || "{}");
+            return output(modifyTransaction(e.parameter.k, e.parameter.type, e.parameter.id, e.parameter.pin, d));
+        }
+        case 'changepin': return output(changeMasterPin(e.parameter.k, e.parameter.oldPin, e.parameter.newPin));
+
+        case 'add_pago': return output(agregarPagoCalendario(e.parameter));
+        case 'get_proximos_pagos': return output(obtenerProximosPagos());
+
+        default: return output({ status: 'error', message: 'Acción desconocida' });
+      }
+    } finally { 
+      lock.releaseLock(); 
+    }
+  } catch (e) { 
+    return output({ status: 'error', message: 'Error general: ' + e.message }); 
+  }
+}
