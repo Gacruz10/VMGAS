@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoría Home Banking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #0a0a0c;
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-hover: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      
+      --accent: #E2B714; 
+      --start: #10B981;  
+      --end: #EF4444;    
+      --info: #3B82F6;   
+      
+      --text-primary: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --text-xs: 0.75rem;
+    }
+
+    body.light-mode {
+      --bg-base: #f8fafc;
+      --surface: rgba(0, 0, 0, 0.03);
+      --surface-hover: rgba(0, 0, 0, 0.06);
+      --glass-border: rgba(0, 0, 0, 0.15);
+      --text-primary: #1a1a1a;
+      --text-muted: rgba(0, 0, 0, 0.6);
+      background: #f8fafc !important;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0; 
+      font-family: 'Inter', sans-serif; 
+      color: var(--text-primary);
+      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
+      background-color: #0d031a;
+      background-attachment: fixed;
+      min-height: 100vh; 
+      padding: 0 15px 120px; 
+      opacity: 0; 
+      transition: opacity 0.5s ease, background 0.3s ease, color 0.3s ease;
+    }
+
+    .theme-toggle {
+      position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-primary);
+      display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer;
+      backdrop-filter: blur(10px); transition: all 0.3s ease; z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--info); }
+
+    .header { 
+      max-width: 900px; margin: 0 auto 20px; 
+      display: flex; align-items: center; justify-content: center; position: sticky; top: 0; z-index: 100;
+      background: rgba(13, 3, 26, 0.9); backdrop-filter: blur(10px); padding: 15px 0;
+    }
+    body.light-mode .header { background: rgba(248, 250, 252, 0.9); }
+    
+    .header h3 { color: var(--text-primary); font-weight: 800; margin: 0; font-size: 1.3rem; letter-spacing: -0.5px; }
+    
+    .btn-volver {
+        background: var(--surface); border: 1px solid var(--glass-border); color: var(--text-muted);
+        padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem;
+        position: absolute; left: 0; transition: all 0.2s;
+    }
+    .btn-volver:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+    .container { max-width: 900px; margin: 0 auto; } 
+
+    .tabs { 
+      display: flex; gap: 8px; margin-bottom: 20px; padding: 5px; border-radius: 8px; border: 1px solid var(--glass-border); 
+      background: rgba(13, 3, 26, 0.95); backdrop-filter: blur(10px);
+      position: sticky; top: 60px; z-index: 99; 
+    }
+    body.light-mode .tabs { background: rgba(248, 250, 252, 0.95); }
+    
+    .tab-btn {
+      flex: 1; padding: 8px; background: transparent; color: var(--text-muted);
+      border: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text-primary); }
+    .tab-btn.active { background: var(--surface-hover); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+    #filtrosHistorial {
+      background: var(--surface); backdrop-filter: blur(10px); padding: 15px; 
+      border-radius: 10px; border: 1px solid var(--glass-border); margin-bottom: 20px;
+      display: none; animation: fadeIn 0.3s;
+    }
+    .date-row { display: flex; gap: 15px; }
+    .date-row div { flex: 1; }
+    .date-row label { display: block; font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+    .date-row input { 
+      width: 100%; padding: 8px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); 
+      border-radius: 6px; color: var(--text-primary); color-scheme: dark; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s;
+    }
+    body.light-mode .date-row input { background: rgba(0,0,0,0.05); color-scheme: light; }
+    .date-row input:focus { border-color: var(--info); }
+    
+    .btn-buscar { 
+      padding: 8px 20px; background: var(--info); color: white; 
+      border: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem; 
+      margin-top: 15px; cursor: pointer; transition: 0.2s; display: block; margin-left: auto;
+    }
+    .btn-buscar:hover { background: #2563EB; }
+
+    /* ESTILOS DEL BUSCADOR FUZZY */
+    .search-container {
+      margin-bottom: 20px;
+      position: sticky;
+      top: 115px; /* Queda justo debajo de las tabs */
+      z-index: 98;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    body.light-mode .search-input {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgba(0,0,0,0.15);
+    }
+    .search-input:focus {
+      border-color: var(--info);
+      background: rgba(0, 0, 0, 0.6);
+    }
+    body.light-mode .search-input:focus {
+      background: #ffffff;
+    }
+
+    .date-group { margin-bottom: 25px; }
+    .date-title { 
+      font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 1px solid var(--glass-border); padding-bottom: 6px; margin-bottom: 10px;
+    }
+
+    .t-card {
+      background: var(--surface); border: 1px solid var(--glass-border);
+      border-radius: 6px; margin-bottom: 6px; overflow: hidden;
+      transition: all 0.3s;
+    }
+    .t-card.fade-out { opacity: 0; transform: scale(0.98) translateX(20px); }
+
+    .t-main { padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: 0.2s; }
+    .t-main:hover { background: var(--surface-hover); }
+    
+    .t-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .t-chofer { font-weight: 600; font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+    .t-chofer span { color: var(--text-muted); font-weight: 400; margin-left: 5px; font-size: 0.75rem;}
+    
+    .t-input-detalle {
+      width: 100%; max-width: 350px; background: rgba(0,0,0,0.4); border: 1px dashed rgba(128,128,128,0.5);
+      color: var(--text-primary); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-family: 'Inter', sans-serif;
+      margin-top: 6px; outline: none; display: none; transition: 0.2s;
+    }
+    body.light-mode .t-input-detalle { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.3); }
+    .t-input-detalle:focus { border: 1px solid var(--info); background: rgba(0,0,0,0.6); }
+    body.light-mode .t-input-detalle:focus { background: #fff; }
+    .t-input-historial { display: block; border: none; background: transparent; color: var(--info); font-style: normal; font-size: 0.75rem; padding: 0; margin-top: 4px; }
+
+    .t-right { text-align: right; display: flex; align-items: center; gap: 15px; }
+    .t-monto { font-size: 1.05rem; font-weight: 800; color: var(--start); }
+    
+    .custom-checkbox {
+      appearance: none; -webkit-appearance: none;
+      width: 18px; height: 18px; border: 2px solid var(--text-muted); border-radius: 4px;
+      background-color: transparent; cursor: pointer; position: relative; transition: 0.2s; margin:0;
+    }
+    .custom-checkbox:checked { background-color: var(--start); border-color: var(--start); }
+    .custom-checkbox:checked::after {
+      content: ''; position: absolute; left: 5px; top: 2px; width: 3px; height: 8px;
+      border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+
+    .t-details { background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); padding: 12px 15px; font-size: 0.8rem; color: var(--text-muted); display: none; }
+    body.light-mode .t-details { background: rgba(0,0,0,0.03); }
+    .d-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+    .d-label { color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 2px;}
+    .d-val { font-size: 0.8rem; color: var(--text-primary); font-weight: 500;}
+    
+    .montos-desglose { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid rgba(128,128,128,0.2); display: flex; gap: 15px; align-items: center; }
+    body.light-mode .montos-desglose { background: rgba(255,255,255,0.5); }
+    .m-item { display: flex; flex-direction: column; }
+    .m-item span:first-child { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+    .m-item span:last-child { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+    .m-item.t-verde span:last-child { color: var(--start); }
+    .m-divider { width: 1px; height: 25px; background: var(--glass-border); }
+
+    .neon-rojo {
+      color: #ff4444; border: 1px solid #ff4444; background: rgba(255, 68, 68, 0.05);
+      padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; font-size: 0.75rem;
+      box-shadow: 0 0 10px rgba(255, 68, 68, 0.2); margin-top: 10px; letter-spacing: 1px;
+    }
+    
+    .ajuste-box {
+      background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; border: 1px dashed var(--info);
+      margin-top: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    body.light-mode .ajuste-box { background: rgba(59, 130, 246, 0.05); }
+    .ajuste-inputs { display: flex; gap: 10px; align-items: center;}
+    .ajuste-group { display: flex; flex-direction: column; }
+    .ajuste-group label { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; }
+    .ajuste-group input { width: 90px; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.6); color: var(--accent); font-weight: 700; font-size: 0.85rem; outline: none; transition: 0.2s;}
+    body.light-mode .ajuste-group input { background: #fff; }
+    .ajuste-group input:focus { border-color: var(--accent); }
+    .btn-ajustar { background: var(--info); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; height: 100%; margin-top: auto;}
+    .btn-ajustar:hover { background: #2563EB; }
+
+    .firma-box { font-size: 0.7rem; color: var(--text-muted); text-align: right; padding-top: 8px; border-top: 1px solid var(--glass-border); margin-top: 10px;}
+
+    #loader { display: none; text-align: center; padding: 30px; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; }
+
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: 280px; }
+    .toast { padding: 10px 14px; border-radius: 6px; color: #fff; font-size: 0.8rem; font-weight: 500; background: #1F2937; border: 1px solid #374151; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); opacity:0; transition: all 0.3s; transform:translateY(-10px); }
+    .toast.show { opacity: 1; transform:translateY(0); }
+
+    .fab-container {
+      position: fixed; bottom: 0; left: 0; width: 100%; 
+      background: rgba(10, 10, 12, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--glass-border);
+      padding: 12px 20px; z-index: 1000; display: none; animation: slideUp 0.3s;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+    }
+    body.light-mode .fab-container { background: rgba(248, 250, 252, 0.95); }
+    
+    .fab-content { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .fab-info { color: var(--text-primary); font-size: 0.85rem; font-weight: 600; }
+    .fab-info span { color: var(--text-muted); font-weight: 400; margin-left: 8px; font-size: 0.75rem;}
+    .fab-btn { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; color: white; transition: 0.2s; }
+    .fab-aprobar { background: var(--start); }
+    .fab-aprobar:hover { background: #059669; }
+    .fab-revertir { background: transparent; border: 1px solid var(--end); color: var(--end); }
+    .fab-revertir:hover { background: rgba(239, 68, 68, 0.1); }
+    
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <script>
+    if(localStorage.getItem('vm_theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
+
+  <div id="toast-container"></div>
+
+  <div class="header">
+    <button class="btn-volver" onclick="window.volver()">← Volver</button>
+    <h3>Auditoría Bancaria</h3>
+  </div>
+
+  <div class="container">
+    
+    <div class="tabs">
+      <button id="tabPendientes" class="tab-btn active" onclick="window.cambiarTab('PENDIENTES')">Pendientes</button>
+      <button id="tabHistorial" class="tab-btn" onclick="window.cambiarTab('HISTORIAL')">Historial Auditado</button>
+    </div>
+
+    <div id="filtrosHistorial">
+      <div class="date-row">
+        <div><label>Fecha Inicio</label><input type="date" id="txtStart"></div>
+        <div><label>Fecha Fin</label><input type="date" id="txtEnd"></div>
+      </div>
+      <button class="btn-buscar" onclick="window.cargarDatos()">Aplicar Filtro</button>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="buscadorTransferencias" class="search-input" placeholder="🔍 Buscar por chofer, cliente o monto ($)..." oninput="window.aplicarFiltroLocal(this.value)">
+    </div>
+
+    <div id="loader">Conectando con base de datos...</div>
+    <div id="listaContainer"></div>
+  </div>
+
+  <div class="fab-container" id="fabContainer">
+    <div class="fab-content">
+       <div class="fab-info" id="fabCountText">0 seleccionadas <span>Listas para procesar</span></div>
+       <button class="fab-btn fab-aprobar" id="btnProcesarLote" onclick="window.procesarLote()">Confirmar Acreditación</button>
+    </div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+const API_KEY = "VM_Seguridad_2026";
+const TIMEOUT_SESION = 1800000; 
+
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+document.getElementById('btnTheme').textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+
+const params = new URLSearchParams(window.location.search);
+let k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
+
+function expulsar() { sessionStorage.clear(); window.location.replace('inicio.html'); }
+
+if (!k) { 
+    expulsar(); 
+} else {
+    sessionStorage.setItem('k', k);
+    if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
+    validarSesion();
+}
+
+async function validarSesion() {
+    try {
+        const docRef = doc(db, "tokens", k);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) throw new Error("Sesión inválida.");
+        
+        const tokenData = docSnap.data();
+        if (tokenData.expira && Date.now() > tokenData.expira) throw new Error("Sesión expirada.");
+        
+        sessionStorage.setItem('usuarioActivo', tokenData.usuario || 'SISTEMA');
+        document.body.style.opacity = 1;
+        initData();
+    } catch (e) { 
+        console.error(e);
+        expulsar(); 
+    }
+}
+
+let tIdle;
+function resetTimer() {
+    clearTimeout(tIdle);
+    tIdle = setTimeout(() => { showToast('Sesión cerrada por inactividad.'); setTimeout(expulsar, 1500); }, TIMEOUT_SESION);
+}
+['click','mousemove','keydown','touchstart','scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
+resetTimer();
+
+let currentModo = 'PENDIENTES';
+let datosGlobales = []; // ACÁ GUARDAMOS TODO EN MEMORIA PARA EL BUSCADOR
+
+window.volver = function() { window.location.replace(`inicio.html?k=${k}`); };
+
+function showToast(msg) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast show'; t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+function initData() {
+    const hoy = new Date();
+    const hace7Dias = new Date(); hace7Dias.setDate(hoy.getDate() - 7);
+    document.getElementById('txtEnd').value = hoy.toISOString().split('T')[0];
+    document.getElementById('txtStart').value = hace7Dias.toISOString().split('T')[0];
+    window.cargarDatos();
+}
+
+window.cambiarTab = function(modo) {
+    currentModo = modo;
+    document.getElementById('tabPendientes').classList.toggle('active', modo === 'PENDIENTES');
+    document.getElementById('tabHistorial').classList.toggle('active', modo === 'HISTORIAL');
+    document.getElementById('filtrosHistorial').style.display = modo === 'HISTORIAL' ? 'block' : 'none';
+    
+    document.getElementById('fabContainer').style.display = 'none';
+    window.cargarDatos();
+};
+
+window.cargarDatos = async function() {
+    const start = document.getElementById('txtStart').value;
+    const end = document.getElementById('txtEnd').value;
+    
+    document.getElementById('listaContainer').innerHTML = '';
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('buscadorTransferencias').value = ''; // Resetear el input
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=gettransferencias&k=${k}&modo=${currentModo}&start=${start}&end=${end}&api_key=${API_KEY}`);
+        const json = await res.json();
+        
+        document.getElementById('loader').style.display = 'none';
+        if (json.status === 'success') {
+            datosGlobales = json.data; 
+            renderizar(datosGlobales);
+        } else {
+            showToast("Error: " + json.message);
+        }
+    } catch (e) {
+        document.getElementById('loader').style.display = 'none';
+        showToast("Error de conexión con el servidor.");
+    }
+};
+
+// ============================================
+// LÓGICA DEL BUSCADOR FUZZY EN DOM (CORREGIDA)
+// ============================================
+window.aplicarFiltroLocal = function(texto) {
+    const query = texto.toLowerCase().trim();
+    
+    // REGLA DE ORO APLICADA AQUÍ: Solo extraemos números si el usuario tipeó estrictamente montos o números.
+    // Esto evita falsos positivos al buscar cosas como "Ruta 3" o "Juan 1".
+    const isNumericSearch = /^[0-9$.,\s]+$/.test(query);
+    const queryNumerico = isNumericSearch ? query.replace(/[^0-9]/g, '') : null;
+    
+    let totalVisible = 0;
+
+    document.querySelectorAll('.date-group').forEach(group => {
+        let cardsVisible = 0;
+        group.querySelectorAll('.t-card').forEach(card => {
+            const rowId = parseInt(card.id.split('-')[1]);
+            const t = datosGlobales.find(d => d.row === rowId);
+            
+            if (!t) return;
+
+            const chofer = (t.chofer || '').toLowerCase();
+            const cliente = (t.cliente || '').toLowerCase();
+            const viaje = (t.viaje || '').toLowerCase();
+            const montoCadena = (t.montoT || '').toString();
+
+            const match = !query || 
+                          chofer.includes(query) || 
+                          cliente.includes(query) || 
+                          viaje.includes(query) ||
+                          (queryNumerico && montoCadena.includes(queryNumerico));
+            
+            if (match) {
+                card.style.display = 'block';
+                cardsVisible++;
+                totalVisible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Ocultar la fecha si no tiene tarjetas visibles adentro
+        group.style.display = (cardsVisible > 0) ? 'block' : 'none';
+    });
+
+    // Controlar cartel de sin resultados
+    let msgEl = document.getElementById('msgNoResultados');
+    if (!msgEl) {
+        msgEl = document.createElement('div');
+        msgEl.id = 'msgNoResultados';
+        msgEl.style = "text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem;";
+        msgEl.innerHTML = "No hay coincidencias con tu búsqueda.";
+        document.getElementById('listaContainer').appendChild(msgEl);
+    }
+    msgEl.style.display = (totalVisible === 0 && datosGlobales.length > 0) ? 'block' : 'none';
+};
+
+function renderizar(data) {
+    const container = document.getElementById('listaContainer');
+    if (data.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem;">
+          ${currentModo === 'PENDIENTES' ? '✅ Todo al día. No hay pendientes.' : 'No se encontraron registros.'}
+        </div>`;
+        return;
+    }
+
+    const grupos = {};
+    data.forEach(t => {
+        if(!grupos[t.fechaCorta]) grupos[t.fechaCorta] = [];
+        grupos[t.fechaCorta].push(t);
+    });
+
+    // Ordenamiento secundario por chofer (alfabético) dentro de cada grupo de fecha
+    Object.keys(grupos).forEach(fecha => {
+        grupos[fecha].sort((a, b) => (a.chofer || '').localeCompare(b.chofer || ''));
+    });
+
+    let html = '';
+    for (const [fecha, transferencias] of Object.entries(grupos)) {
+        html += `<div class="date-group" id="grp-${fecha}">
+                    <div class="date-title">${fecha}</div>`;
+        
+        transferencias.forEach(t => {
+            
+            let inputHTML = '';
+            if (currentModo === 'PENDIENTES') {
+                inputHTML = `<input type="text" class="t-input-detalle" id="input-${t.row}" placeholder="Añadir Nº Op. o nota..." onclick="event.stopPropagation()">`;
+            } else if (currentModo === 'HISTORIAL' && t.detalleBanco) {
+                inputHTML = `<div class="t-input-detalle t-input-historial">Nota: ${t.detalleBanco}</div>`;
+            }
+
+            const isArqueada = (t.arqueo !== 'S/D' && t.arqueo !== '');
+            
+            let panelAjusteHtml = '';
+            if (isArqueada) {
+                panelAjusteHtml = `<div class="neon-rojo">⚠️ ARQUEO CERRADO - INMODIFICABLE</div>`;
+            } else if (currentModo === 'PENDIENTES') {
+                panelAjusteHtml = `
+                <div class="ajuste-box" onclick="event.stopPropagation()">
+                   <span class="d-label" style="width:100%; margin-bottom:5px;">✏️ AJUSTAR PAGOS (Si el cliente pagó de otra forma)</span>
+                   <div class="ajuste-inputs">
+                       <div class="ajuste-group">
+                          <label>Nuevo Efectivo ($)</label>
+                          <input type="number" id="editE-${t.row}" value="${t.montoE}">
+                       </div>
+                       <div class="ajuste-group">
+                          <label>Nueva Transf. ($)</label>
+                          <input type="number" id="editT-${t.row}" value="${t.montoT}">
+                       </div>
+                       <button class="btn-ajustar" onclick="window.guardarAjuste(${t.row}, event)">💾 Guardar</button>
+                   </div>
+                </div>`;
+            }
+
+            const txtCliente = t.cliente ? t.cliente.toUpperCase() : 'C. FINAL';
+            const indicatorAlerta = txtCliente.includes("COBRAR") || txtCliente.includes("PENDIENTE") ? "🟠 " : "";
+
+            html += `
+              <div class="t-card" id="card-${t.row}">
+                <div class="t-main" onclick="window.toggleDetalle(${t.row})">
+                  <div class="t-info">
+                    <div class="t-chofer">${indicatorAlerta}👤 ${t.chofer} <span>| 🛒 ${txtCliente} | 🚚 ${t.viaje}</span></div>
+                    ${inputHTML}
+                  </div>
+                  
+                  <div class="t-right" onclick="event.stopPropagation()">
+                    <div class="t-monto">$${t.montoT.toLocaleString('es-AR')}</div>
+                    <input type="checkbox" class="custom-checkbox cbx-lote" value="${t.row}" onchange="window.checkFila(${t.row})">
+                  </div>
+                </div>
+
+                <div class="t-details" id="det-${t.row}">
+                  <div class="d-grid">
+                    <div><span class="d-label">Tipo Op.</span><span class="d-val">${t.tipoOp}</span></div>
+                    <div><span class="d-label">Hora</span><span class="d-val">${t.hora} hs</span></div>
+                    <div><span class="d-label">ID Arqueo</span><span class="d-val">${t.arqueo}</span></div>
+                    <div><span class="d-label">Total</span><span class="d-val">$${t.montoTotal.toLocaleString('es-AR')}</span></div>
+                  </div>
+
+                  <div class="montos-desglose">
+                    <div class="m-item"><span>Efectivo Declarado</span><span>$${t.montoE.toLocaleString('es-AR')}</span></div>
+                    <div class="m-divider"></div>
+                    <div class="m-item t-verde"><span>Transf. Declarada</span><span>$${t.montoT.toLocaleString('es-AR')}</span></div>
+                  </div>
+                  
+                  ${panelAjusteHtml}
+                  ${t.firma ? `<div class="firma-box">${t.firma}</div>` : ''}
+                </div>
+              </div>`;
+        });
+        html += `</div>`;
+    }
+    container.innerHTML = html;
+}
+
+window.toggleDetalle = function(row) {
+    const el = document.getElementById(`det-${row}`);
+    const isVisible = el.style.display === 'block';
+    document.querySelectorAll('.t-details').forEach(d => d.style.display = 'none');
+    if(!isVisible) el.style.display = 'block';
+};
+
+window.checkFila = function(row) {
+    const cbx = document.querySelector(`.cbx-lote[value="${row}"]`);
+    const input = document.getElementById(`input-${row}`);
+    
+    if (currentModo === 'PENDIENTES' && input) {
+        if (cbx.checked) {
+            input.style.display = 'block';
+            input.focus();
+        } else {
+            input.style.display = 'none';
+        }
+    }
+    window.actualizarBotonFlotante();
+};
+
+window.actualizarBotonFlotante = function() {
+    const marcados = document.querySelectorAll('.cbx-lote:checked');
+    const fabContainer = document.getElementById('fabContainer');
+    const btn = document.getElementById('btnProcesarLote');
+    const textInfo = document.getElementById('fabCountText');
+
+    if (marcados.length > 0) {
+        fabContainer.style.display = 'block';
+        textInfo.innerHTML = `${marcados.length} operación/es <span>seleccionada/s</span>`;
+        
+        if (currentModo === 'PENDIENTES') {
+            btn.className = 'fab-btn fab-aprobar';
+            btn.innerHTML = `Confirmar Acreditación`;
+        } else {
+            btn.className = 'fab-btn fab-revertir';
+            btn.innerHTML = `Deshacer (A Pendientes)`;
+        }
+    } else {
+        fabContainer.style.display = 'none';
+    }
+};
+
+window.guardarAjuste = async function(row, event) {
+    event.stopPropagation(); 
+    
+    const nuevoE = document.getElementById(`editE-${row}`).value;
+    const nuevoT = document.getElementById(`editT-${row}`).value;
+    
+    if(!confirm(`¿Actualizar la fila ${row}?\nNUEVO EFECTIVO: $${nuevoE}\nNUEVA TRANSF.: $${nuevoT}`)) return;
+
+    showToast("Guardando ajuste en base de datos...");
+    
+    const body = new FormData();
+    body.append('action', 'ajustartransferencia');
+    body.append('k', k);
+    body.append('row', row);
+    body.append('nuevoE', nuevoE);
+    body.append('nuevoT', nuevoT);
+    body.append('api_key', API_KEY);
+    body.append('usuario', sessionStorage.getItem('usuarioActivo') || 'SISTEMA');
+
+    try {
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+        const json = await res.json();
+        if (json.status === 'success') {
+            showToast("✅ " + json.message);
+            setTimeout(() => { window.cargarDatos(); }, 800); 
+        } else {
+            showToast("❌ " + json.message);
+        }
+    } catch (e) {
+        showToast("❌ Error de red al intentar guardar.");
+    }
+};
+
+window.procesarLote = async function() {
+    const marcados = document.querySelectorAll('.cbx-lote:checked');
+    if (marcados.length === 0) return;
+
+    const accion = currentModo === 'PENDIENTES' ? 'APROBAR' : 'REVERTIR';
+    const msg = accion === 'APROBAR' 
+        ? `Se registrará la acreditación de ${marcados.length} operación(es). ¿Desea continuar?` 
+        : `Se anulará la conciliación de ${marcados.length} operación(es). ¿Desea continuar?`;
+    
+    if (!confirm(msg)) return;
+
+    const payload = [];
+    marcados.forEach(cbx => {
+        const row = cbx.value;
+        const inputEl = document.getElementById(`input-${row}`);
+        const detalle = inputEl ? inputEl.value.trim() : '';
+        payload.push({ row: row, detalle: detalle });
+    });
+
+    try {
+        showToast("Procesando transacciones...");
+        document.getElementById('fabContainer').style.display = 'none';
+
+        const body = new FormData();
+        body.append('action', 'verifytransferenciabatch');
+        body.append('k', k);
+        body.append('accion', accion);
+        body.append('rowsData', JSON.stringify(payload));
+        body.append('api_key', API_KEY);
+        body.append('usuario', sessionStorage.getItem('usuarioActivo') || 'SISTEMA');
+
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+            marcados.forEach(cbx => {
+                const card = document.getElementById(`card-${cbx.value}`);
+                card.classList.add('fade-out');
+                setTimeout(() => {
+                    card.remove();
+                    document.querySelectorAll('.date-group').forEach(grp => {
+                        if(grp.querySelectorAll('.t-card').length === 0) grp.remove();
+                    });
+                    if(document.querySelectorAll('.t-card').length === 0) {
+                        document.getElementById('listaContainer').innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem;">Lista actualizada.</div>`;
+                    }
+                }, 300); 
+            });
+            showToast("Procesamiento completado.");
+            // Refrescar en segundo plano para limpiar memoria
+            setTimeout(() => { window.cargarDatos(); }, 1500);
+        } else {
+            showToast("Error del servidor: " + json.message);
+            window.actualizarBotonFlotante();
+        }
+    } catch (e) {
+        showToast("Error de conexión.");
+        window.actualizarBotonFlotante();
+    }
+};
+</script>
+
+<div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
+  <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
+  <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
+  <p style="max-width:400px; color:var(--text-muted); font-family:'Inter', sans-serif; margin-top:10px;">
+    Estamos procesando los cierres y auditorías del día. <br>
+    El sistema volverá a estar operativo a las <b>00:06 AM</b>.
+  </p>
+</div>
+
+<script>
+  function controlPatovica() {
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    const min = ahora.getMinutes();
+    const capa = document.getElementById('capaMantenimiento');
+    const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
+    if (estaEnBloqueo) {
+      capa.style.display = 'flex';
+      document.onkeydown = function (e) { return false; };
+    } else {
+      capa.style.display = 'none';
+      document.onkeydown = null;
+    }
+  }
+  controlPatovica();
+  setInterval(controlPatovica, 30000);
+</script>
+</body>
+</html>

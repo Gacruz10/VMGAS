@@ -71,144 +71,404 @@
             display: none;
         }
 
-        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin {
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
         @keyframes neon-glow {
-            from { box-shadow: 0 0 10px var(--accent), inset 0 0 10px var(--accent); }
-            to { box-shadow: 0 0 25px var(--accent), inset 0 0 20px var(--accent); }
+            from {
+                box-shadow: 0 0 10px var(--accent), inset 0 0 10px var(--accent);
+            }
+
+            to {
+                box-shadow: 0 0 25px var(--accent), inset 0 0 20px var(--accent);
+            }
         }
 
         /* --- HEADER --- */
         .fixed-header {
-            position: sticky; top: 0; z-index: 200;
+            position: sticky;
+            top: 0;
+            z-index: 200;
             background: rgba(5, 5, 16, 0.95);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border-bottom: 1px solid var(--glass-border);
-            padding: 12px 15px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            padding: 12px 15px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
 
         .header-top {
-            display: flex; justify-content: space-between; align-items: center;
-            max-width: 1200px; margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .page-title {
-            font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0;
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin: 0;
             background: linear-gradient(to right, #fff, var(--accent));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .btn-action {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-sec);
-            padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-sec);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
-        .btn-action:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
 
         /* --- CONTROLES DE FECHA --- */
         .controls-wrapper {
-            max-width: 1200px; margin: 15px auto; padding: 0 15px;
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+            max-width: 1200px;
+            margin: 15px auto;
+            padding: 0 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .pills-group {
-            display: flex; gap: 5px; background: rgba(255, 255, 255, 0.03);
-            padding: 4px; border-radius: 8px; border: 1px solid var(--glass-border);
+            display: flex;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
         }
 
         .btn-pill {
-            background: transparent; border: none; color: var(--text-sec); padding: 4px 10px;
-            border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; transition: 0.2s;
+            background: transparent;
+            border: none;
+            color: var(--text-sec);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .btn-pill.active { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+        .btn-pill.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
 
         .date-filters {
-            display: flex; gap: 5px; align-items: center; background: var(--bg-card);
-            padding: 4px; border-radius: 8px; border: 1px solid var(--glass-border); flex: 1; min-width: 250px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            flex: 1;
+            min-width: 250px;
         }
 
-        .date-group { position: relative; flex: 1; }
-        .date-group input {
-            width: 100%; background: transparent; border: none; color: white; padding: 6px 6px 6px 24px;
-            font-family: inherit; font-size: 12px; cursor: pointer; font-weight: 600; text-align: center;
+        .date-group {
+            position: relative;
+            flex: 1;
         }
-        .date-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 12px; }
+
+        .date-group input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 6px 6px 6px 24px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .date-icon {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent);
+            font-size: 12px;
+        }
 
         /* --- GRILLA Y CARDS --- */
         .view-section {
-            padding: 0 15px; max-width: 1200px; margin: 0 auto 30px auto;
-            opacity: 1; transition: opacity 0.5s ease-in-out;
+            padding: 0 15px;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
         }
 
         .section-header {
-            font-size: 1.2rem; font-weight: 800; margin-bottom: 15px; color: #fff;
-            display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 8px;
         }
 
-        .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 15px; }
-        .grid-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .grid-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
 
         .card {
-            background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px;
-            padding: 15px; display: flex; flex-direction: column; position: relative; overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
         }
+
         .card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
             background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
         }
 
         .card-title {
-            font-size: 10px; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px;
-            font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 10px;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .kpi-value { font-size: 1.6rem; font-weight: 800; color: #fff; font-family: monospace; }
-        .kpi-sub { font-size: 11px; margin-top: 2px; }
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #fff;
+            font-family: monospace;
+        }
 
-        .chart-container { position: relative; height: 250px; width: 100%; margin-top: 10px; }
-        .chart-container-sm { position: relative; height: 180px; width: 100%; display: flex; justify-content: center; }
+        .kpi-sub {
+            font-size: 11px;
+            margin-top: 2px;
+        }
 
-        .scrollable-list { max-height: 160px; overflow-y: auto; padding-right: 5px; }
-        .scrollable-list::-webkit-scrollbar { width: 4px; }
-        .scrollable-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
-        .scrollable-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .chart-container-sm {
+            position: relative;
+            height: 180px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .scrollable-list {
+            max-height: 160px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .scrollable-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .scrollable-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .scrollable-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
 
         /* LIST ROW ESTÁNDAR Y CON BORDES DE COLOR */
         .list-row {
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03); font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 11px;
         }
-        .list-row:last-child { border-bottom: none; }
-        
-        .list-row.b-accent { border-left: 2px solid var(--accent); padding-left: 8px; margin-bottom: 2px; }
-        .list-row.b-compra { border-left: 2px solid var(--compra); padding-left: 8px; margin-bottom: 2px; }
-        .list-row.b-blue   { border-left: 2px solid var(--card-blue); padding-left: 8px; margin-bottom: 2px; }
 
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+        .list-row:last-child {
+            border-bottom: none;
+        }
 
-        .text-pos { color: var(--success); }
-        .text-neg { color: var(--danger); }
-        .text-accent { color: var(--accent); }
-        .text-compra { color: var(--compra); }
+        .list-row.b-accent {
+            border-left: 2px solid var(--accent);
+            padding-left: 8px;
+            margin-bottom: 2px;
+        }
 
-        .mixed-card { display: flex; flex-wrap: wrap; gap: 15px; align-items: stretch; }
-        .mixed-left { flex: 1; min-width: 150px; }
-        .mixed-right { flex: 1; min-width: 200px; display: flex; flex-direction: column; justify-content: center; }
+        .list-row.b-compra {
+            border-left: 2px solid var(--compra);
+            padding-left: 8px;
+            margin-bottom: 2px;
+        }
 
-        .block-calle { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 8px; }
-        .block-calle-title { font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; }
-        .block-calle-data { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sec); }
-        .block-calle-data b { color: #fff; font-family: monospace; font-size: 14px; }
+        .list-row.b-blue {
+            border-left: 2px solid var(--card-blue);
+            padding-left: 8px;
+            margin-bottom: 2px;
+        }
 
-        .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
-        .stat-box { background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; }
-        .stat-lbl { font-size: 10px; color: var(--text-sec); margin-bottom: 5px; text-transform: uppercase; font-weight: 700; }
-        .stat-val { font-size: 16px; font-family: monospace; font-weight: 800; color: #fff; }
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
 
-        .hidden-row { display: none !important; }
-        .btn-toggle-list { width: 100%; margin-top: 10px; padding: 8px; text-align: center; }
+        .text-pos {
+            color: var(--success);
+        }
 
-        .leaflet-layer, .leaflet-control-zoom-in, .leaflet-control-zoom-out, .leaflet-control-attribution {
-            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        .text-neg {
+            color: var(--danger);
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .text-compra {
+            color: var(--compra);
+        }
+
+        .mixed-card {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: stretch;
+        }
+
+        .mixed-left {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .mixed-right {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .block-calle {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .block-calle-title {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .block-calle-data {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-sec);
+        }
+
+        .block-calle-data b {
+            color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .stat-lbl {
+            font-size: 10px;
+            color: var(--text-sec);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .stat-val {
+            font-size: 16px;
+            font-family: monospace;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .hidden-row {
+            display: none !important;
+        }
+
+        .btn-toggle-list {
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px;
+            text-align: center;
         }
     </style>
 </head>
@@ -221,7 +481,8 @@
         <div class="header-top">
             <button class="btn-action" id="btnVolver">❮ Volver</button>
             <h2 class="page-title">Tablero de Comando</h2>
-            <button class="btn-action" id="btnFlota" style="color: var(--accent); border-color: var(--accent); font-weight: bold;">🚚 KM FLOTA</button>
+            <button class="btn-action" id="btnFlota"
+                style="color: var(--accent); border-color: var(--accent); font-weight: bold;">🚚 KM FLOTA</button>
         </div>
     </div>
 
@@ -233,48 +494,57 @@
         </div>
 
         <div class="date-filters">
-            <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-start" onchange="invalidateCacheAndReload()"></div>
+            <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-start"
+                    onchange="invalidateCacheAndReload()"></div>
             <div style="color:var(--text-sec); font-size:10px; font-weight:bold;">➜</div>
-            <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-end" onchange="invalidateCacheAndReload()"></div>
+            <div class="date-group"><span class="date-icon">📅</span><input type="text" id="dash-end"
+                    onchange="invalidateCacheAndReload()"></div>
         </div>
     </div>
 
     <div id="view-riesgo" class="view-section">
         <div class="section-header">⚠️ Riesgo & Stock</div>
-        
+
         <div class="card" style="margin-bottom: 15px; border-top: 2px solid var(--accent);">
-            <div class="card-title">Stock Total Empresa (Planta + Calle) <span id="ind-stock" style="font-size:14px">⚫</span></div>
+            <div class="card-title">Stock Total Empresa (Planta + Calle) <span id="ind-stock"
+                    style="font-size:14px">⚫</span></div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:5px;">
                 <div class="stat-box" style="flex:1; min-width:160px; text-align:center;">
                     <div class="stat-lbl" style="color:#2dd4bf; font-size:12px;">GARRAFA 10KG</div>
-                    <div style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
+                    <div
+                        style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
                         <span class="text-pos">🟢 Llenos: <b id="t-stock-l10" style="font-size:15px;">...</b></span>
                         <span class="text-neg">🔴 Vacíos: <b id="t-stock-v10" style="font-size:15px;">...</b></span>
                     </div>
                 </div>
                 <div class="stat-box" style="flex:1; min-width:160px; text-align:center;">
                     <div class="stat-lbl" style="color:#3b82f6; font-size:12px;">GARRAFA 15KG</div>
-                    <div style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
+                    <div
+                        style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
                         <span class="text-pos">🟢 Llenos: <b id="t-stock-l15" style="font-size:15px;">...</b></span>
                         <span class="text-neg">🔴 Vacíos: <b id="t-stock-v15" style="font-size:15px;">...</b></span>
                     </div>
                 </div>
                 <div class="stat-box" style="flex:1; min-width:160px; text-align:center;">
                     <div class="stat-lbl" style="color:#FFD700; font-size:12px;">CILINDRO 45KG</div>
-                    <div style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
+                    <div
+                        style="font-size:13px; margin-top:8px; display:flex; justify-content:space-around; align-items:center;">
                         <span class="text-pos">🟢 Llenos: <b id="t-stock-l45" style="font-size:15px;">...</b></span>
                         <span class="text-neg">🔴 Vacíos: <b id="t-stock-v45" style="font-size:15px;">...</b></span>
                     </div>
                 </div>
             </div>
-            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+            <div
+                style="margin-top:15px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
                 <span style="font-size:11px; color:var(--text-sec);">Proyección de Quiebre (Al ritmo actual):</span>
                 <span class="kpi-value text-neg" id="kpi-quiebre" style="font-size:1.2rem;">...</span>
             </div>
         </div>
 
-        <div class="card" style="margin-bottom: 15px; border-top: 2px solid var(--success); background: rgba(0,0,0,0.2);">
-            <div class="card-title">Stock Físico en Plataforma (Base) <span id="estado-turno" class="badge" style="background:rgba(255,255,255,0.1)">...</span></div>
+        <div class="card"
+            style="margin-bottom: 15px; border-top: 2px solid var(--success); background: rgba(0,0,0,0.2);">
+            <div class="card-title">Stock Físico en Plataforma (Base) <span id="estado-turno" class="badge"
+                    style="background:rgba(255,255,255,0.1)">...</span></div>
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:5px;">
                 <div class="stat-box" style="flex:1; min-width:150px; text-align:center;">
                     <div class="stat-lbl" style="color:#2dd4bf; font-size:12px;">GARRAFAS 10KG</div>
@@ -306,17 +576,17 @@
         </div>
 
         <div class="grid-charts">
-            
+
             <div class="card" style="border-top: 2px solid var(--accent)">
                 <div class="card-title">Cuenta Corriente (Clientes)</div>
                 <div id="container-ctacte">
-                    </div>
+                </div>
             </div>
 
             <div class="card" style="border-top: 2px solid var(--card-blue)">
                 <div class="card-title">Cauciones (Garantías)</div>
                 <div id="container-cauciones">
-                    </div>
+                </div>
             </div>
 
             <div class="card" style="border-top: 2px solid var(--danger)">
@@ -325,7 +595,8 @@
             </div>
 
             <div class="card" style="border-top: 2px solid var(--danger)">
-                <div class="card-title">Transferencias Adeudadas <span class="badge" style="background: rgba(255,71,87,0.2); color: var(--danger)">CRÍTICO</span></div>
+                <div class="card-title">Transferencias Adeudadas <span class="badge"
+                        style="background: rgba(255,71,87,0.2); color: var(--danger)">CRÍTICO</span></div>
                 <div class="scrollable-list" id="list-adeudados"></div>
             </div>
 
@@ -342,7 +613,8 @@
     </div>
 
     <div id="container-btn-mas" style="text-align: center; padding: 20px 15px; max-width: 1200px; margin: 0 auto;">
-        <button id="btnCargarMas" class="btn-action" style="padding: 12px 24px; font-size: 13px; border-color: var(--accent); color: var(--accent); width: 100%; max-width: 400px; font-weight: bold;">
+        <button id="btnCargarMas" class="btn-action"
+            style="padding: 12px 24px; font-size: 13px; border-color: var(--accent); color: var(--accent); width: 100%; max-width: 400px; font-weight: bold;">
             ⬇️ Cargar Operativa y Finanzas ⬇️
         </button>
     </div>
@@ -355,16 +627,22 @@
                 <div class="mixed-card">
                     <div class="mixed-left">
                         <div class="kpi-value" id="kpi-kilos" style="font-size: 2rem;">...</div>
-                        <div class="kpi-sub text-pos" id="kpi-kilos-plata" style="font-weight:700; margin-bottom:10px;">...</div>
+                        <div class="kpi-sub text-pos" id="kpi-kilos-plata" style="font-weight:700; margin-bottom:10px;">
+                            ...</div>
                         <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
-                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--glass-border); padding-bottom:2px;">
-                                <span style="color:#2dd4bf">● Garrafas 10kg</span><span id="unid-10" style="color:#fff; font-weight:700;">...</span>
+                            <div
+                                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--glass-border); padding-bottom:2px;">
+                                <span style="color:#2dd4bf">● Garrafas 10kg</span><span id="unid-10"
+                                    style="color:#fff; font-weight:700;">...</span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--glass-border); padding-bottom:2px;">
-                                <span style="color:#3b82f6">● Garrafas 15kg</span><span id="unid-15" style="color:#fff; font-weight:700;">...</span>
+                            <div
+                                style="display:flex; justify-content:space-between; border-bottom:1px solid var(--glass-border); padding-bottom:2px;">
+                                <span style="color:#3b82f6">● Garrafas 15kg</span><span id="unid-15"
+                                    style="color:#fff; font-weight:700;">...</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; padding-bottom:2px;">
-                                <span style="color:#FFD700">● Cilindros 45kg</span><span id="unid-45" style="color:#fff; font-weight:700;">...</span>
+                                <span style="color:#FFD700">● Cilindros 45kg</span><span id="unid-45"
+                                    style="color:#fff; font-weight:700;">...</span>
                             </div>
                         </div>
                     </div>
@@ -374,8 +652,10 @@
                             <div class="chart-container-sm" style="height:120px;"><canvas id="chart-mix"></canvas></div>
                         </div>
                         <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
-                            <div style="font-size:10px; color:var(--text-sec); margin-bottom:5px;">BUTANO / PROPANO</div>
-                            <div class="chart-container-sm" style="height:120px;"><canvas id="chart-gases"></canvas></div>
+                            <div style="font-size:10px; color:var(--text-sec); margin-bottom:5px;">BUTANO / PROPANO
+                            </div>
+                            <div class="chart-container-sm" style="height:120px;"><canvas id="chart-gases"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -384,19 +664,41 @@
             <div class="card" style="grid-column: 1 / -1; border-top: 2px solid var(--accent)">
                 <div class="card-title">Promedios de Venta Históricos</div>
                 <div style="margin-bottom: 15px;">
-                    <div style="color: var(--text-sec); font-size: 11px; margin-bottom: 5px; font-weight: bold;">📊 PROMEDIO SEMANAL (Últ. 5 semanas)</div>
+                    <div style="color: var(--text-sec); font-size: 11px; margin-bottom: 5px; font-weight: bold;">📊
+                        PROMEDIO SEMANAL (Últ. 5 semanas)</div>
                     <div class="grid-3col">
-                        <div class="stat-box"><div class="stat-lbl">BUTANO (Kg)</div><div class="stat-val text-accent" id="prom-sem-bk">...</div></div>
-                        <div class="stat-box"><div class="stat-lbl">PROPANO (Kg)</div><div class="stat-val text-accent" id="prom-sem-pk">...</div></div>
-                        <div class="stat-box"><div class="stat-lbl">Unidades</div><div style="font-size:10px; color:#fff; font-family:monospace; margin-top:2px;" id="prom-sem-u">...</div></div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">BUTANO (Kg)</div>
+                            <div class="stat-val text-accent" id="prom-sem-bk">...</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">PROPANO (Kg)</div>
+                            <div class="stat-val text-accent" id="prom-sem-pk">...</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">Unidades</div>
+                            <div style="font-size:10px; color:#fff; font-family:monospace; margin-top:2px;"
+                                id="prom-sem-u">...</div>
+                        </div>
                     </div>
                 </div>
                 <div>
-                    <div style="color: var(--text-sec); font-size: 11px; margin-bottom: 5px; font-weight: bold;">📊 PROMEDIO MENSUAL (Últ. 6 meses)</div>
+                    <div style="color: var(--text-sec); font-size: 11px; margin-bottom: 5px; font-weight: bold;">📊
+                        PROMEDIO MENSUAL (Últ. 6 meses)</div>
                     <div class="grid-3col">
-                        <div class="stat-box"><div class="stat-lbl">BUTANO (Kg)</div><div class="stat-val text-pos" id="prom-men-bk">...</div></div>
-                        <div class="stat-box"><div class="stat-lbl">PROPANO (Kg)</div><div class="stat-val text-pos" id="prom-men-pk">...</div></div>
-                        <div class="stat-box"><div class="stat-lbl">Unidades</div><div style="font-size:10px; color:#fff; font-family:monospace; margin-top:2px;" id="prom-men-u">...</div></div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">BUTANO (Kg)</div>
+                            <div class="stat-val text-pos" id="prom-men-bk">...</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">PROPANO (Kg)</div>
+                            <div class="stat-val text-pos" id="prom-men-pk">...</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-lbl">Unidades</div>
+                            <div style="font-size:10px; color:#fff; font-family:monospace; margin-top:2px;"
+                                id="prom-men-u">...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -405,7 +707,8 @@
                 <div class="card-title">Total Viajes Logísticos</div>
                 <div style="display:flex; justify-content:space-between; align-items:end;">
                     <div class="kpi-value text-accent" id="kpi-viajes">...</div>
-                    <div class="kpi-sub text-pos" id="kpi-viajes-plata" style="font-weight:700; font-family:monospace; font-size:14px;">...</div>
+                    <div class="kpi-sub text-pos" id="kpi-viajes-plata"
+                        style="font-weight:700; font-family:monospace; font-size:14px;">...</div>
                 </div>
             </div>
         </div>
@@ -542,7 +845,7 @@
         function toggleRows(btn, containerId, rowClass) {
             const rows = document.querySelectorAll(`#${containerId} .${rowClass}`);
             const isExpanded = btn.getAttribute('data-expanded') === 'true';
-            
+
             if (isExpanded) {
                 rows.forEach(r => r.classList.add('hidden-row'));
                 btn.innerText = 'Ver más ⬇️';
@@ -554,28 +857,28 @@
             }
         }
 
-        document.getElementById('btnCargarMas').onclick = function() {
-            this.parentElement.style.display = 'none'; 
-            
+        document.getElementById('btnCargarMas').onclick = function () {
+            this.parentElement.style.display = 'none';
+
             const viewOp = document.getElementById('view-operativa');
             const viewFin = document.getElementById('view-finanzas');
-            
+
             viewOp.style.display = 'block';
             viewFin.style.display = 'block';
-            
+
             if (heatMapObj) heatMapObj.invalidateSize();
-            Object.values(chartInst).forEach(chart => { if(chart) chart.resize(); });
-            
+            Object.values(chartInst).forEach(chart => { if (chart) chart.resize(); });
+
             setTimeout(() => { viewOp.style.opacity = 1; viewFin.style.opacity = 1; }, 50);
             seccionesExtraVisibles = true;
-            
+
             fetchTabData('operativa');
             fetchTabData('finanzas');
         };
 
         function initMap() {
             heatMapObj = L.map('mapa-calor').setView([-29.413, -66.850], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(heatMapObj);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap, © CARTO' }).addTo(heatMapObj);
         }
 
         function invalidateCacheAndReload() {
@@ -596,7 +899,7 @@
             fetch(API_URL, { method: 'POST', body: fd })
                 .then(r => r.json())
                 .then(data => {
-                    if (data.status === 'success') { renderData(viewId, data.payload); } 
+                    if (data.status === 'success') { renderData(viewId, data.payload); }
                     else { renderData(viewId, getEmptyData(viewId)); }
                 })
                 .catch(e => { console.error("Error cargando:", e); renderData(viewId, getEmptyData(viewId)); })
@@ -616,7 +919,7 @@
                 renderChart('gastos', 'doughnut', data.graficoGastos, { plugins: { legend: { display: false }, datalabels: { display: false } } });
 
                 let htmlGastos = '';
-                if(data.graficoGastos.labels.length > 0) {
+                if (data.graficoGastos.labels.length > 0) {
                     data.graficoGastos.labels.forEach((lbl, index) => {
                         let monto = data.graficoGastos.datasets[0].data[index];
                         let color = data.graficoGastos.datasets[0].backgroundColor[index];
@@ -657,11 +960,21 @@
                 renderChart('efectividad', 'bar', dataEfectividad, { indexAxis: 'y', plugins: { legend: { display: true, labels: { color: '#a0a0b0' } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => v + " u." } } });
                 renderChart('choferes', 'bar', data.graficoChoferes, { indexAxis: 'y', plugins: { legend: { display: false }, datalabels: { color: '#000', anchor: 'end', align: 'left', formatter: (v) => "$" + formatM(v), font: { weight: 'bold', size: 11 } } } });
                 renderChart('zonas', 'bar', data.graficoZonas, { indexAxis: 'y', plugins: { legend: { display: false }, datalabels: { color: '#fff', anchor: 'end', align: 'end', formatter: (v, ctx) => `[${ctx.dataset.unidades ? ctx.dataset.unidades[ctx.dataIndex] : 0} unid]  $${formatM(v)}`, font: { size: 10 } } }, layout: { padding: { right: 100 } } });
+	
+
+console.log("Datos que llegan del backend:", data.mapaCalor);
 
                 if (data.mapaCalor && data.mapaCalor.length > 0) {
                     if (heatLayer) heatMapObj.removeLayer(heatLayer);
-                    heatLayer = L.heatLayer(data.mapaCalor, { radius: 20, blur: 15, maxZoom: 14 }).addTo(heatMapObj);
-                } else { if (heatLayer) heatMapObj.removeLayer(heatLayer); }
+                    heatLayer = L.heatLayer(data.mapaCalor, {
+                        radius: 20,
+                        blur: 15,
+                        maxZoom: 14,
+                        gradient: { 0.2: '#3b82f6', 0.5: '#2dd4bf', 0.8: '#FFD700', 1.0: '#ff4757' }
+                    }).addTo(heatMapObj);
+                } else {
+                    if (heatLayer) heatMapObj.removeLayer(heatLayer);
+                }
 
             } else if (view === 'riesgo') {
                 document.getElementById('t-stock-l10').innerText = data.stockTotal.llenos['10kg'];
@@ -679,7 +992,7 @@
                 document.getElementById('p-stock-v45').innerText = data.stockPlanta.vacios['45kg'];
 
                 let btnEstado = document.getElementById('estado-turno');
-                if(data.estadoTurno) {
+                if (data.estadoTurno) {
                     btnEstado.innerText = "Turno: " + data.estadoTurno;
                     btnEstado.style.background = data.estadoTurno === 'ABIERTO' ? 'rgba(45,212,191,0.2)' : 'rgba(255,71,87,0.2)';
                     btnEstado.style.color = data.estadoTurno === 'ABIERTO' ? 'var(--success)' : 'var(--danger)';
@@ -711,11 +1024,11 @@
                 document.getElementById('lista-flota').innerHTML = htmlFlota;
 
                 let htmlCta = '';
-                if(data.ctaCteDetalle && data.ctaCteDetalle.length > 0) {
+                if (data.ctaCteDetalle && data.ctaCteDetalle.length > 0) {
                     data.ctaCteDetalle.forEach((item, index) => {
                         let hideClass = index >= 3 ? 'row-cta hidden-row' : 'row-cta';
-                        
-                        if(item.estado.includes('COMODATO')) {
+
+                        if (item.estado.includes('COMODATO')) {
                             htmlCta += `
                             <div class="list-row b-accent ${hideClass}">
                                 <div><b style="color:#fff" title="${item.cliente}">${item.cliente}</b><br><span style="color:var(--text-sec); font-size:9px;">Comodato (Fijo)</span></div>
@@ -734,7 +1047,7 @@
                             </div>`;
                         }
                     });
-                    
+
                     if (data.ctaCteDetalle.length > 3) {
                         htmlCta += `<button class="btn-action btn-toggle-list" data-expanded="false" onclick="toggleRows(this, 'container-ctacte', 'row-cta')">Ver más ⬇️</button>`;
                     }
@@ -742,7 +1055,7 @@
                 document.getElementById('container-ctacte').innerHTML = htmlCta;
 
                 let htmlCau = '';
-                if(data.caucionesDetalle && data.caucionesDetalle.length > 0) {
+                if (data.caucionesDetalle && data.caucionesDetalle.length > 0) {
                     data.caucionesDetalle.forEach((item, index) => {
                         let hideClass = index >= 3 ? 'row-cau hidden-row' : 'row-cau';
                         htmlCau += `
@@ -820,7 +1133,7 @@
                     stockTotal: { llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }, vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' } },
                     stockPlanta: { llenos: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' }, vacios: { '10kg': 'S/D', '15kg': 'S/D', '45kg': 'S/D' } },
                     flotaActiva: [], diasQuiebre: 'S/D',
-                    
+
                     ctaCteDetalle: [
                         { cliente: "Juan Pérez", c10: 5, c15: 0, c45: 1, estado: "COMODATO" },
                         { cliente: "La Casa del Gas", c10: 20, c15: 5, c45: 0, estado: "CONSIGNACION", monto: 45000 },

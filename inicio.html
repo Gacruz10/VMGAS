@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
 <style>
   :root {
+    /* Variables del tema Dark Glass (Por defecto) */
     --glass: rgba(0, 0, 0, 0.5);
     --glass-hover: rgba(255, 255, 255, 0.05);
     --glass-border: rgba(255, 255, 255, 0.15);
@@ -21,33 +22,84 @@
     --badge-text: #ffffff;
     --ok: #2dd4bf; 
     --error: #ff5e5e;
-    /* Estilos PIN */
     --pin-bg: rgba(255, 215, 0, 0.15); 
     --pin-border: rgba(255, 215, 0, 0.4);
+    --bg-color: #0d031a;
+    --bg-grad-1: #1e053a;
+    --bg-grad-2: #310d5e;
+    --bg-grad-3: #0d031a;
+    --bg-grad-4: #214d7a;
+    --tile-hover-border: rgba(255,255,255,0.4);
   }
+
+  /* Variables del tema Light Glass */
+  body.light-mode {
+    --glass: rgba(255, 255, 255, 0.65);
+    --glass-hover: rgba(0, 0, 0, 0.05);
+    --glass-border: rgba(0, 0, 0, 0.15);
+    --text-primary: #1a1a1a;
+    --text-muted: rgba(0, 0, 0, 0.6);
+    --accent: #d97706; 
+    --pin-bg: rgba(217, 119, 6, 0.15);
+    --pin-border: rgba(217, 119, 6, 0.4);
+    --bg-color: #f8fafc;
+    --bg-grad-1: #e9d5ff;
+    --bg-grad-2: #bfdbfe;
+    --bg-grad-3: #fbcfe8;
+    --bg-grad-4: #bae6fd;
+    --tile-hover-border: rgba(0,0,0,0.3);
+  }
+
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body {
     margin: 0;
     font-family: 'Inter', sans-serif;
-    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
-                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
-                radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
-    background-color: #0d031a;
+    background: radial-gradient(at 0% 0%, var(--bg-grad-1) 0%, transparent 50%),
+                radial-gradient(at 100% 0%, var(--bg-grad-2) 0%, transparent 50%),
+                radial-gradient(at 100% 100%, var(--bg-grad-3) 0%, transparent 50%),
+                radial-gradient(at 0% 100%, var(--bg-grad-4) 0%, transparent 50%);
+    background-color: var(--bg-color);
     background-attachment: fixed;
     color: var(--text-primary);
     display: flex;
     justify-content: center;
     opacity: 0; 
-    transition: opacity 0.5s ease;
+    transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
   }
+
+  /* Botón flotante para cambiar tema */
+  .theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  .theme-toggle:hover {
+    transform: scale(1.1);
+    border-color: var(--accent);
+  }
+
   .wrap {
     width: 100%;
     max-width: 1000px; 
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    padding-top: 10px;
   }
   header { 
     padding: 30px 20px 20px; 
@@ -57,11 +109,11 @@
   }
   
   .header-info { text-align: left; }
-  .header-info h1 { margin: 0 0 8px; font-weight: 800; font-size: clamp(24px, 6vw, 32px); text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  .header-info h1 { margin: 0 0 8px; font-weight: 800; font-size: clamp(24px, 6vw, 32px); text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
   .header-info .hello { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
   .session-info {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-muted);
     margin-top: 4px;
     display: flex;
     gap: 12px;
@@ -75,6 +127,7 @@
   }
   .session-info .status-dot.online { background: var(--ok); }
   .session-info .status-dot.offline { background: var(--error); }
+  
   .pin-display {
     display: none; 
     background: var(--pin-bg);
@@ -88,11 +141,12 @@
     letter-spacing: 3px;
     cursor: pointer;
     user-select: none;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     transition: transform 0.1s, background 0.3s;
     text-align: center;
   }
-  .pin-display:active { transform: scale(0.95); background: rgba(255,215,0,0.3); }
+  .pin-display:active { transform: scale(0.95); background: var(--glass-border); }
+  
   .grid {
     padding: 10px 20px 40px;
     display: grid;
@@ -116,7 +170,7 @@
     border-radius: 20px;
     height: 120px;
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     cursor: pointer;
     padding: 10px;
     overflow: visible; 
@@ -129,7 +183,7 @@
     border-radius: inherit; 
     background: radial-gradient(
         250px circle at var(--x, 50%) var(--y, 50%), 
-        rgba(255, 255, 255, 0.15), 
+        var(--glass-border), 
         transparent 40%
     );
     opacity: 0; 
@@ -138,12 +192,13 @@
     z-index: 1;
   }
   .tile:hover::before { opacity: 1; }
-  .tile:hover { border-color: rgba(255,255,255,0.4); transform: translateY(-3px); }
+  .tile:hover { border-color: var(--tile-hover-border); transform: translateY(-3px); }
   .tile:active { transform: scale(0.96); }
-  /* ESTILOS DE LOS NUEVOS ICONOS */
+  
   .tile-icon {
     font-size: 34px !important;
-    color: rgba(255, 255, 255, 0.85); 
+    color: var(--text-primary); 
+    opacity: 0.85;
     z-index: 2;
     transition: transform 0.3s ease, color 0.3s ease;
   }
@@ -151,23 +206,25 @@
   .tile:hover .tile-icon { 
     transform: scale(1.15); 
     color: var(--accent); 
+    opacity: 1;
   }
   .tile.logout:hover .tile-icon {
     color: var(--error); 
   }
   .tile .title { 
       font-weight: 600; font-size: 13px; line-height: 1.2; 
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2); 
       position: relative; z-index: 2; 
   }
   .tile.finance { border-color: rgba(50, 205, 50, 0.3); } 
   .tile.audit { border-color: rgba(138, 43, 226, 0.3); }   
   .tile.flotantes { border-color: rgba(76, 175, 80, 0.3); }
   .tile.treeview { border-color: rgba(255, 165, 0, 0.3); } 
-  .tile.micaja { border-color: rgba(45, 212, 191, 0.4); } /* Color aqua para la billetera */
+  .tile.micaja { border-color: rgba(45, 212, 191, 0.4); } 
+  
   .badge {
     position: absolute; top: -8px; right: -8px;
-    background: var(--badge-bg); color: var(--badge-text);
+    background: var(--badge-bg); color: #ffffff; /* Fijo blanco siempre */
     border: 2px solid rgba(255,255,255,0.2);
     font-weight: 800; font-size: 13px;
     display: flex; align-items: center; justify-content: center;
@@ -179,14 +236,16 @@
     white-space: nowrap; 
   }
   @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+  
   /* --- SISTEMA DE TOASTS --- */
   #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
+  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
   .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.error { background: rgba(255, 94, 94, 0.9); backdrop-filter: blur(10px); }
-  .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
-  .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
-  .toast.warning { background: rgba(255, 165, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+  .toast.error { background: rgba(255, 94, 94, 0.95); backdrop-filter: blur(10px); }
+  .toast.success { background: rgba(45, 212, 191, 0.95); backdrop-filter: blur(10px); }
+  .toast.info { background: rgba(255, 215, 0, 0.95); color: #000; backdrop-filter: blur(10px); }
+  .toast.warning { background: rgba(255, 165, 0, 0.95); color: #000; backdrop-filter: blur(10px); }
+  
   /* --- ANIMACIÓN DE CARGA (OVERLAY) --- */
   .loading-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -195,10 +254,11 @@
     opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
+  body.light-mode .loading-overlay { background: rgba(255, 255, 255, 0.85); }
   .loading-overlay.active { opacity: 1; visibility: visible; }
   
   .spinner {
-    width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
+    width: 60px; height: 60px; border: 4px solid rgba(128, 128, 128, 0.2);
     border-left-color: var(--accent); border-radius: 50%;
     animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
     margin-bottom: 20px; transition: all 0.3s ease;
@@ -206,17 +266,28 @@
   .spinner.success-mode { border-left-color: var(--ok); }
   
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 25px rgba(0,0,0,0.2); } 100% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } }
   .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
   .loading-text.success-mode { color: var(--ok); }
 </style>
 </head>
 <body>
+  <script>
+    // Aplicar tema instantáneamente
+    if(localStorage.getItem('vm_theme') !== 'dark') {
+      document.body.classList.add('light-mode');
+      localStorage.setItem('vm_theme', 'light');
+    }
+  </script>
+
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
+
   <div id="toast-container"></div>
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner" id="loaderSpinner"></div>
     <div class="loading-text" id="loaderText">AUTENTICANDO...</div>
   </div>
+  
   <div class="wrap">
     <header>
       <div class="header-info">
@@ -228,88 +299,113 @@
         </div>
       </div>
       
-      <div id="pinBox" class="pin-display" onclick="revelarPin()" title="Tocar para ver PIN">****</div>
+      <div id="pinBox" class="pin-display" onclick="window.revelarPin()" title="Tocar para ver PIN">****</div>
     </header>
     <main class="grid" id="mainGrid" style="display:none">
-      <a class="tile" id="tileFormulario" onclick="navegar('index4.html')" style="display:none">
+      <a class="tile" id="tileFormulario" onclick="window.navegar('index4.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">receipt_long</span>
           <span class="title">Formulario<br>de Venta</span>
       </a>
-      <a class="tile micaja" id="tileMiCaja" onclick="navegar('micaja.html')" style="display:none">
+      <a class="tile micaja" id="tileMiCaja" onclick="window.navegar('micaja.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">wallet</span>
           <span class="title">Mi Caja</span>
       </a>
       
-      <a class="tile" id="tileClientes"   onclick="navegar('clientes.html')" style="display:none">
+      <a class="tile" id="tileClientes"   onclick="window.navegar('clientes.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">group</span>
           <span class="title">Clientes</span>
       </a>
       
-      <a class="tile" id="tilePrecios"    onclick="navegar('precios.html')"  style="display:none">
+      <a class="tile" id="tilePrecios"    onclick="window.navegar('precios.html')"  style="display:none">
           <span class="material-symbols-rounded tile-icon">sell</span>
           <span class="title">Precios</span>
       </a>
       
-      <a class="tile" id="tileUsuarios"   onclick="navegar('usuarios.html')" style="display:none">
+      <a class="tile" id="tileUsuarios"   onclick="window.navegar('usuarios.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">manage_accounts</span>
           <span class="title">Usuarios</span>
       </a>
       
-      <a class="tile" id="tileAlarmas"    onclick="navegar('alarmas.html')"  style="display:none">
+      <a class="tile" id="tileAlarmas"    onclick="window.navegar('alarmas.html')"  style="display:none">
           <span class="material-symbols-rounded tile-icon">notifications_active</span>
           <span class="title">Alarmas</span>
           <span class="badge" id="alarmBadge" style="display:none"></span>
       </a>
       
-      <a class="tile" id="tileTablero"    onclick="navegar('tablero.html')" style="display:none">
+      <a class="tile" id="tileTablero"    onclick="window.navegar('tablero.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">dashboard</span>
           <span class="title">Tablero</span>
       </a>
       
-      <a class="tile" id="tileStock"      onclick="navegar('controlstock.html')" style="display:none">
+      <a class="tile" id="tileStock"      onclick="window.navegar('controlstock.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">inventory_2</span>
           <span class="title">Control<br>Stock</span>
       </a>
       
-      <a class="tile" id="tileCarga"      onclick="navegar('controlcarga.html')" style="display:none">
+      <a class="tile" id="tileCarga"      onclick="window.navegar('controlcarga.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">local_shipping</span>
           <span class="title">Control<br>Carga</span>
       </a>
       
-      <a class="tile finance" id="tileFinanzas"   onclick="navegar('arqueo.html')" style="display:none">
+      <a class="tile finance" id="tileFinanzas"   onclick="window.navegar('administrativo.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">account_balance_wallet</span>
-          <span class="title">Arqueos</span>
+          <span class="title">Administrativo</span>
       </a>
       
-      <a class="tile audit" id="tileConFinanzas" onclick="navegar('controlfinanzas.html')" style="display:none">
+      <a class="tile audit" id="tileConFinanzas" onclick="window.navegar('controlfinanzas.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">query_stats</span>
           <span class="title">Control<br>Finanzas</span>
       </a>
-      <a class="tile treeview" id="tileTreeView" onclick="navegar('treeview.html')" style="display:none">
+      <a class="tile treeview" id="tileTreeView" onclick="window.navegar('treeview.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">account_tree</span>
           <span class="title">Control<br>Movimientos</span>
       </a>
-      <a class="tile flotantes" id="tileFlotantes" onclick="navegar('index_recepcion.html')" style="display:none">
+      <a class="tile flotantes" id="tileFlotantes" onclick="window.navegar('index_recepcion.html')" style="display:none">
           <span class="material-symbols-rounded tile-icon">move_to_inbox</span>
           <span class="title">Recepción<br>Flotantes</span>
       </a>
-      <a class="tile logout" onclick="logout()" style="border-color: rgba(255,55,95,0.3);">
+      <a class="tile logout" onclick="window.logout()" style="border-color: rgba(255,55,95,0.3);">
           <span class="material-symbols-rounded tile-icon">logout</span>
           <span class="title" style="color:#ff375f">Cerrar Sesión</span>
       </a>
     </main>
   </div>
-<script>
-// ================= CONFIGURACIÓN =================
-const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
 
-// ⏱️ TIMEOUTS (ahora 4 horas)
-const TIMEOUT_SESION_ONLINE = 14400000;  // 4 horas en ONLINE (con conexión)
-const TIMEOUT_SESION_OFFLINE = 86400000; // 24 horas en OFFLINE (máxima autonomía)
-const TIMEOUT_VERIFICACION = 1800000;    // Verificar con servidor cada 30 min si hay red
+<script type="module">
+// ================= IMPORTACIONES FIREBASE =================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// Funciones visuales (Toast y Loader)
-function showToast(msg, type = 'info') {
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8",
+    measurementId: "G-RJCWWBMBFF"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// API de Google Apps Script (Solo mantenida para leer Alarmas, ya que residen en Google Sheets)
+const API_GOOGLE = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+
+// ================= CONFIGURACIÓN Y TIMEOUT =================
+const TIMEOUT_SESION_INACTIVIDAD = 14400000;  // 4 horas máximo de inactividad física
+
+// ================= SEGURIDAD DE ARRANQUE =================
+const params = new URLSearchParams(window.location.search);
+window.k = params.get('k') || sessionStorage.getItem('vm_token');
+
+// Limpieza ninja de URL
+if (window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+// ================= FUNCIONES VISUALES GLOBALES =================
+window.showToast = function(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -317,240 +413,212 @@ function showToast(msg, type = 'info') {
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
-}
-function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
+};
+
+window.toggleLoader = function(show, text = 'CARGANDO...', isSuccess = false) {
     const overlay = document.getElementById('loadingOverlay');
     const loaderText = document.getElementById('loaderText');
     const spinner = document.getElementById('loaderSpinner');
     
     loaderText.textContent = text;
-    
     if (isSuccess) {
-        spinner.classList.add('success-mode');
-        loaderText.classList.add('success-mode');
+        spinner.classList.add('success-mode'); loaderText.classList.add('success-mode');
     } else {
-        spinner.classList.remove('success-mode');
-        loaderText.classList.remove('success-mode');
+        spinner.classList.remove('success-mode'); loaderText.classList.remove('success-mode');
     }
-    if (show) overlay.classList.add('active');
-    else overlay.classList.remove('active');
+    if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
+};
+
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+
+// Ajuste del icono inicial
+if(localStorage.getItem('vm_theme') !== 'dark') {
+    document.getElementById('btnTheme').textContent = '☀️';
+} else {
+    document.getElementById('btnTheme').textContent = '🌙';
 }
 
-// ================= SISTEMA DE SESIÓN ROBUSTO =================
+window.expulsar = function() {
+    sessionStorage.clear();
+    window.location.replace('index.html');
+};
+
+window.logout = function() { 
+    window.toggleLoader(true, "CERRANDO SESIÓN...");
+    SessionManager.logout();
+};
+
+window.navegar = function(pagina) {
+    if(!window.k) return;
+    window.toggleLoader(true, "CARGANDO MÓDULO...");
+    window.location.replace(`${pagina}?k=${window.k}`);
+};
+
+// ================= SISTEMA DE SESIÓN (SOLO ONLINE) =================
 const SessionManager = {
     sessionStartTime: null,
     lastActivityTime: null,
-    isOnline: navigator.onLine,
-    currentTimeout: null,
-    verificationInterval: null,
     
     init() {
-        // Guardar cuando inicia la sesión
         this.sessionStartTime = Date.now();
         this.lastActivityTime = Date.now();
-        localStorage.setItem('vm_session_start', this.sessionStartTime);
         
-        // Monitorear conexión
-        window.addEventListener('online', () => this.setOnline(true));
-        window.addEventListener('offline', () => this.setOnline(false));
-        
-        // Monitorear actividad
+        // Caza la inactividad del mouse, tacto, etc.
         ['mousemove', 'mousedown', 'touchstart', 'click', 'keydown', 'scroll'].forEach(evt => 
             window.addEventListener(evt, () => this.recordActivity(), { passive: true })
         );
         
-        // Vigilancia cada minuto (para detección de inactividad)
+        window.addEventListener('offline', () => window.showToast('📴 Se cortó internet. Recuperando...', 'warning'));
+        window.addEventListener('online', () => window.showToast('🔗 Conexión restaurada', 'success'));
+        
         this.startWatchdog();
-        
-        // Verificación remota periódica (si hay internet)
-        this.startRemoteVerification();
-        
         this.updateStatus();
-    },
-    
-    setOnline(online) {
-        this.isOnline = online;
-        this.updateStatus();
-        
-        if (online) {
-            showToast('🔗 Conexión restaurada', 'success');
-            this.startRemoteVerification();
-        } else {
-            showToast('📴 Modo offline - Trabajando sin conexión', 'warning');
-        }
     },
     
     recordActivity() {
         this.lastActivityTime = Date.now();
-        localStorage.setItem('vm_last_activity', this.lastActivityTime);
     },
     
     startWatchdog() {
         setInterval(() => {
-            const now = Date.now();
-            const timeSinceSession = now - this.sessionStartTime;
-            const timeSinceActivity = now - this.lastActivityTime;
-            const timeout = this.isOnline ? TIMEOUT_SESION_ONLINE : TIMEOUT_SESION_OFFLINE;
-            
-            // Si pasó el timeout desde la ACTIVIDAD (no desde el inicio)
-            if (timeSinceActivity > timeout) {
-                const minutos = Math.floor(timeout / 60000);
-                showToast(`⏱️ Sesión expirada por inactividad (${minutos}h).`, 'error');
+            const timeSinceActivity = Date.now() - this.lastActivityTime;
+            if (timeSinceActivity > TIMEOUT_SESION_INACTIVIDAD) {
+                window.showToast(`⏱️ Sesión expirada por inactividad.`, 'error');
                 this.logout();
             }
-        }, 60000); // Chequear cada minuto
-    },
-    
-    startRemoteVerification() {
-        if (this.verificationInterval) clearInterval(this.verificationInterval);
-        
-        this.verificationInterval = setInterval(async () => {
-            if (!navigator.onLine) return;
-            
-            try {
-                const fd = new FormData();
-                fd.append('action', 'verificarsesion');
-                fd.append('k', k);
-                const r = await fetch(API, { method: 'POST', body: fd, signal: AbortSignal.timeout(5000) });
-                const data = await r.json();
-                
-                if (data.status !== 'success') {
-                    showToast('⚠️ Sesión inválida en servidor', 'error');
-                    this.logout();
-                }
-            } catch (e) {
-                console.log('No se pudo verificar en servidor');
-            }
-        }, TIMEOUT_VERIFICACION);
+        }, 60000); 
     },
     
     updateStatus() {
-        const dot = document.getElementById('statusDot');
         const text = document.getElementById('sessionStatus');
-        const sessionTime = this.sessionStartTime;
-        const activityTime = this.lastActivityTime;
+        const horasDesdeInicio = Math.floor((Date.now() - this.sessionStartTime) / 3600000);
+        const minDesdeActividad = Math.floor((Date.now() - this.lastActivityTime) / 60000);
         
-        if (sessionTime) {
-            const horasDesdeInicio = Math.floor((Date.now() - sessionTime) / 3600000);
-            const minDesdeActividad = Math.floor((Date.now() - activityTime) / 60000);
-            
-            if (this.isOnline) {
-                dot.className = 'status-dot online';
-                text.textContent = `ONLINE • ${horasDesdeInicio}h activa • Inactividad: ${minDesdeActividad}m`;
-            } else {
-                dot.className = 'status-dot offline';
-                text.textContent = `OFFLINE • ${horasDesdeInicio}h activa • Inactividad: ${minDesdeActividad}m`;
-            }
-        }
-        
-        // Actualizar UI cada 30 segundos
+        text.textContent = `ONLINE • ${horasDesdeInicio}h activa • Inactividad: ${minDesdeActividad}m`;
         setTimeout(() => this.updateStatus(), 30000);
     },
     
     logout() {
-        localStorage.removeItem('vm_session_start');
-        localStorage.removeItem('vm_last_activity');
-        clearInterval(this.verificationInterval);
-        expulsar();
+        window.expulsar();
     }
 };
 
-// ================= SEGURIDAD DE ARRANQUE =================
-const params = new URLSearchParams(window.location.search);
-const k = params.get('k') || params.get('token');
-if (!k) expulsar();
-if (window.history.replaceState) {
-    window.history.replaceState({}, document.title, window.location.pathname);
-}
-window.addEventListener('pageshow', function(event) {
-  if (event.persisted) window.location.reload();
-});
-
-// ================= VIGILANCIA SILENCIOSA (EL PATOVICA INTERNO) =================
-async function verificarSeguridadSilenciosa() {
-    if (!navigator.onLine) return; 
-    try {
-        const r = await fetch(`${API}?action=gettimestamps`); 
-        const data = await r.json();
-        
-        if (data.status === 'success' && data.TS_USUARIOS) {
-            const localTS = localStorage.getItem('TS_USUARIOS');
-            if (!localTS) {
-                localStorage.setItem('TS_USUARIOS', data.TS_USUARIOS);
-            } else if (localTS !== data.TS_USUARIOS) {
-                localStorage.clear();
-                showToast("⚠️ SEGURIDAD: Se actualizaron los accesos. Por favor, vuelva a iniciar sesión.", "error");
-                setTimeout(() => window.location.replace('index.html'), 2500);
-            }
-        }
-    } catch (e) {
-        console.log("No se pudo verificar versiones silenciosamente.");
-    }
-}
-
-// ================= LÓGICA PRINCIPAL =================
+// ================= LÓGICA PRINCIPAL CON FIREBASE =================
 let pinReal = null;
+
 async function iniciarSesion() {
+    if (!window.k) return window.expulsar();
+    
+    if (!navigator.onLine) {
+        window.showToast("⛔ Sin internet. La aplicación debe operar online.", "error");
+        setTimeout(() => window.expulsar(), 2000);
+        return;
+    }
+
     try {
         document.body.style.opacity = 1;
+        window.toggleLoader(true, "VERIFICANDO CREDENCIALES...");
         
-        // Si arrancamos directamente sin red
-        if (!navigator.onLine) {
-            const usuarioGuardado = localStorage.getItem('vm_usuario') || 'USUARIO';
-            const permsGuardados = JSON.parse(localStorage.getItem('vm_perms') || '{"formulario": true}');
-            renderizarInterfaz(usuarioGuardado, permsGuardados); 
-            showToast("MODO OFFLINE", "warning");
-            SessionManager.init();
+        // 1. Buscamos el token en Firebase
+        const tokenRef = doc(db, "tokens", window.k);
+        const tokenSnap = await getDoc(tokenRef);
+
+        if (!tokenSnap.exists()) {
+            throw new Error("Token inválido o expirado");
+        }
+
+        const tokenData = tokenSnap.data();
+        const ahora = Date.now();
+
+        // 2. EL PATOVICA DEL TIEMPO (Control de expiración absoluto)
+        if (tokenData.expira && ahora > tokenData.expira) {
+            window.showToast("⏱️ El token ha vencido.", "error");
+            setTimeout(() => window.expulsar(), 1500);
             return;
         }
-        toggleLoader(true, "VERIFICANDO CREDENCIALES...");
-        
-        const fd = new FormData();
-        fd.append('action', 'verificarsesion');
-        fd.append('k', k); 
-        const r = await fetch(API, { method: 'POST', body: fd });
-        const data = await r.json();
-        if (data.status === 'success') {
-            // Guardamos todo en la caja fuerte para cuando corten el WiFi
-            localStorage.setItem('vm_usuario', data.nombre);
-            localStorage.setItem('vm_perms', JSON.stringify(data.perms || {}));
-            renderizarInterfaz(data.nombre, data.perms);
-            buscarPin();
-            verificarSeguridadSilenciosa();
-            SessionManager.init();
-        } else {
-            throw new Error("Credenciales inválidas");
+
+        // 3. LA BOMBA DE TIEMPO (Si se vence mientras está con la pantalla abierta)
+        if (tokenData.expira) {
+            const tiempoRestante = tokenData.expira - ahora;
+            setTimeout(() => {
+                window.showToast("⏳ Sesión expirada por límite de tiempo.", "error");
+                window.expulsar();
+            }, Math.max(0, tiempoRestante));
         }
+
+        const username = tokenData.usuario;
+
+        // 4. Traemos los permisos del usuario de Firebase
+        const userRef = doc(db, "usuarios", username);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            throw new Error("Usuario no encontrado");
+        }
+
+        const userData = userSnap.data();
+        
+        // Guardamos el usuario en local para que el nuevo index4 lo pueda leer sin ir a Google Sheets
+        localStorage.setItem('vm_usuario', userData.nombre_mostrar || username);
+        
+        // Mapeamos los permisos para renderizarlos
+        const permisos = {
+            formulario: userData.FORMULARIO === true || userData.FORMULARIO === "true",
+            clientes: userData.CLIENTES === true || userData.CLIENTES === "true",
+            precios: userData.PRECIOS === true || userData.PRECIOS === "true",
+            usuarios: userData.USUARIOS === true || userData.USUARIOS === "true",
+            alarmas: userData.ALARMAS === true || userData.ALARMAS === "true",
+            tablero: userData.TABLERO === true || userData.TABLERO === "true",
+            stock: userData.STOCK === true || userData.STOCK === "true",
+            carga: userData.CARGA === true || userData.CARGA === "true",
+            finanzas: userData.FINANZAS === true || userData.FINANZAS === "true",
+            confinanzas: userData.CONFINANZAS === true || userData.CONFINANZAS === "true",
+            gastos: userData.GASTOS === true || userData.GASTOS === "true",
+            pin_dinamico: userData.PIN_DINAMICO === true || userData.PIN_DINAMICO === "true",
+            flotantes: userData.FLOTANTES === true || userData.FLOTANTES === "true"
+        };
+
+        renderizarInterfaz(userData.nombre_mostrar || username, permisos);
+        
+        if (permisos.pin_dinamico) {
+            buscarPinFirebase();
+        }
+
+        SessionManager.init();
+
     } catch (e) {
-        // Si hay red pero falla (ej. servidor caído o mala señal), intentamos rescatar la caché
-        const usuarioGuardado = localStorage.getItem('vm_usuario');
-        const permsGuardados = localStorage.getItem('vm_perms');
-        
-        if (usuarioGuardado && permsGuardados) {
-            renderizarInterfaz(usuarioGuardado, JSON.parse(permsGuardados));
-            showToast("CONEXIÓN INESTABLE: Modo offline activo", "warning");
-            SessionManager.init();
-        } else {
-            expulsar();
-        }
+        console.error(e);
+        window.showToast("Acceso denegado.", "error");
+        setTimeout(() => window.expulsar(), 1500);
     }
 }
 
-async function buscarPin() {
+async function buscarPinFirebase() {
     try {
-        const res = await fetch(`${API}?action=usuarioinfo&k=${k}`);
-        const d = await res.json();
+        const segRef = doc(db, "seguridad", "pin");
+        const segSnap = await getDoc(segRef);
         
-        if (d.status === 'success' && d.pin_dinamico) {
-            pinReal = d.pin_dinamico;
+        if (segSnap.exists() && segSnap.data().dinamico) {
+            pinReal = segSnap.data().dinamico;
             document.getElementById('pinBox').style.display = 'block';
         }
-    } catch(e) { console.log("No se pudo obtener PIN"); }
+    } catch(e) { console.log("No se pudo obtener el PIN desde Firebase", e); }
 }
 
-function revelarPin() {
+window.revelarPin = function() {
     const box = document.getElementById('pinBox');
     if (!pinReal) return;
+    
     if (box.textContent.includes('*')) {
         box.textContent = pinReal;
         box.style.borderColor = '#ffffff';
@@ -566,21 +634,23 @@ function revelarPin() {
         box.style.borderColor = 'var(--pin-border)';
         box.style.background = 'var(--pin-bg)';
     }
-}
+};
 
-function renderizarInterfaz(nombre, perms) {
-    toggleLoader(false);
+function renderizarInterfaz(nombre, p) {
+    // Velocidad: Apagamos el loader apenas tenemos los datos listos
+    window.toggleLoader(false);
     
     const grid = document.getElementById('mainGrid');
     grid.style.display = 'grid'; 
     const h = new Date().getHours();
     const tramo = h < 12 ? 'BUENOS DÍAS' : (h < 19 ? 'BUENAS TARDES' : 'BUENAS NOCHES');
     document.getElementById('hello').textContent = `${tramo}, ${nombre ? nombre.toUpperCase() : 'USUARIO'}`;
-    const p = perms || {};
+    
     const show = (id, condition) => {
         const el = document.getElementById(id);
         if (el) el.style.display = condition ? 'flex' : 'none';
     };
+    
     // VISIBILIDAD DE LOS MÓDULOS SEGÚN PERMISOS
     show('tileFormulario',  p.formulario !== false); 
     show('tileMiCaja',      p.formulario !== false); 
@@ -595,8 +665,12 @@ function renderizarInterfaz(nombre, perms) {
     show('tileConFinanzas', p.confinanzas);
     show('tileTreeView',    p.gastos); 
     show('tileFlotantes',   p.flotantes);
+    
     initHoverEffects();
-    if (p.alarmas) loadAlarmBadge();
+    
+    if (p.alarmas) {
+        loadAlarmBadgeFromGoogle();
+    }
 }
 
 function initHoverEffects() {
@@ -614,25 +688,10 @@ function initHoverEffects() {
     }
 }
 
-function navegar(pagina) {
-    if(!k) return;
-    toggleLoader(true, "CARGANDO MÓDULO...");
-    window.location.replace(`${pagina}?k=${k}`);
-}
-
-function expulsar() {
-    sessionStorage.clear();
-    window.location.replace('index.html');
-}
-
-function logout() { 
-    toggleLoader(true, "CERRANDO SESIÓN...");
-    SessionManager.logout();
-}
-
-async function loadAlarmBadge(){
+// Las alarmas siguen en Google Sheets porque los datos operativos no migraron
+async function loadAlarmBadgeFromGoogle(){
   try{
-    const url = `${API}?action=alarmascount&_=${Date.now()}`;
+    const url = `${API_GOOGLE}?action=alarmascount&_=${Date.now()}`;
     const r = await fetch(url);
     const j = await r.json();
     const n = Number(j?.pendientes || 0);
@@ -644,14 +703,12 @@ async function loadAlarmBadge(){
   }catch(e){}
 }
 
+// Refrescar al volver del historial del navegador
+window.addEventListener('pageshow', function(event) {
+  if (event.persisted) window.location.reload();
+});
+
 iniciarSesion();
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
-    });
-  }
 </script>
 </body>
 </html>

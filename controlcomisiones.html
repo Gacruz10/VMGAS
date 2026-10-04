@@ -16,27 +16,45 @@
       --text-primary: #ffffff;
       --text-muted: rgba(255, 255, 255, 0.5);
     }
+    
+    body.light-mode {
+      --glass: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(0, 0, 0, 0.15);
+      --accent: #d97706;
+      --text-primary: #1a1a1a;
+      --text-muted: rgba(0, 0, 0, 0.6);
+      background: #f8fafc !important; 
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
       background: radial-gradient(at 0% 0%, #0f172a 0%, transparent 50%),
                   radial-gradient(at 100% 100%, #1e1b4b 0%, transparent 50%), #020617;
       background-attachment: fixed; min-height: 100vh; padding: 10px;
-      opacity: 0; transition: opacity 0.5s ease;
+      opacity: 0; transition: opacity 0.5s ease, color 0.3s ease, background 0.3s ease;
     }
+
+    .theme-toggle {
+      position: absolute; top: 10px; left: 10px; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-primary);
+      display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer;
+      backdrop-filter: blur(10px); transition: all 0.3s ease; z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--comision); }
     
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;}
-    .header h1 { font-size: 1.1rem; font-weight: 800; color: var(--comision); margin: 0; }
-    .header-buttons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 1;}
+    .header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; margin-top: 5px; position: relative;}
+    .header h1 { font-size: 1.1rem; font-weight: 800; color: var(--comision); margin: 0; position: absolute; left: 60px; top: 10px;}
+    .header-buttons { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: 1; margin-top: 5px;}
     
     .btn-action { padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.75rem; transition: 0.3s; border: 1px solid;}
     
     .btn-arqueo { background: rgba(255, 215, 0, 0.1); border-color: var(--accent); color: var(--accent); }
     .btn-arqueo:hover { background: rgba(255, 215, 0, 0.2); }
-    .btn-volver { background: rgba(255,255,255,0.05); border-color: var(--glass-border); color: white; }
-    .btn-volver:hover { background: rgba(255,255,255,0.1); }
+    .btn-volver { background: rgba(255,255,255,0.05); border-color: var(--glass-border); color: var(--text-primary); }
+    .btn-volver:hover { background: rgba(128,128,128,0.2); }
 
-    .container { max-width: 900px; margin: 0 auto; display: grid; gap: 10px; grid-template-columns: 1fr; }
+    .container { max-width: 900px; margin: 0 auto; display: grid; gap: 10px; grid-template-columns: 1fr; margin-top: 25px;}
     @media (min-width: 768px) { .container { grid-template-columns: 1fr 1fr; } .full-width { grid-column: 1 / -1; } }
     
     .led-alert {
@@ -48,17 +66,17 @@
     .led-alert.active { display: block; }
 
     .card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; }
-    .card-title { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;}
+    .card-title { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 4px;}
     
     /* CHECKBOXES DE DIAS */
     .dias-container { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 200px; overflow-y: auto; padding-right: 5px; }
-    .dia-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--glass-border); cursor: pointer; transition: 0.2s;}
-    .dia-item:hover { background: rgba(255,255,255,0.08); }
+    .dia-item { display: flex; align-items: center; justify-content: space-between; background: rgba(128,128,128,0.1); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--glass-border); cursor: pointer; transition: 0.2s;}
+    .dia-item:hover { background: rgba(128,128,128,0.2); }
     .dia-item.disabled { opacity: 0.4; text-decoration: line-through; border-color: transparent;}
     .dia-info { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600;}
     .dia-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--comision); cursor: pointer; margin:0;}
 
-    .data-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.03); }
+    .data-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed rgba(128,128,128,0.2); }
     .data-label { color: var(--text-muted); font-size: 0.75rem; }
     .data-value { font-weight: 700; font-size: 0.85rem;}
     .data-total { font-size: 1.2rem; color: var(--comision); margin-top: 4px; border: none; font-weight: 800; }
@@ -68,17 +86,19 @@
     .input-group label { display: block; font-size: 0.65rem; color: var(--text-muted); margin-bottom: 3px; font-weight: 600;}
     
     input[type="number"], input[type="text"], textarea, select { 
-      width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border); 
-      border-radius: 6px; padding: 8px; color: white; font-size: 0.9rem; font-weight: 600; outline: none; transition: 0.3s; 
+      width: 100%; background: rgba(128,128,128,0.1); border: 1px solid var(--glass-border); 
+      border-radius: 6px; padding: 8px; color: var(--text-primary); font-size: 0.9rem; font-weight: 600; outline: none; transition: 0.3s; 
     }
-    select option { background-color: #0f172a; color: #ffffff; font-weight: 600; }
+    select option { background-color: var(--bg-color, #0f172a); color: var(--text-primary); font-weight: 600; }
+    body.light-mode select option { background-color: #ffffff; color: #000; }
+    
     textarea { min-height: 45px; resize: none; font-size: 0.8rem;}
     input:focus, textarea:focus, select:focus { border-color: var(--comision); background: rgba(59, 130, 246, 0.05); }
     
     .result-box { text-align: center; padding: 10px; border-radius: 6px; margin-top: 8px; transition: 0.3s; }
     .status-ok { background: rgba(45, 212, 191, 0.1); border: 1px solid var(--ok); color: var(--ok); }
     .status-error { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--error); color: var(--error); }
-    .status-neutral { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); color: var(--text-muted); }
+    .status-neutral { background: rgba(128, 128, 128, 0.1); border: 1px solid var(--glass-border); color: var(--text-muted); }
     
     .btn-confirm { width: 100%; padding: 12px; background: var(--comision); border: none; border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; color: #fff;}
     .btn-confirm:disabled { background: #333; color: #666; cursor: not-allowed; }
@@ -90,7 +110,7 @@
     .toast.error { background: rgba(255, 68, 68, 0.9); }
     .toast.success { background: rgba(45, 212, 191, 0.9); }
 
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 15, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--glass); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px); }
     .loading-overlay.active { opacity: 1; visibility: visible; }
     .spinner { width: 35px; height: 35px; border: 3px solid rgba(59, 130, 246, 0.1); border-left-color: var(--comision); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -98,6 +118,13 @@
   </style>
 </head>
 <body>
+
+  <script>
+    if(localStorage.getItem('vm_theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
 
   <div id="toast-container"></div>
   <div class="loading-overlay" id="loadingOverlay">
@@ -192,10 +219,40 @@
 
   </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+const API_KEY = "VM_Seguridad_2026";
+
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+document.getElementById('btnTheme').textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+
 const params = new URLSearchParams(window.location.search);
-let k = params.get('k') || params.get('token');
+let k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
 
 function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -212,8 +269,12 @@ function toggleLoader(show, text = 'CARGANDO...') {
     if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-function expulsar() { sessionStorage.clear(); window.location.replace('index.html'); }
-if (!k) { expulsar(); } else {
+function expulsar() { sessionStorage.clear(); window.location.replace('inicio.html'); }
+
+if (!k) { 
+    expulsar(); 
+} else {
+    sessionStorage.setItem('k', k);
     if (window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
     validarSesion();
 }
@@ -222,12 +283,22 @@ async function validarSesion() {
     try {
         document.body.style.opacity = 1;
         toggleLoader(true, "VERIFICANDO SESIÓN...");
-        const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
-        const r = await fetch(API, { method: 'POST', body: fd });
-        const d = await r.json();
-        if (d.status !== 'success') throw new Error();
+        
+        const docRef = doc(db, "tokens", k);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) throw new Error("Sesión inválida en base de datos.");
+        
+        const tokenData = docSnap.data();
+        if (tokenData.expira && Date.now() > tokenData.expira) throw new Error("La sesión ha expirado.");
+        
+        sessionStorage.setItem('usuarioActivo', tokenData.usuario || 'SISTEMA');
+        
         init(); 
-    } catch (e) { expulsar(); }
+    } catch (e) { 
+        console.error(e);
+        expulsar(); 
+    }
 }
 
 document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
@@ -239,7 +310,8 @@ let totalTeorico = 0;
 async function init() {
     try {
         toggleLoader(true, "BUSCANDO COMISIONES...");
-        const r = await fetch(`${API}?action=getcomisiones_choferes&k=${k}`);
+        // Inyectamos api_key al GET
+        const r = await fetch(`${API}?action=getcomisiones_choferes&k=${k}&api_key=${API_KEY}`);
         const d = await r.json();
         
         if(d.status === 'success') {
@@ -281,7 +353,8 @@ document.getElementById('selChofer').onchange = async (e) => {
     document.getElementById('alertEstricto').classList.add('active');
     
     try {
-        const r = await fetch(`${API}?action=getcomisiones_detalle&chofer=${chofer}&k=${k}`);
+        // Inyectamos api_key al GET detallado
+        const r = await fetch(`${API}?action=getcomisiones_detalle&chofer=${chofer}&k=${k}&api_key=${API_KEY}`);
         const res = await r.json();
         
         if(res.status === 'success') {
@@ -291,7 +364,7 @@ document.getElementById('selChofer').onchange = async (e) => {
                 seleccionado: true
             }));
             dibujarCheckboxesDias();
-            recalcularPizarra();
+            window.recalcularPizarra();
             dContainer.classList.remove('hidden');
             document.getElementById('monitorSistema').style.opacity = '1';
         } else { throw new Error(res.message); }
@@ -307,7 +380,7 @@ function dibujarCheckboxesDias() {
         html += `
         <label class="dia-item" id="itemDia_${index}">
             <div class="dia-info">📅 <div><div>Día: ${d.fecha}</div><div style="font-size:0.7rem; color:var(--text-muted)">Comisión: ${strMonto}</div></div></div>
-            <input type="checkbox" checked onchange="toggleDia(${index}, this.checked)">
+            <input type="checkbox" checked onchange="window.toggleDia(${index}, this.checked)">
         </label>`;
     });
     dContainer.innerHTML = html;
@@ -317,22 +390,22 @@ window.toggleDia = function(index, isChecked) {
     diasChofer[index].seleccionado = isChecked;
     const itemUI = document.getElementById(`itemDia_${index}`);
     if(isChecked) itemUI.classList.remove('disabled'); else itemUI.classList.add('disabled');
-    recalcularPizarra();
+    window.recalcularPizarra();
 };
 
-function recalcularPizarra() {
+window.recalcularPizarra = function() {
     totalTeorico = 0;
     let countDias = 0;
     diasChofer.forEach(d => { if(d.seleccionado) { totalTeorico += d.monto; countDias++; } });
     
     document.getElementById('sisTotal').textContent = `$ ${totalTeorico.toLocaleString()}`;
     document.getElementById('lblDiasCount').textContent = countDias;
-    validarCuadre();
-}
+    window.validarCuadre();
+};
 
-document.querySelectorAll('.input-monto').forEach(i => i.addEventListener('input', validarCuadre));
+document.querySelectorAll('.input-monto').forEach(i => i.addEventListener('input', () => window.validarCuadre()));
 
-function validarCuadre() {
+window.validarCuadre = function() {
     const efvo = Number(document.getElementById('pagoEfvo').value) || 0;
     const transf = Number(document.getElementById('pagoTransf').value) || 0;
     const dep = Number(document.getElementById('pagoDep').value) || 0;
@@ -349,7 +422,7 @@ function validarCuadre() {
         return;
     }
 
-    if (diff === 0) { 
+    if (Math.abs(diff) < 0.01) { // Evita problemas de redondeo decimal 
         box.className = "result-box status-ok"; msg.textContent = "✅ CUADRE PERFECTO"; 
         val.textContent = "Diferencia: $ 0.00"; 
         btn.disabled = false; btn.textContent = "REGISTRAR PAGO Y GUARDAR";
@@ -363,7 +436,7 @@ function validarCuadre() {
             btn.textContent = "LOS MONTOS NO CUADRAN";
         }
     }
-}
+};
 
 document.getElementById('btnPagar').onclick = async () => {
     const choferTarget = document.getElementById('selChofer').value;
@@ -384,7 +457,10 @@ document.getElementById('btnPagar').onclick = async () => {
         refTransf: document.getElementById('refTransf').value || '',
         refDep: document.getElementById('refDep').value || '',
         observaciones: document.getElementById('obsPago').value || '',
-        diasPagados: JSON.stringify(diasActivos)
+        diasPagados: JSON.stringify(diasActivos),
+        // Inyectamos apiKey y usuario Activo
+        api_key: API_KEY,
+        usuario: sessionStorage.getItem('usuarioActivo') || 'SISTEMA'
     };
 
     const fd = new FormData();
@@ -406,7 +482,7 @@ document.getElementById('btnPagar').onclick = async () => {
     const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
     if (estaEnBloqueo) { document.body.innerHTML = "<div style='color:white; text-align:center; padding-top:100px;'><h2>SISTEMA EN MANTENIMIENTO</h2></div>"; }
   }
-  controlPatovica(); setInterval(controlPatovica, 30000);
+  controlPatovica(); setInterval(controlPatovica, 300000);
 </script>
 </body>
 </html>

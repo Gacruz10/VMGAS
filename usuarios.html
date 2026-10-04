@@ -10,7 +10,8 @@
   <title>Gestión de Usuarios</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{
+    :root {
+      /* Dark Glass (Por defecto) */
       --glass: rgba(0, 0, 0, 0.5);
       --glass-filled: rgba(255, 215, 0, 0.08);
       --glass-border: rgba(255, 255, 255, 0.15);
@@ -24,6 +25,31 @@
       --switch-off: #4b5563; 
       --error: #ff5e5e;
       --success: #2dd4bf;
+      --bg-color: #0d031a;
+      --bg-grad-1: #1e053a;
+      --bg-grad-2: #310d5e;
+      --bg-grad-3: #0d031a;
+      --bg-grad-4: #214d7a;
+    }
+
+    body.light-mode {
+      /* Light Glass */
+      --glass: rgba(255, 255, 255, 0.65);
+      --glass-filled: rgba(217, 119, 6, 0.08);
+      --glass-border: rgba(0, 0, 0, 0.15);
+      --glass-border-filled: rgba(217, 119, 6, 0.4);
+      --input-bg: rgba(255, 255, 255, 0.5);
+      --text-primary: #1a1a1a;
+      --text-muted: rgba(0, 0, 0, 0.6);
+      --accent: #d97706; 
+      --btn-bg: rgba(0, 0, 0, 0.05);
+      --switch-on: #2dd4bf;  
+      --switch-off: #cbd5e1; 
+      --bg-color: #f8fafc;
+      --bg-grad-1: #e9d5ff;
+      --bg-grad-2: #bfdbfe;
+      --bg-grad-3: #fbcfe8;
+      --bg-grad-4: #bae6fd;
     }
 
     * { box-sizing: border-box; }
@@ -32,21 +58,43 @@
       margin: 0;
       font-family: 'Inter', sans-serif;
       color: var(--text-primary);
-      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
-                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
-                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
-      background-color: #0d031a;
+      background: radial-gradient(at 0% 0%, var(--bg-grad-1) 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, var(--bg-grad-2) 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, var(--bg-grad-3) 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, var(--bg-grad-4) 0%, transparent 50%);
+      background-color: var(--bg-color);
       background-attachment: fixed;
       min-height: 100vh;
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
     }
+
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 22px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--accent); }
 
     .wrap {
       max-width: 1200px;
       margin: 0 auto;
       padding: 30px 20px 100px;
+      position: relative;
     }
 
     h1 {
@@ -55,7 +103,7 @@
       font-size: clamp(24px, 4vw, 36px);
       letter-spacing: -1px;
       margin: 0 0 10px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.1);
       color: var(--accent);
     }
 
@@ -69,17 +117,17 @@
     .search-box { width: 100%; max-width: 400px; position: relative; }
     .search-input {
       width: 100%; background: var(--glass); border: 1px solid var(--glass-border);
-      padding: 12px 15px 12px 40px; border-radius: 99px; color: white;
+      padding: 12px 15px 12px 40px; border-radius: 99px; color: var(--text-primary);
       font-family: 'Inter', sans-serif; outline: none; transition: all 0.3s; backdrop-filter: blur(5px);
     }
-    .search-input:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+    .search-input:focus { border-color: var(--accent); background: var(--glass); }
     .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; }
 
     .actions { display: flex; gap: 10px; }
     .btn {
       border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px 20px;
       font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
-      background: var(--btn-bg); color: white; backdrop-filter: blur(5px); transition: all 0.3s ease;
+      background: var(--btn-bg); color: var(--text-primary); backdrop-filter: blur(5px); transition: all 0.3s ease;
     }
     .btn:hover { background: var(--accent); color: #000; border-color: var(--accent); transform: translateY(-2px); }
 
@@ -93,36 +141,47 @@
       border: 1px solid var(--glass-border);
       border-radius: 24px; overflow: hidden;
       display: flex; flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
       transition: all 0.3s ease;
       opacity: 0.85;
+      position: relative;
     }
 
     .user-card.filled {
-      background: linear-gradient(135deg, var(--glass-filled), rgba(0,0,0,0.6));
+      background: linear-gradient(135deg, var(--glass-filled), var(--glass));
       border-color: var(--glass-border-filled);
       opacity: 1;
     }
     
     .user-card:hover { transform: translateY(-5px); }
 
-    .card-header { background: rgba(255,255,255,0.03); padding: 20px; border-bottom: 1px solid var(--glass-border); }
+    .card-header { background: rgba(128,128,128,0.05); padding: 20px; border-bottom: 1px solid var(--glass-border); }
     .card-title { font-size: 12px; color: var(--accent); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
     
+    /* Botón Eliminar (La cruz) */
+    .btn-delete {
+      background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: 18px; padding: 0; line-height: 1; transition: all 0.2s;
+    }
+    .btn-delete:hover { color: var(--error); transform: scale(1.2); }
+
     .login-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .card-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .section-label { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 5px; text-transform: uppercase; }
 
-    .card-footer { background: rgba(0,0,0,0.2); padding: 15px 20px; border-top: 1px solid var(--glass-border); }
+    .card-footer { background: rgba(0,0,0,0.1); padding: 15px 20px; border-top: 1px solid var(--glass-border); }
     .perms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 15px; }
 
     .input-glass {
-      width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border); color: white;
+      width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-primary);
       padding: 8px 12px; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+      transition: border-color 0.3s, background 0.3s;
     }
-    .input-glass:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+    .input-glass::placeholder { color: var(--text-muted); }
+    .input-glass:focus { border-color: var(--accent); background: var(--glass); }
 
-    .switch-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: rgba(255,255,255,0.8); cursor: pointer; }
+    .switch-label { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-primary); cursor: pointer; opacity: 0.9; }
+    .switch-label:hover { opacity: 1; }
     .switch-input { display: none; }
     .switch-track { width: 34px; height: 18px; background: var(--switch-off); border-radius: 99px; position: relative; transition: background 0.3s; }
     .switch-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: transform 0.3s; }
@@ -133,16 +192,16 @@
 
     footer {
       position: fixed; bottom: 0; left: 0; right: 0;
-      background: linear-gradient(180deg, rgba(13,3,26,0), rgba(13,3,26,0.95) 40%);
+      background: linear-gradient(180deg, rgba(0,0,0,0), var(--bg-color) 60%);
       padding: 20px; display: flex; justify-content: center; z-index: 100; backdrop-filter: blur(2px);
     }
 
     #toast-container { position: fixed; bottom: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
+    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px; letter-spacing: 0.5px;}
     .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.error { background: rgba(255, 94, 94, 0.9); backdrop-filter: blur(10px); }
-    .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
-    .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+    .toast.error { background: rgba(255, 94, 94, 0.95); backdrop-filter: blur(10px); }
+    .toast.success { background: rgba(45, 212, 191, 0.95); backdrop-filter: blur(10px); }
+    .toast.info { background: rgba(255, 215, 0, 0.95); color: #000; backdrop-filter: blur(10px); }
 
     .loading-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -151,10 +210,11 @@
       opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     }
+    body.light-mode .loading-overlay { background: rgba(255, 255, 255, 0.85); }
     .loading-overlay.active { opacity: 1; visibility: visible; }
     
     .spinner {
-      width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
+      width: 60px; height: 60px; border: 4px solid rgba(128, 128, 128, 0.2);
       border-left-color: var(--accent); border-radius: 50%;
       animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite;
       margin-bottom: 20px; transition: all 0.3s ease;
@@ -162,13 +222,21 @@
     .spinner.success-mode { border-left-color: var(--success); }
     
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 25px rgba(0,0,0,0.2); } 100% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } }
 
     .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
     .loading-text.success-mode { color: var(--success); }
   </style>
 </head>
 <body>
+
+<script>
+  // Aplicar tema instantáneamente
+  if(localStorage.getItem('vm_theme') !== 'dark') {
+    document.body.classList.add('light-mode');
+    localStorage.setItem('vm_theme', 'light');
+  }
+</script>
 
 <div id="toast-container"></div>
 
@@ -178,6 +246,8 @@
 </div>
 
 <div class="wrap">
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
+
   <h1>Control de Usuarios</h1>
   <div class="sub">Gestión de Accesos y Permisos</div>
 
@@ -200,11 +270,26 @@
   <button class="btn" id="btnGuardar" style="min-width: 200px; background: var(--accent); color: #000; border:none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">Guardar Cambios</button>
 </footer>
 
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
-const TIMEOUT_SESION = 300000; 
+<script type="module">
+// ================= IMPORTACIONES FIREBASE =================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-function showToast(msg, type = 'info') {
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8",
+    measurementId: "G-RJCWWBMBFF"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ================= FUNCIONES VISUALES =================
+window.showToast = function(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -212,78 +297,106 @@ function showToast(msg, type = 'info') {
     container.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
-}
+};
 
-function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
+window.toggleLoader = function(show, text = 'CARGANDO...', isSuccess = false) {
     const overlay = document.getElementById('loadingOverlay');
     const loaderText = document.getElementById('loaderText');
     const spinner = document.getElementById('loaderSpinner');
     
     loaderText.textContent = text;
-    
     if (isSuccess) {
-        spinner.classList.add('success-mode');
-        loaderText.classList.add('success-mode');
+        spinner.classList.add('success-mode'); loaderText.classList.add('success-mode');
     } else {
-        spinner.classList.remove('success-mode');
-        loaderText.classList.remove('success-mode');
+        spinner.classList.remove('success-mode'); loaderText.classList.remove('success-mode');
     }
+    if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
+};
 
-    if (show) overlay.classList.add('active');
-    else overlay.classList.remove('active');
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+
+if(localStorage.getItem('vm_theme') !== 'dark') {
+    document.getElementById('btnTheme').textContent = '☀️';
+} else {
+    document.getElementById('btnTheme').textContent = '🌙';
 }
 
-window.addEventListener('pageshow', (e) => {
-  if (e.persisted || (window.performance && window.performance.navigation.type === 2)) window.location.reload();
-});
-
+// ================= SEGURIDAD Y PATOVICA =================
 const params = new URLSearchParams(window.location.search);
-const k = params.get('k') || params.get('token');
+const k = params.get('k') || sessionStorage.getItem('vm_token');
 
-function expulsar() {
+window.expulsar = function() {
   sessionStorage.clear();
   window.location.replace('index.html');
-}
-
-if (!k) {
-  expulsar();
-} else {
-    if (window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    validarSesion();
-}
-
-async function validarSesion() {
-  try {
-    document.body.style.opacity = 1;
-    toggleLoader(true, "VERIFICANDO SESIÓN...");
-    
-    const fd = new FormData();
-    fd.append('action', 'verificarsesion');
-    fd.append('k', k);
-    const r = await fetch(SCRIPT_URL, { method: 'POST', body: fd });
-    const d = await r.json();
-    
-    if (d.status !== 'success') throw new Error();
-    
-    toggleLoader(true, "CARGANDO USUARIOS...");
-    cargar();
-  } catch (e) { expulsar(); }
-}
-
-let tIdle;
-function resetTimer() {
-  clearTimeout(tIdle);
-  tIdle = setTimeout(expulsar, TIMEOUT_SESION);
-}
-['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, resetTimer));
-resetTimer();
+};
 
 document.getElementById('btnInicio').onclick = () => {
   window.location.replace(`inicio.html?k=${k}`);
 };
 
+if (!k) {
+  window.expulsar();
+} else {
+    // EL PATOVICA 1: Verifica si tiene permiso "usuarios" en memoria
+    const permsLocales = JSON.parse(sessionStorage.getItem('vm_perms') || '{}');
+    if (permsLocales.usuarios !== true && permsLocales.usuarios !== "true") {
+        alert("⛔ Acceso denegado. No tienes permisos de Administrador.");
+        window.location.replace(`inicio.html?k=${k}`);
+    } else {
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        validarSesion();
+    }
+}
+
+async function validarSesion() {
+  try {
+    document.body.style.opacity = 1;
+    // Solo levantamos el loader inicial cortito
+    window.toggleLoader(true, "VERIFICANDO SESIÓN...");
+    
+    // Verificamos el token directo en Firebase
+    const tokenRef = doc(db, "tokens", k);
+    const tokenSnap = await getDoc(tokenRef);
+    
+    if (!tokenSnap.exists()) throw new Error("Token expirado");
+    
+    const tokenData = tokenSnap.data();
+    const ahora = Date.now();
+
+    // EL PATOVICA DEL TIEMPO (Control de expiración absoluto)
+    if (tokenData.expira && ahora > tokenData.expira) {
+        window.showToast("⏱️ El token ha vencido.", "error");
+        setTimeout(() => window.expulsar(), 1500);
+        return;
+    }
+
+    // LA BOMBA DE TIEMPO (Primer plano)
+    if (tokenData.expira) {
+        const tiempoRestante = tokenData.expira - ahora;
+        setTimeout(() => {
+            window.showToast("⏳ Sesión expirada por límite de tiempo.", "error");
+            window.expulsar();
+        }, Math.max(0, tiempoRestante));
+    }
+    
+    // Todo legal, cargamos la grilla sin cambiar el texto del loader para no perder tiempo
+    cargar();
+  } catch (e) { window.expulsar(); }
+}
+
+// ================= LÓGICA DE USUARIOS =================
 const MAX_USERS = 50;
 let loadedUsers = [];
 
@@ -292,27 +405,29 @@ function crearTarjeta(data) {
   const userVal = data['usuario'] || '';
   el.className = userVal ? 'user-card filled' : 'user-card';
   
-  const val = (k) => data[k] || '';
-  const isChecked = (k) => {
-    const v = String(data[k]||'').toUpperCase();
-    return v === 'TRUE' || v === 'SI' || v === '1';
-  };
+  // Guardamos el usuario original escondido en la tarjeta para saber si lo renombra
+  el.dataset.originalUsuario = userVal;
+  
+  const val = (key) => data[key] || '';
+  const isChecked = (key) => data[key] === true; // Firebase devuelve booleanos puros
 
-  // ACÁ REEMPLAZAMOS "Gastos" por "TreeView" y agregamos "PIN Dinámico"
   el.innerHTML = `
     <div class="card-header">
-      <div class="card-title">Credenciales de Acceso</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <div class="card-title" style="margin-bottom:0;">Credenciales de Acceso</div>
+        <button class="btn-delete" title="Eliminar usuario" onclick="window.borrarUsuario(this, '${userVal}')">✖</button>
+      </div>
       <div class="login-grid">
         <input type="text" class="input-glass user-field" data-key="usuario" value="${val('usuario')}" placeholder="Usuario">
-        <input type="text" class="input-glass" data-key="password" value="${val('password')}" placeholder="Clave">
+        <input type="text" class="input-glass" data-key="clave" value="${val('clave')}" placeholder="Clave">
       </div>
       <div style="margin-top:10px">
-        <input type="text" class="input-glass" data-key="nombreMostrar" value="${val('nombreMostrar')}" placeholder="Nombre para mostrar">
+        <input type="text" class="input-glass" data-key="nombre_mostrar" value="${val('nombre_mostrar')}" placeholder="Nombre para mostrar">
       </div>
     </div>
     <div class="card-body">
       <div class="section-label">Datos Personales</div>
-      <input type="text" class="input-glass" data-key="nombreCompleto" value="${val('nombreCompleto')}" placeholder="Nombre Completo">
+      <input type="text" class="input-glass" data-key="nombre_completo" value="${val('nombre_completo')}" placeholder="Nombre Completo">
       <div style="display:grid; grid-template-columns: 1fr 2fr; gap:10px;">
         <input type="text" class="input-glass" data-key="dni" value="${val('dni')}" placeholder="DNI">
         <input type="text" class="input-glass" data-key="domicilio" value="${val('domicilio')}" placeholder="Domicilio">
@@ -322,18 +437,20 @@ function crearTarjeta(data) {
     <div class="card-footer">
       <div class="section-label" style="margin-bottom:10px; color:var(--accent);">Permisos</div>
       <div class="perms-grid">
-        ${makeSwitch('alarmas', 'Alarmas', isChecked('alarmas'))}
-        ${makeSwitch('tablero', 'Tablero', isChecked('tablero'))}
-        ${makeSwitch('usuarios', 'Usuarios', isChecked('usuarios'))}
-        ${makeSwitch('formulario', 'Formulario', isChecked('formulario'))}
-        ${makeSwitch('clientes', 'Clientes', isChecked('clientes'))}
-        ${makeSwitch('precios', 'Precios', isChecked('precios'))}
-        ${makeSwitch('stock', 'Control Stock', isChecked('stock'))}
-        ${makeSwitch('gastos', 'TreeView', isChecked('gastos'))} ${makeSwitch('carga', 'Control Carga', isChecked('carga'))}
-        ${makeSwitch('finanzas', 'Arqueos', isChecked('finanzas'))}
-        ${makeSwitch('confinanzas', 'Control Finanzas', isChecked('confinanzas'))}
-        ${makeSwitch('flotantes', 'Recepción Flotantes', isChecked('flotantes'))}
-        ${makeSwitch('pinDinamico', 'PIN Dinámico', isChecked('pinDinamico'))} </div>
+        ${makeSwitch('ALARMAS', 'Alarmas', isChecked('ALARMAS'))}
+        ${makeSwitch('TABLERO', 'Tablero', isChecked('TABLERO'))}
+        ${makeSwitch('USUARIOS', 'Usuarios', isChecked('USUARIOS'))}
+        ${makeSwitch('FORMULARIO', 'Formulario', isChecked('FORMULARIO'))}
+        ${makeSwitch('CLIENTES', 'Clientes', isChecked('CLIENTES'))}
+        ${makeSwitch('PRECIOS', 'Precios', isChecked('PRECIOS'))}
+        ${makeSwitch('STOCK', 'Control Stock', isChecked('STOCK'))}
+        ${makeSwitch('GASTOS', 'TreeView', isChecked('GASTOS'))} 
+        ${makeSwitch('CARGA', 'Control Carga', isChecked('CARGA'))}
+        ${makeSwitch('FINANZAS', 'Arqueos', isChecked('FINANZAS'))}
+        ${makeSwitch('CONFINANZAS', 'Control Finanzas', isChecked('CONFINANZAS'))}
+        ${makeSwitch('FLOTANTES', 'Recepción Flotantes', isChecked('FLOTANTES'))}
+        ${makeSwitch('PIN_DINAMICO', 'PIN Dinámico', isChecked('PIN_DINAMICO'))} 
+      </div>
     </div>
   `;
 
@@ -353,88 +470,126 @@ function makeSwitch(key, label, checked) {
   `;
 }
 
+// BOTÓN CRUZ PARA ELIMINAR DIRECTO
+window.borrarUsuario = async function(btn, username) {
+    if (!username) {
+        // Si la tarjeta está vacía, solo la blanquea visualmente
+        const card = btn.closest('.user-card');
+        card.querySelectorAll('input').forEach(i => {
+            if (i.type === 'checkbox') i.checked = false;
+            else i.value = '';
+        });
+        card.classList.remove('filled');
+        return;
+    }
+
+    if (confirm(`⚠️ ¿ESTÁS SEGURO?\nEstás a punto de eliminar al usuario "${username}".\nEsta acción destruirá su acceso y no se puede deshacer.`)) {
+        try {
+            window.toggleLoader(true, "ELIMINANDO...");
+            await deleteDoc(doc(db, "usuarios", username));
+            window.showToast(`Usuario ${username} fulminado.`, "success");
+            cargar(); 
+        } catch (e) {
+            console.error(e);
+            window.toggleLoader(false);
+            window.showToast("Error al eliminar en la base de datos.", "error");
+        }
+    }
+}
+
 async function cargar() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
-  toggleLoader(true, "SINCRONIZANDO DATOS...");
+  // window.toggleLoader(true, "LEYENDO BASE DE DATOS..."); // Omitido para mayor velocidad, ya viene cargando de validarSesion
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=listUsuarios&ts=${Date.now()}`);
-    const json = await res.json();
+    const querySnapshot = await getDocs(collection(db, "usuarios"));
+    loadedUsers = [];
     
-    toggleLoader(false);
+    querySnapshot.forEach((docSnap) => {
+        let user = docSnap.data();
+        user.usuario = docSnap.id; // El ID del documento es el nombre de usuario
+        loadedUsers.push(user);
+    });
     
-    loadedUsers = json.usuarios || [];
+    window.toggleLoader(false);
+    
+    // Rellenamos hasta MAX_USERS con tarjetas vacías
     while(loadedUsers.length < MAX_USERS) loadedUsers.push({});
     loadedUsers.slice(0, MAX_USERS).forEach(u => grid.appendChild(crearTarjeta(u)));
     filtrar();
   } catch (e) {
-    toggleLoader(false);
-    showToast('Error al cargar datos. Compruebe su conexión.', 'error');
+    window.toggleLoader(false);
+    window.showToast('Error de conexión con Firebase.', 'error');
   }
 }
 
 async function guardar() {
-  const btn = document.getElementById('btnGuardar');
   const cards = document.querySelectorAll('.user-card');
-  const rows = [];
+  const operacionesFirebase = [];
 
-  const toBit = (k, card) => {
-    const check = card.querySelector(`[data-key="${k}"]`);
-    return (check && check.checked) ? "1" : "0";
+  const getVal = (card, k) => {
+      const input = card.querySelector(`[data-key="${k}"]`);
+      return input ? input.value.trim() : '';
+  };
+  
+  const toBool = (card, k) => {
+      const check = card.querySelector(`[data-key="${k}"]`);
+      return check ? check.checked : false; // Devolvemos Booleano puro
   };
 
   cards.forEach(card => {
-    const getVal = (k) => card.querySelector(`[data-key="${k}"]`) ? card.querySelector(`[data-key="${k}"]`).value.trim() : '';
+    const currentUsername = getVal(card, 'usuario').toLowerCase();
+    const originalUsername = card.dataset.originalUsuario;
     
-    if (getVal('usuario')) {
-      rows.push({
-        usuario: getVal('usuario'), 
-        password: getVal('password'),
-        nombreMostrar: getVal('nombreMostrar'), 
-        nombreCompleto: getVal('nombreCompleto'),
-        dni: getVal('dni'), 
-        domicilio: getVal('domicilio'), 
-        datosExtra: getVal('datosExtra'),
+    if (currentUsername) {
+      const userData = {
+        clave: getVal(card, 'clave'),
+        nombre_mostrar: getVal(card, 'nombre_mostrar'), 
+        nombre_completo: getVal(card, 'nombre_completo'),
+        dni: getVal(card, 'dni'), 
+        domicilio: getVal(card, 'domicilio'), 
+        datosExtra: getVal(card, 'datosExtra'),
         
-        alarmas: toBit('alarmas', card),
-        tablero: toBit('tablero', card),
-        usuarios: toBit('usuarios', card),
-        formulario: toBit('formulario', card),
-        clientes: toBit('clientes', card),
-        precios: toBit('precios', card),
-        stock: toBit('stock', card),
-        gastos: toBit('gastos', card), // Gastos se usa para el TreeView
-        carga: toBit('carga', card),
-        finanzas: toBit('finanzas', card),
-        confinanzas: toBit('confinanzas', card),
-        flotantes: toBit('flotantes', card),
-        pinDinamico: toBit('pinDinamico', card) // AGREGADO AQUÍ PARA MANDAR AL BACKEND
-      });
+        ALARMAS: toBool(card, 'ALARMAS'),
+        TABLERO: toBool(card, 'TABLERO'),
+        USUARIOS: toBool(card, 'USUARIOS'),
+        FORMULARIO: toBool(card, 'FORMULARIO'),
+        CLIENTES: toBool(card, 'CLIENTES'),
+        PRECIOS: toBool(card, 'PRECIOS'),
+        STOCK: toBool(card, 'STOCK'),
+        GASTOS: toBool(card, 'GASTOS'), 
+        CARGA: toBool(card, 'CARGA'),
+        FINANZAS: toBool(card, 'FINANZAS'),
+        CONFINANZAS: toBool(card, 'CONFINANZAS'),
+        FLOTANTES: toBool(card, 'FLOTANTES'),
+        PIN_DINAMICO: toBool(card, 'PIN_DINAMICO')
+      };
+
+      // Si le cambiaron el nombre, armamos la orden para borrar el viejo documento
+      if (originalUsername && originalUsername !== currentUsername) {
+          operacionesFirebase.push( deleteDoc(doc(db, "usuarios", originalUsername)) );
+      }
+      
+      // Armamos la orden para guardar/actualizar el documento
+      operacionesFirebase.push( setDoc(doc(db, "usuarios", currentUsername), userData) );
     }
   });
 
   try {
-    toggleLoader(true, "GUARDANDO CAMBIOS...");
+    window.toggleLoader(true, "GUARDANDO CAMBIOS...");
     
-    const body = new FormData();
-    body.append('action', 'saveUsuarios');
-    body.append('k', k);
-    body.append('rows', JSON.stringify(rows));
-
-    const res = await fetch(SCRIPT_URL, { method: 'POST', body });
-    const json = await res.json();
+    // Disparamos todas las escrituras y borrados a la vez para que sea súper rápido
+    await Promise.all(operacionesFirebase);
     
-    if (json.status === 'success') {
-      toggleLoader(true, "¡PERMISOS ACTUALIZADOS!", true);
-      setTimeout(() => {
-          toggleLoader(false);
-          cargar();
-      }, 1500);
-    } else { throw new Error(json.message || "Error desconocido"); }
+    window.toggleLoader(true, "¡PERMISOS ACTUALIZADOS!", true);
+    setTimeout(() => {
+        window.toggleLoader(false);
+        cargar(); // Recargamos para asentar los nombres originales nuevos
+    }, 1500);
   } catch (e) {
-    toggleLoader(false);
-    showToast('Error al guardar: ' + e.message, 'error');
+    window.toggleLoader(false);
+    window.showToast('Error al guardar: ' + e.message, 'error');
   }
 }
 

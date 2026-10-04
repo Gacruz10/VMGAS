@@ -8,7 +8,7 @@
   <style>
     :root {
       --glass: rgba(0, 0, 0, 0.6);
-      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.15);
       --accent: #FFD700; 
       --ok: #2dd4bf; 
       --error: #ff4444; 
@@ -16,74 +16,107 @@
       --text-primary: #ffffff;
       --text-muted: rgba(255, 255, 255, 0.5);
       --card-bg: rgba(255, 255, 255, 0.05);
+      --input-bg: rgba(0, 0, 0, 0.3);
+      --input-border: var(--glass-border);
+      
+      --bg-color: #0d031a;
+      --bg-grad-1: #1e053a;
+      --bg-grad-2: #310d5e;
+      --bg-grad-3: #0d031a;
+      --bg-grad-4: #214d7a;
     }
+
+    body.light-mode {
+      --glass: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(0, 0, 0, 0.15);
+      --text-primary: #1a1a1a;
+      --text-muted: rgba(0, 0, 0, 0.6);
+      --card-bg: rgba(255, 255, 255, 0.5);
+      --accent: #d97706; 
+      --input-bg: rgba(255, 255, 255, 0.5);
+      --input-border: rgba(0, 0, 0, 0.2);
+      
+      --bg-color: #f8fafc;
+      --bg-grad-1: #e9d5ff;
+      --bg-grad-2: #bfdbfe;
+      --bg-grad-3: #fbcfe8;
+      --bg-grad-4: #bae6fd;
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
-      background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                  radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%),
-                  radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%),
-                  radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
-      background-color: #0d031a; background-attachment: fixed;
-      min-height: 100vh; padding: 20px; opacity: 0; transition: opacity 0.5s ease;
+      background: radial-gradient(at 0% 0%, var(--bg-grad-1) 0%, transparent 50%),
+                  radial-gradient(at 100% 0%, var(--bg-grad-2) 0%, transparent 50%),
+                  radial-gradient(at 100% 100%, var(--bg-grad-3) 0%, transparent 50%),
+                  radial-gradient(at 0% 100%, var(--bg-grad-4) 0%, transparent 50%);
+      background-color: var(--bg-color); background-attachment: fixed;
+      min-height: 100vh; padding: 20px; opacity: 0; transition: all 0.5s ease;
     }
-    .header { text-align: center; margin-bottom: 25px; position: relative; }
+    
+    .theme-toggle {
+      position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; border-radius: 50%;
+      background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-primary);
+      display: flex; justify-content: center; align-items: center; font-size: 22px; cursor: pointer;
+      backdrop-filter: blur(10px); transition: all 0.3s ease; z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--accent); }
+
+    .header { text-align: center; margin-bottom: 25px; position: relative; margin-top: 10px; }
     .header h3 { color: var(--accent); font-weight: 800; margin: 0; font-size: 22px; text-transform: uppercase; transition: color 0.3s; }
     
     .btn-volver {
-        background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white;
+        background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-primary);
         padding: 8px 12px; border-radius: 8px; cursor: pointer; position: absolute; left: 0; top: 0;
-        font-weight: bold;
+        font-weight: bold; transition: all 0.3s ease;
     }
 
     .mode-switch-container { display: flex; justify-content: center; margin-bottom: 20px; }
-    .mode-switch { background: rgba(0,0,0,0.4); border-radius: 20px; padding: 4px; display: flex; border: 1px solid var(--glass-border); width: 80%; max-width: 400px; }
+    .mode-switch { background: var(--input-bg); border-radius: 20px; padding: 4px; display: flex; border: 1px solid var(--glass-border); width: 80%; max-width: 400px; }
     .mode-btn { flex: 1; text-align: center; padding: 10px; border-radius: 16px; cursor: pointer; font-weight: 800; font-size: 12px; transition: all 0.3s; color: var(--text-muted); }
-    .mode-btn.active.reparto { background: var(--accent); color: #000; box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
+    .mode-btn.active.reparto { background: var(--accent); color: #000; box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3); }
     .mode-btn.active.compra { background: var(--compra); color: #fff; box-shadow: 0 4px 15px rgba(168,85,247,0.3); }
 
     .container { max-width: 600px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border); }
-    .tabs { display: flex; gap: 8px; margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
-    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; }
-    .tab.active { background: rgba(255,255,255,0.1); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .section { display: none; animation: slideIn 0.3s ease; }
     .section.active { display: block; }
     @keyframes slideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
-    select { width: 100%; padding: 14px; background: #1a1a1a; color: white; border: 1px solid var(--glass-border); border-radius: 12px; font-size: 16px; font-weight: 600; outline: none; margin-bottom: 20px; }
-    option.ocupado { background-color: #3f0e0e; color: #ff8888; font-style: italic; }
+    select { width: 100%; padding: 14px; background: var(--input-bg); color: var(--text-primary); border: 1px solid var(--input-border); border-radius: 12px; font-size: 16px; font-weight: 600; outline: none; margin-bottom: 20px; }
+    option { background: var(--bg-color); color: var(--text-primary); }
+    option.ocupado { background-color: rgba(255, 68, 68, 0.2); color: var(--error); font-style: italic; }
 
     .trip-list { display: grid; gap: 12px; }
     .trip-card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
     .trip-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .trip-info h4 { margin: 0 0 5px 0; font-size: 16px; color: white; }
+    .trip-info h4 { margin: 0 0 5px 0; font-size: 16px; color: var(--text-primary); }
     .trip-info span { font-size: 12px; color: var(--text-muted); display: block; }
-    .trip-detail { font-size: 11px; color: var(--accent); font-weight: bold; margin-top: 6px; background:rgba(255, 215, 0, 0.1); padding:4px 8px; border-radius:6px; display:inline-block;}
+    .trip-detail { font-size: 11px; color: var(--accent); font-weight: bold; margin-top: 6px; background:rgba(217, 119, 6, 0.1); padding:4px 8px; border-radius:6px; display:inline-block;}
     .trip-card.compra-mode { border-color: var(--compra); }
     .trip-card.compra-mode .trip-detail { color: var(--compra); background: rgba(168,85,247,0.1); }
     .trip-card.alert { border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05); }
 
     .grid-inputs { display: grid; gap: 8px; margin-top: 15px; }
-    .row-input { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; transition: background 0.3s; }
+    .row-input { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: center; background: var(--input-bg); padding: 8px; border-radius: 10px; transition: background 0.3s; }
     .label-kilo { font-weight: 900; color: var(--accent); text-align: center; font-size: 14px; transition: color 0.3s;}
     
-    .input-disabled { opacity: 0.5; filter: grayscale(100%); }
+    .input-disabled { opacity: 0.5; filter: grayscale(100%); pointer-events: none;}
     .highlight-envase { background: rgba(255,68,68,0.15) !important; border-color: var(--error) !important; }
     .highlight-lleno { background: rgba(45,212,191,0.15) !important; border-color: var(--ok) !important; }
 
     .input-wrapper { position: relative; transition: all 0.3s; }
-    .input-wrapper label { position: absolute; top: -6px; left: 6px; font-size: 8px; background: #333; padding: 0 4px; color: #aaa; border-radius: 4px; z-index: 10; transition: background 0.3s;}
-    input[type="number"], input[type="text"] { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; text-align: center; font-weight: 700; outline: none; font-size: 16px; transition: all 0.3s; }
+    .input-wrapper label { position: absolute; top: -6px; left: 6px; font-size: 8px; background: var(--bg-color); padding: 0 4px; color: var(--text-muted); border-radius: 4px; z-index: 10; transition: background 0.3s;}
+    input[type="number"], input[type="text"] { width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: var(--text-primary); text-align: center; font-weight: 700; outline: none; font-size: 16px; transition: all 0.3s; }
     input[type="text"] { text-align: left; font-weight: normal; }
 
-    .diff-box { margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 12px; font-size: 13px; min-height: 20px;}
-    .diff-item { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);}
+    .diff-box { margin-top: 20px; padding: 10px; background: var(--input-bg); border-radius: 12px; font-size: 13px; min-height: 20px;}
+    .diff-item { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom:5px; border-bottom:1px solid var(--glass-border);}
     .diff-alert { color: var(--error); font-weight: bold; }
     .diff-ok { color: var(--ok); font-weight: bold; }
 
-    textarea { width: 100%; height: 80px; background: rgba(0,0,0,0.3); border-radius: 8px; color: white; padding: 10px; resize: none; margin-top: 10px; font-family: 'Inter', sans-serif; border: 1px solid var(--glass-border); transition: all 0.3s ease; }
+    textarea { width: 100%; height: 80px; background: var(--input-bg); border-radius: 8px; color: var(--text-primary); padding: 10px; resize: none; margin-top: 10px; font-family: 'Inter', sans-serif; border: 1px solid var(--input-border); transition: all 0.3s ease; }
     .tx-novedad { border: 1px solid var(--accent) !important; }
-    .tx-novedad::placeholder { color: rgba(255, 215, 0, 0.7); }
+    .tx-novedad::placeholder { color: var(--accent); opacity: 0.7; }
     .tx-obligatorio { border: 2px solid var(--error) !important; background: rgba(255, 68, 68, 0.1); }
     .tx-obligatorio::placeholder { color: rgba(255, 68, 68, 0.8); font-weight: 800; text-transform: uppercase; }
 
@@ -98,7 +131,7 @@
     
     .audit-box { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--error); padding: 12px; border-radius: 8px; margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
     .audit-box p { color: var(--error); font-size: 11px; margin: 0; font-weight: 800; text-align: center; text-transform: uppercase;}
-    .audit-box label { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: white; cursor: pointer; font-weight: 600; line-height: 1.4;}
+    .audit-box label { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: var(--text-primary); cursor: pointer; font-weight: 600; line-height: 1.4;}
     .audit-box input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--error); cursor: pointer; }
 
     .hidden { display: none; }
@@ -108,19 +141,26 @@
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast.error { background: rgba(255, 68, 68, 0.9); backdrop-filter: blur(10px); }
     .toast.success { background: rgba(45, 212, 191, 0.9); backdrop-filter: blur(10px); }
-    .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; backdrop-filter: blur(10px); }
+    .toast.info { background: rgba(217, 119, 6, 0.9); color: #fff; backdrop-filter: blur(10px); }
 
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .loading-overlay.active { opacity: 1; visibility: visible; }
-    .spinner { width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite; margin-bottom: 20px; transition: all 0.3s ease; }
+    .spinner { width: 60px; height: 60px; border: 4px solid rgba(128, 128, 128, 0.2); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite; margin-bottom: 20px; transition: all 0.3s ease; }
     .spinner.success-mode { border-left-color: var(--ok); }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 25px rgba(0,0,0,0.2); } 100% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } }
     .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; transition: color 0.3s; }
     .loading-text.success-mode { color: var(--ok); }
   </style>
 </head>
 <body>
+
+  <script>
+    if(localStorage.getItem('vm_theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
 
   <div id="toast-container"></div>
 
@@ -136,48 +176,33 @@
 
   <div class="mode-switch-container">
     <div class="mode-switch">
-        <div class="mode-btn active reparto" id="btnModeReparto" onclick="setMode('REPARTO')">🚚 REPARTO</div>
-        <div class="mode-btn compra" id="btnModeCompra" onclick="setMode('COMPRA')">🏭 COMPRA PLANTA</div>
+        <div class="mode-btn active reparto" id="btnModeReparto" onclick="window.setMode('REPARTO')">🚚 REPARTO</div>
+        <div class="mode-btn compra" id="btnModeCompra" onclick="window.setMode('COMPRA')">🏭 COMPRA PLANTA</div>
     </div>
   </div>
 
   <div class="container">
-    <div id="mainContent" class="hidden">
-      
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab('salida')">SALIDA</div>
-        <div class="tab" onclick="switchTab('llegada')">LLEGADA</div>
-      </div>
-
-      <div id="viewSalida" class="section active">
+    
+    <div id="viewMain" class="section active">
+        
         <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">CHOFER</label>
         <select id="selChofer"><option value="">Cargando...</option></select>
         
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <div style="flex: 2;">
-                <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">VEHÍCULO</label>
-                <select id="selVehiculo" style="margin-bottom:0;"><option value="">Cargando...</option></select>
-            </div>
-            <div style="flex: 1;">
-                <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; margin-bottom:5px; display:block;">KM SALIDA</label>
-                <input type="number" id="txtKmSalida" placeholder="KM" style="padding: 14px; background: #1a1a1a; border: 1px solid var(--glass-border); border-radius: 12px; color: white; width: 100%; text-align: center; font-weight: bold; font-size: 16px; margin-bottom:0;">
-            </div>
-        </div>
         <div class="grid-inputs" id="gridSalida"></div>
         
         <div class="diff-box" style="text-align:center;">
-             <span style="color:#aaa; font-size:10px;">TOTAL A BORDO</span><br>
+             <span style="color:var(--text-muted); font-size:10px;">TOTAL A BORDO</span><br>
              <span id="totalSalidaDisplay" style="font-size:24px; font-weight:900; color:var(--accent)">0</span>
         </div>
 
         <button class="btn-main btn-salida" id="btnRegistrarSalida">REGISTRAR SALIDA</button>
-        <div style="text-align:center; margin-top:15px;" id="linkRetro"><small style="color:#a855f7; cursor:pointer; text-decoration:underline;" onclick="toggleRetro()">Ingreso Excepcional (Retroactivo)</small></div>
+        <div style="text-align:center; margin-top:15px;" id="linkRetro"><small style="color:#a855f7; cursor:pointer; text-decoration:underline;" onclick="window.toggleRetro()">Ingreso Excepcional (Retroactivo)</small></div>
         
         <div id="retroContainer" class="retro-section">
             <div style="text-align:center; color:#a855f7; font-weight:800; margin-bottom:10px;">CARGA RETROACTIVA MANUAL</div>
             <div id="gridRetro"></div> 
             <div id="retroDiffBox" class="diff-box"></div>
-            <textarea id="retroMotivoTxt" class="tx-obligatorio" placeholder="Motivo de la diferencia / justificación obligatoria..."></textarea>
+            <textarea id="retroMotivoTxt" class="tx-obligatorio" placeholder="Motivo de la diferencia / justificación obligatoria..." inputmode="text"></textarea>
             
             <div class="audit-box">
                 <p>⚠️ Alerta de Auditoría</p>
@@ -186,53 +211,101 @@
                     Declaro bajo juramento que los datos ingresados son verídicos, asumiendo la responsabilidad por no haber registrado el viaje en el momento correspondiente.
                 </label>
             </div>
-
             <button class="btn-main btn-retro" id="btnRegistrarRetro">GUARDAR RETROACTIVO</button>
         </div>
-      </div>
 
-      <div id="viewLlegadaList" class="section">
-         <div id="listViajes" class="trip-list"><div style="text-align:center; color:#aaa;">Buscando camiones...</div></div>
-      </div>
-
-      <div id="viewLlegadaForm" class="section">
-          <button style="background:none; border:none; color:#aaa; cursor:pointer; margin-bottom:10px;" onclick="cancelLlegada()">⬅ Volver a la lista</button>
-          <div style="color:var(--accent); font-weight:bold; font-size:18px; margin-bottom:10px;" id="lblChoferLlegada"></div>
-          
-          <div class="grid-inputs" id="gridLlegada"></div>
-          
-          <div id="llegadaDiffBox" class="diff-box">
-              <div style="text-align:center; color:#aaa;">Ingrese la carga para calcular...</div>
-          </div>
-
-          <div style="margin-top: 15px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
-              <label style="font-size:11px; color:var(--text-muted); font-weight:800; letter-spacing:1px; display:block; margin-bottom:5px;">KM LLEGADA (TABLERO)</label>
-              <input type="number" id="txtKmLlegada" placeholder="KM al llegar" style="margin-bottom: 5px; transition: all 0.3s; border-width: 2px;">
-              <div id="msgKmFeedback" style="font-size: 11px; font-weight: bold; min-height: 14px;"></div>
-          </div>
-          
-          <input type="text" id="txtRemitoCompra" class="tx-obligatorio hidden" placeholder="Nº DE REMITO (OBLIGATORIO)..." style="margin-top: 10px; font-family: 'Inter', sans-serif;">
-          
-          <textarea id="txtMotivo" class="tx-novedad" placeholder="Novedades... (Opcional)"></textarea>
-          
-          <button class="btn-main btn-llegada" id="btnFinalizar">FINALIZAR VIAJE ✅</button>
-      </div>
-
+        <hr style="border: 0; border-top: 1px dashed var(--glass-border); margin: 30px 0 20px 0;">
+        
+        <h4 id="tituloRuta" style="text-align: center; color: var(--accent); margin-top:0; margin-bottom: 15px; font-weight: 800; letter-spacing: 1px;">📥 CAMIONES EN RUTA</h4>
+        <div id="listViajes" class="trip-list"><div style="text-align:center; color:var(--text-muted);">Buscando camiones...</div></div>
     </div>
+
+    <div id="viewLlegadaForm" class="section">
+        <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; margin-bottom:10px; font-weight:bold; font-size: 14px;" onclick="window.cancelLlegada()">⬅ CANCELAR Y VOLVER</button>
+        <div style="color:var(--accent); font-weight:bold; font-size:18px; margin-bottom:10px;" id="lblChoferLlegada"></div>
+        
+        <div class="grid-inputs" id="gridLlegada"></div>
+        
+        <div id="llegadaDiffBox" class="diff-box">
+            <div style="text-align:center; color:var(--text-muted);">Ingrese la carga para calcular...</div>
+        </div>
+        
+        <div id="boxCompraEnvases" class="hidden" style="margin-top: 15px; border: 1px dashed var(--compra); border-radius: 12px; padding: 15px; background: rgba(168, 85, 247, 0.05);">
+            <div style="color:var(--compra); font-weight:900; font-size:12px; text-align:center; margin-bottom:12px; letter-spacing:1px;">🛒 DECLARAR COMPRA DE ENVASES (EFECTIVO)</div>
+            <div class="row-input" style="background: var(--input-bg); grid-template-columns: 45px 1fr 1fr 1fr;">
+                <div class="label-kilo" style="color:var(--compra)">CANT.</div>
+                <div class="input-wrapper"><label style="background:var(--compra); color:#000;">+10KG</label><input type="number" id="compraEnv10" class="calc-L" placeholder="0" inputmode="numeric" pattern="[0-9]*" style="border-color:var(--compra);"></div>
+                <div class="input-wrapper"><label style="background:var(--compra); color:#000;">+15KG</label><input type="number" id="compraEnv15" class="calc-L" placeholder="0" inputmode="numeric" pattern="[0-9]*" style="border-color:var(--compra);"></div>
+                <div class="input-wrapper"><label style="background:var(--compra); color:#000;">+45KG</label><input type="number" id="compraEnv45" class="calc-L" placeholder="0" inputmode="numeric" pattern="[0-9]*" style="border-color:var(--compra);"></div>
+            </div>
+            <div style="margin-top: 10px;">
+                <input type="number" id="montoCompraEnvases" placeholder="$ MONTO TOTAL PAGADO EN EFECTIVO" inputmode="numeric" pattern="[0-9]*" style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--compra); border-radius: 8px; color: var(--text-primary); text-align: center; font-weight: bold; font-size: 14px;">
+            </div>
+        </div>
+
+        <input type="text" id="txtRemitoCompra" class="tx-obligatorio hidden" placeholder="Nº DE REMITO (OBLIGATORIO)..." inputmode="text" style="margin-top: 10px; font-family: 'Inter', sans-serif;">
+        
+        <textarea id="txtMotivo" class="tx-novedad" placeholder="Novedades... (Opcional)" inputmode="text"></textarea>
+        
+        <button class="btn-main btn-llegada" id="btnFinalizar">FINALIZAR VIAJE ✅</button>
+    </div>
+
   </div>
 
-<script>
+<div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
+  <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
+  <h2 style="color:#d97706; letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
+  <p style="max-width:400px; color:#aaa; font-family:'Inter', sans-serif; margin-top:10px;">
+    Estamos procesando los cierres y auditorías del día. <br>
+    El sistema volverá a estar operativo a las <b>00:06 AM</b>.
+  </p>
+  <div style="margin-top:30px; padding:10px 20px; border:1px solid #444; border-radius:4px; font-size:12px; color:#ff4444;">
+    AGUARDE UN MOMENTO...
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
 
 const params = new URLSearchParams(window.location.search);
 let k = params.get('k') || params.get('token');
 
-let modoActual = 'REPARTO';
-let viajesPendientes = [];
-let viajeSeleccionado = null;
-let hayDiferenciaLlegada = false;
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+document.getElementById('btnTheme').textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
 
-// Funciones para focus automático
+document.getElementById('btnBack').addEventListener('click', () => {
+    window.location.href = `inicio.html?k=${k}`;
+});
+
+function normalizarStr(str) {
+    return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+}
+
 function aplicarFocoAuto() {
     document.querySelectorAll('input[type="number"]').forEach(input => {
         input.addEventListener('focus', function() {
@@ -262,52 +335,100 @@ function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
     if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-if (k) { sessionStorage.setItem('k', k); window.history.replaceState({}, document.title, window.location.pathname); } 
-else { k = sessionStorage.getItem('k'); }
+if (k) { 
+    sessionStorage.setItem('k', k); 
+    window.history.replaceState({}, document.title, window.location.pathname); 
+} else { 
+    k = sessionStorage.getItem('k'); 
+}
 
-function logout() { sessionStorage.removeItem('k'); window.location.replace('index.html'); }
-if (!k) logout();
+function logout() { 
+    sessionStorage.removeItem('k'); 
+    window.location.replace('inicio.html'); 
+}
 
-document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+if (!k) {
+    alert("⚠️ No hay token de sesión en la URL ni en memoria. Volviendo al login.");
+    logout();
+    throw new Error("Ejecución detenida: Falta token.");
+}
 
-let sessionTime = 180; let timerInterval;
+let sessionTime = 180; 
+let timerInterval = null;
+
 function startSessionTimer() {
-    clearInterval(timerInterval);
+    if (timerInterval) clearInterval(timerInterval);
+    sessionTime = 180;
     timerInterval = setInterval(() => {
         sessionTime--;
-        if (sessionTime <= 0) { showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error'); setTimeout(logout, 1500); }
+        if (sessionTime <= 0) { 
+            clearInterval(timerInterval);
+            showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error'); 
+            setTimeout(logout, 1500); 
+        }
     }, 1000);
 }
 function refreshSession() { sessionTime = 180; }
 ['click','mousemove','keydown','touchstart'].forEach(ev => document.addEventListener(ev, refreshSession));
+
+let modoActual = 'REPARTO';
+let viajesPendientes = [];
+let listaChoferes = [];
+let enRutaSet = new Set();
+let viajeSeleccionado = null;
+let hayDiferenciaLlegada = false;
 
 async function init() {
     document.body.style.opacity = 1;
     toggleLoader(true, "VALIDANDO SESIÓN...");
 
     try {
-        const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
-        const r = await fetch(API, { method: 'POST', body: fd }); const d = await r.json();
-        if (d.status !== 'success') { logout(); return; }
-    } catch(e) { logout(); return; }
+        const tokenRef = doc(db, "tokens", k);
+        const tokenSnap = await getDoc(tokenRef);
+        if (!tokenSnap.exists()) { logout(); return; }
+        const tokenData = tokenSnap.data();
+        if (tokenData.expira && Date.now() > tokenData.expira) { logout(); return; }
+        
+        sessionStorage.setItem('usuarioActivo', tokenData.usuario || 'SISTEMA');
+    } catch(e) { 
+        alert("Error validando la sesión en Firebase.");
+        return; 
+    }
 
-    toggleLoader(true, "CARGANDO DATOS...");
+    toggleLoader(true, "DESCARGANDO DATOS...");
     startSessionTimer();
 
     renderGrid('gridSalida', 'S');
     renderGrid('gridLlegada', 'L');
     document.getElementById('gridRetro').innerHTML = renderRetroInputs();
-
-    // Sumamos la carga de vehículos a las peticiones iniciales
-    await Promise.all([loadDrivers(), loadTrips(), loadVehiculos()]);
-    syncDropdownConViajesActivos(); 
-    
-    toggleLoader(false);
-    document.getElementById('mainContent').classList.remove('hidden');
-    
+    aplicarFocoAuto();
     setupCalc('S', updateSalidaTotal);
     setupCalc('L', calcLlegadaDiff);
     setupCalc('R', calcRetroDiff);
+
+    try {
+        const pUsuarios = fetch(`${API}?action=listusuarios`).then(r => r.json()).catch(() => ({}));
+        const pDrivers = fetch(`${API}?action=getdrivers`).then(r => r.json()).catch(() => ({}));
+        const pTrips = fetch(`${API}?action=getpendingtrips&k=${k}`).then(r => r.json()).catch(() => ({}));
+
+        const [dUsuarios, dDrivers, dTrips] = await Promise.all([pUsuarios, pDrivers, pTrips]);
+
+        if (dUsuarios.status === 'success' && Array.isArray(dUsuarios.usuarios)) {
+            listaChoferes = dUsuarios.usuarios;
+        }
+        if (dDrivers.drivers) {
+            dDrivers.drivers.forEach(x => { if(x.enRuta) enRutaSet.add(normalizarStr(x.nombre)); });
+        }
+        if (dTrips.trips) {
+            viajesPendientes = dTrips.trips;
+        }
+    } catch(e) {
+        console.error("Error en Promise.all", e);
+        showToast("Error descargando datos del servidor", "error");
+    }
+
+    procesarChoferes();
+    syncDropdownConViajesActivos();
     
     document.getElementById('selChofer').addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
@@ -318,79 +439,48 @@ async function init() {
         }
     });
 
-    document.getElementById('selVehiculo').addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.dataset.ocupado === "true") {
-             showToast(`⛔ ESTE VEHÍCULO YA ESTÁ EN RUTA.`, "error");
-             this.value = ""; 
-             document.getElementById('txtKmSalida').value = "";
-        } else {
-             // AUTOCOMPLETAR KILOMETRAJE
-             if (selectedOption.dataset.kmActual) {
-                 document.getElementById('txtKmSalida').value = selectedOption.dataset.kmActual;
-             } else {
-                 document.getElementById('txtKmSalida').value = "";
-             }
-        }
-    });
-
-    // --- NUEVO: VIGILANTE VISUAL DE KILÓMETROS A LA LLEGADA ---
-    document.getElementById('txtKmLlegada').addEventListener('input', function() {
-        const inputKm = parseInt(this.value) || 0;
-        const msgBox = document.getElementById('msgKmFeedback');
-        
-        // Asumimos que el backend mandará el kmSalida. Si no lo tiene, no bloqueamos el color.
-        const kmSalidaOculto = viajeSeleccionado ? (parseInt(viajeSeleccionado.kmSalida) || 0) : 0;
-
-        if (inputKm === 0) {
-            this.style.color = "white";
-            this.style.borderColor = "var(--glass-border)";
-            msgBox.textContent = "";
-        } else if (kmSalidaOculto > 0 && inputKm <= kmSalidaOculto) {
-            this.style.color = "var(--error)";
-            this.style.borderColor = "var(--error)";
-            msgBox.style.color = "var(--error)";
-            msgBox.textContent = "❌ ERROR: Menor al KM de salida.";
-        } else if (kmSalidaOculto > 0 && (inputKm - kmSalidaOculto) > 400) {
-            // Techo de cordura visual (Ej: 400km maximos por viaje)
-            this.style.color = "var(--accent)";
-            this.style.borderColor = "var(--accent)";
-            msgBox.style.color = "var(--accent)";
-            msgBox.textContent = `⚠️ ¿Seguro? Hizo ${inputKm - kmSalidaOculto} KM en este viaje.`;
-        } else if (kmSalidaOculto > 0) {
-            this.style.color = "var(--ok)";
-            this.style.borderColor = "var(--ok)";
-            msgBox.style.color = "var(--ok)";
-            msgBox.textContent = `✅ Lógico (+${inputKm - kmSalidaOculto} KM recorridos).`;
-        } else {
-            // Si el backend no nos mandó el kmSalida (viajes viejos) lo dejamos en blanco neutro
-            this.style.color = "white";
-            this.style.borderColor = "var(--glass-border)";
-            msgBox.textContent = "";
-        }
-    });
-
-    aplicarFocoAuto();
-    setMode('REPARTO');
+    window.setMode('REPARTO');
+    toggleLoader(false);
+    document.getElementById('viewMain').classList.add('active');
 }
 
-function setMode(modo) {
+function procesarChoferes() {
+    const sel = document.getElementById('selChofer');
+    sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+    if (listaChoferes.length > 0) {
+        listaChoferes.forEach(item => {
+            const idReal = String(item.usuario || '').trim();
+            const nombreMostrar = item.nombreMostrar || item.nombre || idReal; 
+            const idUpper = normalizarStr(idReal);
+            const estaOcupado = enRutaSet.has(idUpper);
+
+            const o = document.createElement('option');
+            o.value = idReal; o.text = nombreMostrar;
+            o.dataset.backendOcupado = estaOcupado ? "true" : "false";
+            sel.add(o);
+        });
+    }
+}
+
+window.setMode = function(modo) {
     modoActual = modo;
     const btnReparto = document.getElementById('btnModeReparto');
     const btnCompra = document.getElementById('btnModeCompra');
     const title = document.getElementById('mainTitle');
     const btnSalida = document.getElementById('btnRegistrarSalida');
+    const titleRuta = document.getElementById('tituloRuta');
 
-    if(document.getElementById('viewLlegadaForm').classList.contains('active')) { cancelLlegada(); }
+    if(document.getElementById('viewLlegadaForm').classList.contains('active')) { window.cancelLlegada(); }
 
     document.querySelectorAll('input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
+    document.querySelectorAll('.input-wrapper').forEach(w => w.classList.remove('input-disabled'));
     updateSalidaTotal();
 
     if (modo === 'REPARTO') {
         btnReparto.classList.add('active'); btnCompra.classList.remove('active');
         title.style.color = "var(--accent)"; document.getElementById('totalSalidaDisplay').style.color = "var(--accent)";
+        titleRuta.style.color = "var(--accent)"; titleRuta.innerText = "📥 CAMIONES EN RUTA";
         ['10','15','45'].forEach(kg => {
-            document.getElementById(`S_wrap_V${kg}`).classList.add('input-disabled');
             document.getElementById(`SL${kg}`).classList.add('highlight-lleno');
         });
         btnSalida.className = "btn-main btn-salida"; btnSalida.innerHTML = "REGISTRAR SALIDA A REPARTO";
@@ -398,133 +488,28 @@ function setMode(modo) {
     } else {
         btnCompra.classList.add('active'); btnReparto.classList.remove('active');
         title.style.color = "var(--compra)"; document.getElementById('totalSalidaDisplay').style.color = "var(--compra)";
+        titleRuta.style.color = "var(--compra)"; titleRuta.innerText = "🏭 COMPRAS EN PLANTA";
         ['10','15','45'].forEach(kg => {
-            document.getElementById(`S_wrap_L${kg}`).classList.add('input-disabled');
             document.getElementById(`SV${kg}`).classList.add('highlight-envase');
         });
-        btnSalida.className = "btn-main btn-salida-compra"; btnSalida.innerHTML = "REGISTRAR SALIDA A PLANTA (VACÍOS)";
+        btnSalida.className = "btn-main btn-salida-compra"; btnSalida.innerHTML = "REGISTRAR SALIDA A PLANTA";
         document.getElementById('linkRetro').style.display = "none"; document.getElementById('retroContainer').style.display = "none";
     }
 
-    if(document.getElementById('viewLlegadaList').classList.contains('active')) { loadTrips(); }
-}
-
-function renderGrid(id, pre) {
-    const html = [10, 15, 45].map(kg => `
-        <div class="row-input">
-            <div class="label-kilo">${kg}</div>
-            <div class="input-wrapper" id="${pre}_wrap_L${kg}"><label>LLENOS</label><input type="number" id="${pre}L${kg}" class="calc-${pre}" placeholder="0"></div>
-            <div class="input-wrapper" id="${pre}_wrap_V${kg}"><label>VACÍOS</label><input type="number" id="${pre}V${kg}" class="calc-${pre}" placeholder="0"></div>
-        </div>
-    `).join('');
-    document.getElementById(id).innerHTML = html;
-}
-
-function renderRetroInputs() {
-    return [10,15,45].map(kg => `
-        <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">
-            <div style="text-align:center; font-size:10px; color:var(--accent); font-weight:bold; margin-bottom:5px;">${kg} KG</div>
-            <div class="row-input" style="background:rgba(255,215,0,0.05)">
-                <div style="font-size:9px; color:#aaa;">SALIO</div>
-                <input type="number" id="R_SL${kg}" class="calc-R" placeholder="Llenos">
-                <input type="number" id="R_SV${kg}" class="calc-R" placeholder="Vacíos">
-            </div>
-            <div class="row-input" style="background:rgba(45,212,191,0.05)">
-                <div style="font-size:9px; color:#aaa;">VOLVIO</div>
-                <input type="number" id="R_RL${kg}" class="calc-R" placeholder="Llenos">
-                <input type="number" id="R_RV${kg}" class="calc-R" placeholder="Vacíos">
-            </div>
-        </div>
-    `).join('');
-}
-
-async function loadDrivers() {
-    try {
-        const r = await fetch(`${API}?action=listusuarios`); 
-        const d = await r.json();
-        
-        const sel = document.getElementById('selChofer');
-        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
-        
-        let lista = [];
-        if (d.status === 'success' && Array.isArray(d.usuarios)) lista = d.usuarios;
-
-        let enRutaSet = new Set();
-        try {
-           const r2 = await fetch(`${API}?action=getdrivers`);
-           const d2 = await r2.json();
-           if(d2.drivers) { d2.drivers.forEach(x => { if(x.enRuta) enRutaSet.add(String(x.nombre).toUpperCase().trim()); }); }
-        } catch(e) {}
-
-        if (lista.length > 0) {
-            lista.forEach(item => {
-                const idReal = String(item.usuario || '').trim();
-                const nombreMostrar = item.nombreMostrar || item.nombre || idReal; 
-                const idUpper = idReal.toUpperCase();
-                const estaOcupado = enRutaSet.has(idUpper);
-
-                const o = document.createElement('option');
-                o.value = idReal; o.text = nombreMostrar;
-                o.dataset.backendOcupado = estaOcupado ? "true" : "false";
-                sel.add(o);
-            });
-        }
-    } catch(e) { console.error(e); }
-}
-
-// Cargar flota de vehículos
-async function loadVehiculos() {
-    try {
-        const r = await fetch(`${API}?action=getflota`); 
-        const d = await r.json();
-        
-        const sel = document.getElementById('selVehiculo');
-        sel.innerHTML = '<option value="">-- Seleccionar Camión --</option>';
-        
-        if (d.status === 'success' && Array.isArray(d.flota)) {
-            d.flota.forEach(v => {
-                const o = document.createElement('option');
-                o.value = v.patente; 
-                o.text = `${v.vehiculo} (${v.patente})`; 
-                o.dataset.kmActual = v.kmActual || v.km || '';
-                sel.add(o);
-            });
-        }
-    } catch(e) { 
-        const sel = document.getElementById('selVehiculo');
-        sel.innerHTML = '<option value="">-- Carga Manual (Falta API) --</option><option value="CAMION-1">Camión 1</option><option value="CAMION-2">Camión 2</option>';
-    }
-}
-
-async function loadTrips() {
-    const list = document.getElementById('listViajes');
-    const colorCarga = modoActual === 'COMPRA' ? 'var(--compra)' : 'var(--accent)';
-    list.innerHTML = `<div style="text-align:center; padding:40px 20px;"><div class="spinner" style="width:40px; height:40px; margin: 0 auto 15px auto; border-left-color: ${colorCarga};"></div><div style="color: ${colorCarga}; font-weight:800; font-size:12px; letter-spacing:2px;">RASTREANDO RADARES...</div></div>`;
-
-    try {
-        const r = await fetch(`${API}?action=getpendingtrips&k=${k}`);
-        const d = await r.json();
-        if(d.status === 'error' && d.message.includes('Sesión')) logout();
-
-        viajesPendientes = d.trips || [];
-        renderTripList();
-        syncDropdownConViajesActivos(); 
-        refreshSession();
-    } catch(e){ list.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">⚠️ Error de conexión. Intentá otra vez.</div>`; }
+    renderTripList();
 }
 
 function syncDropdownConViajesActivos() {
     const selChofer = document.getElementById('selChofer');
-    const selVehiculo = document.getElementById('selVehiculo');
     if (!viajesPendientes) return;
 
-    // Bloquear Choferes
-    const choferesEnCalle = viajesPendientes.map(v => String(v.chofer).toUpperCase().trim());
+    const choferesEnCalle = viajesPendientes.map(v => normalizarStr(v.chofer));
+    
     if (selChofer) {
         Array.from(selChofer.options).forEach(opt => {
             if (!opt.value) return; 
-            const optText = opt.text.replace('⛔ ', '').replace(' (En Ruta)', '').toUpperCase().trim();
-            const optVal = String(opt.value).toUpperCase().trim();
+            const optText = normalizarStr(opt.text.replace('⛔ ', '').replace(' (En Ruta)', ''));
+            const optVal = normalizarStr(opt.value);
             const enRuta = choferesEnCalle.includes(optText) || choferesEnCalle.includes(optVal) || opt.dataset.backendOcupado === "true";
             
             if (enRuta) {
@@ -536,31 +521,13 @@ function syncDropdownConViajesActivos() {
             }
         });
     }
-
-    // Bloquear Vehículos
-    const vehiculosEnCalle = viajesPendientes.map(v => String(v.vehiculo || '').toUpperCase().trim());
-    if (selVehiculo) {
-        Array.from(selVehiculo.options).forEach(opt => {
-            if (!opt.value) return; 
-            const optVal = String(opt.value).toUpperCase().trim();
-            const enRuta = vehiculosEnCalle.includes(optVal);
-            
-            if (enRuta) {
-                if (!opt.text.includes('⛔')) { opt.text = `⛔ ${opt.text} (En Uso)`; }
-                opt.className = "ocupado"; opt.dataset.ocupado = "true";
-            } else {
-                opt.text = opt.text.replace('⛔ ', '').replace(' (En Uso)', '');
-                opt.className = ""; opt.dataset.ocupado = "false";
-            }
-        });
-    }
 }
 
 function renderTripList() {
     const list = document.getElementById('listViajes');
     list.innerHTML = '';
     const viajesFiltrados = viajesPendientes.filter(v => v.tipoViaje === modoActual);
-    if(!viajesFiltrados.length) return list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa; font-weight:bold;">No hay camiones de ${modoActual} pendientes en la ruta.</div>`;
+    if(!viajesFiltrados.length) return list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-weight:bold;">No hay movimientos de ${modoActual} pendientes en la calle.</div>`;
 
     viajesFiltrados.forEach(v => {
         const isCompra = v.tipoViaje === 'COMPRA';
@@ -572,45 +539,83 @@ function renderTripList() {
     });
 }
 
-function selectTrip(trip) {
+function renderGrid(id, pre) {
+    const html = [10, 15, 45].map(kg => `
+        <div class="row-input">
+            <div class="label-kilo">${kg}</div>
+            <div class="input-wrapper" id="${pre}_wrap_L${kg}"><label>LLENOS</label><input type="number" id="${pre}L${kg}" class="calc-${pre}" placeholder="0" inputmode="numeric" pattern="[0-9]*"></div>
+            <div class="input-wrapper" id="${pre}_wrap_V${kg}"><label>VACÍOS</label><input type="number" id="${pre}V${kg}" class="calc-${pre}" placeholder="0" inputmode="numeric" pattern="[0-9]*"></div>
+        </div>
+    `).join('');
+    document.getElementById(id).innerHTML = html;
+}
+
+function renderRetroInputs() {
+    return [10,15,45].map(kg => `
+        <div style="margin-top:10px; border-top:1px solid var(--glass-border); padding-top:5px;">
+            <div style="text-align:center; font-size:10px; color:var(--accent); font-weight:bold; margin-bottom:5px;">${kg} KG</div>
+            <div class="row-input" style="background:rgba(255,215,0,0.05)">
+                <div style="font-size:9px; color:var(--text-muted);">SALIO</div>
+                <input type="number" id="R_SL${kg}" class="calc-R" placeholder="Llenos" inputmode="numeric" pattern="[0-9]*">
+                <input type="number" id="R_SV${kg}" class="calc-R" placeholder="Vacíos" inputmode="numeric" pattern="[0-9]*">
+            </div>
+            <div class="row-input" style="background:rgba(45,212,191,0.05)">
+                <div style="font-size:9px; color:var(--text-muted);">VOLVIO</div>
+                <input type="number" id="R_RL${kg}" class="calc-R" placeholder="Llenos" inputmode="numeric" pattern="[0-9]*">
+                <input type="number" id="R_RV${kg}" class="calc-R" placeholder="Vacíos" inputmode="numeric" pattern="[0-9]*">
+            </div>
+        </div>
+    `).join('');
+}
+
+async function selectTrip(trip) {
     viajeSeleccionado = trip;
-    document.getElementById('viewLlegadaList').classList.remove('active'); document.getElementById('viewLlegadaForm').classList.add('active');
-    
     const isCompra = trip.tipoViaje === 'COMPRA';
     const txtRemito = document.getElementById('txtRemitoCompra');
 
-    // Reset visual del input de KM
-    const inputKm = document.getElementById('txtKmLlegada');
-    inputKm.value = '';
-    inputKm.style.color = "white";
-    inputKm.style.borderColor = "var(--glass-border)";
-    document.getElementById('msgKmFeedback').textContent = "";
-
-    document.querySelectorAll('#viewLlegadaForm input[type="number"]:not(#txtKmLlegada)').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
+    document.querySelectorAll('#viewLlegadaForm input[type="number"]').forEach(i => { i.value = ''; i.classList.remove('highlight-envase', 'highlight-lleno', 'input-disabled'); });
 
     if (isCompra) {
+        document.getElementById('viewMain').classList.remove('active'); 
+        document.getElementById('viewLlegadaForm').classList.add('active');
+
         document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--compra); margin-left:10px;">(Volviendo de Planta)</span>`;
         document.getElementById('btnFinalizar').className = "btn-main btn-llegada-compra"; document.getElementById('btnFinalizar').innerHTML = "CONFIRMAR INGRESO DE COMPRA ✅";
         txtRemito.classList.remove('hidden'); txtRemito.value = '';
 
+        document.getElementById('boxCompraEnvases').classList.remove('hidden');
+        ['10','15','45'].forEach(kg => { document.getElementById(`compraEnv${kg}`).value = ''; });
+        document.getElementById('montoCompraEnvases').value = '';
+
         ['10','15','45'].forEach(kg => {
-            document.getElementById(`L_wrap_V${kg}`).classList.add('input-disabled');
-            document.getElementById(`LL${kg}`).value = trip.sDetails[`v${kg}`]; 
+            document.getElementById(`LL${kg}`).value = trip.sDetails[`v${kg}`] + (trip.sDetails[`l${kg}`] || 0); 
+            document.getElementById(`LV${kg}`).value = 0;
             document.getElementById(`LL${kg}`).classList.add('highlight-lleno');
         });
+        calcLlegadaDiff();
     } else {
-        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Entregó: ${trip.totalEntregas})</span>`;
+        document.getElementById('viewMain').classList.remove('active'); 
+        document.getElementById('viewLlegadaForm').classList.add('active');
+
+        document.getElementById('lblChoferLlegada').innerHTML = `${trip.chofer} <span style="font-size:12px; color:var(--ok); margin-left:10px;">(Entregó: ${trip.totalEntregas || 0})</span>`;
         txtRemito.classList.add('hidden'); txtRemito.value = '';
+        document.getElementById('boxCompraEnvases').classList.add('hidden');
 
         ['10','15','45'].forEach(kg => {
-            document.getElementById(`LL${kg}`).value = trip.sugerencia[kg].L;
-            document.getElementById(`LV${kg}`).value = trip.sugerencia[kg].V;
+            document.getElementById(`LL${kg}`).value = trip.sugerencia ? (trip.sugerencia[kg]?.L || 0) : 0;
+            document.getElementById(`LV${kg}`).value = trip.sugerencia ? (trip.sugerencia[kg]?.V || 0) : 0;
         });
+        
+        calcLlegadaDiff(); 
     }
-    calcLlegadaDiff(); 
 }
 
-function cancelLlegada() { viajeSeleccionado = null; document.getElementById('viewLlegadaForm').classList.remove('active'); document.getElementById('viewLlegadaList').classList.add('active'); }
+window.cancelLlegada = function() { 
+    viajeSeleccionado = null; 
+    document.getElementById('viewLlegadaForm').classList.remove('active'); 
+    document.getElementById('viewMain').classList.add('active'); 
+}
+
 function val(id) { return Number(document.getElementById(id).value) || 0; }
 function updateSalidaTotal() { document.getElementById('totalSalidaDisplay').textContent = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45'); }
 
@@ -619,13 +624,24 @@ function calcLlegadaDiff() {
     const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA'; let diff = 0;
     
     if (isCompra) { 
-        diff += Math.abs(val('LL10') - viajeSeleccionado.sDetails.v10); 
-        diff += Math.abs(val('LL15') - viajeSeleccionado.sDetails.v15); 
-        diff += Math.abs(val('LL45') - viajeSeleccionado.sDetails.v45); 
+        const exp10 = viajeSeleccionado.sDetails.v10 + (viajeSeleccionado.sDetails.l10 || 0) + val('compraEnv10');
+        const exp15 = viajeSeleccionado.sDetails.v15 + (viajeSeleccionado.sDetails.l15 || 0) + val('compraEnv15');
+        const exp45 = viajeSeleccionado.sDetails.v45 + (viajeSeleccionado.sDetails.l45 || 0) + val('compraEnv45');
+
+        diff += Math.abs((val('LL10') + val('LV10')) - exp10); 
+        diff += Math.abs((val('LL15') + val('LV15')) - exp15); 
+        diff += Math.abs((val('LL45') + val('LV45')) - exp45); 
     } else {
-        diff += Math.abs(val('LL10') - viajeSeleccionado.sugerencia[10].L); diff += Math.abs(val('LV10') - viajeSeleccionado.sugerencia[10].V);
-        diff += Math.abs(val('LL15') - viajeSeleccionado.sugerencia[15].L); diff += Math.abs(val('LV15') - viajeSeleccionado.sugerencia[15].V);
-        diff += Math.abs(val('LL45') - viajeSeleccionado.sugerencia[45].L); diff += Math.abs(val('LV45') - viajeSeleccionado.sugerencia[45].V);
+        const sug10L = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[10]?.L || 0) : 0;
+        const sug10V = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[10]?.V || 0) : 0;
+        const sug15L = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[15]?.L || 0) : 0;
+        const sug15V = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[15]?.V || 0) : 0;
+        const sug45L = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[45]?.L || 0) : 0;
+        const sug45V = viajeSeleccionado.sugerencia ? (viajeSeleccionado.sugerencia[45]?.V || 0) : 0;
+
+        diff += Math.abs(val('LL10') - sug10L); diff += Math.abs(val('LV10') - sug10V);
+        diff += Math.abs(val('LL15') - sug15L); diff += Math.abs(val('LV15') - sug15V);
+        diff += Math.abs(val('LL45') - sug45L); diff += Math.abs(val('LV45') - sug45V);
     }
     
     hayDiferenciaLlegada = diff > 0;
@@ -651,13 +667,10 @@ function calcRetroDiff() {
 }
 
 function setupCalc(cls, fn) { document.querySelectorAll(`.calc-${cls}`).forEach(i => i.addEventListener('input', fn)); }
-function toggleRetro() { const el = document.getElementById('retroContainer'); el.style.display = el.style.display === 'block' ? 'none' : 'block'; }
 
-function switchTab(t) {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
-    if(t === 'salida') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('viewSalida').classList.add('active'); } 
-    else { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('viewLlegadaList').classList.add('active'); loadTrips(); }
+window.toggleRetro = function() { 
+    const el = document.getElementById('retroContainer'); 
+    el.style.display = el.style.display === 'block' ? 'none' : 'block'; 
 }
 
 async function enviar(payload) {
@@ -666,40 +679,56 @@ async function enviar(payload) {
     
     toggleLoader(true, "GUARDANDO DATOS...");
     
-    const fd = new FormData(); fd.append('action', 'savetransporte'); fd.append('k', k);
+    const fd = new FormData(); 
+    fd.append('action', 'savetransporte'); 
+    fd.append('k', k);
+    
+    fd.append('usuario', sessionStorage.getItem('usuarioActivo') || 'SISTEMA');
+    
     for(let key in payload) { fd.append(key, payload[key]); }
     
     try {
-        const r = await fetch(API, {method:'POST', body:fd}); const j = await r.json();
+        const r = await fetch(API, {method:'POST', body:fd}); 
+        const j = await r.json();
+        
         if(j.status === 'success') { 
-            toggleLoader(true, "¡GUARDADO!", true); window.location.replace(`inicio.html?k=${k}`); 
-        } else { if(j.message.includes('Sesión')) logout(); throw new Error(j.message); }
-    } catch(e) { toggleLoader(false); showToast('Error: ' + e.message, 'error'); document.querySelectorAll('button').forEach(b => {b.disabled=false;}); }
+            toggleLoader(true, "¡GUARDADO!", true); 
+            window.location.replace(`controlcarga.html?k=${k}`); 
+        } else { 
+            toggleLoader(false);
+            document.querySelectorAll('button').forEach(b => {b.disabled=false;});
+            
+            const msg = j.message || "";
+            if(msg.includes('Sesión') || msg.includes('sesión') || msg.includes('token')) {
+                showToast("⛔ RECHAZADO: El backend (GAS) pide el token viejo.", "error");
+                alert("Tu Google Apps Script bloqueó el guardado porque sigue exigiendo la validación vieja. Hay que actualizar el backend.");
+            } else {
+                showToast('Error del servidor: ' + msg, 'error'); 
+            }
+        }
+    } catch(e) { 
+        toggleLoader(false); 
+        showToast('Error de red: ' + e.message, 'error'); 
+        document.querySelectorAll('button').forEach(b => {b.disabled=false;}); 
+    }
 }
 
 document.getElementById('btnRegistrarSalida').onclick = () => {
     const selChofer = document.getElementById('selChofer'); const c = selChofer.value;
-    const selVehiculo = document.getElementById('selVehiculo'); const vehiculo = selVehiculo.value;
-    const kmSalida = document.getElementById('txtKmSalida').value;
     const total = val('SL10')+val('SV10')+val('SL15')+val('SV15')+val('SL45')+val('SV45');
     
     if(!c) return showToast('Selecciona chofer', 'error');
     if (selChofer.options[selChofer.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Chofer en ruta.", 'error');
-    
-    if(!vehiculo) return showToast('Selecciona el vehículo', 'error');
-    if (selVehiculo.options[selVehiculo.selectedIndex].dataset.ocupado === "true") return showToast("⛔ ERROR: Vehículo en uso.", 'error');
-    if(!kmSalida) return showToast('Ingresa los KM de salida del tablero', 'error');
 
-    const cStr = String(c).toUpperCase().trim();
-    const estaEnRuta = viajesPendientes.some(v => String(v.chofer).toUpperCase().trim() === cStr);
+    const cStr = normalizarStr(c);
+    const estaEnRuta = viajesPendientes.some(v => normalizarStr(v.chofer) === cStr);
     if (estaEnRuta) return showToast("⛔ ERROR: Este chofer ya tiene un viaje activo en la calle.", 'error');
 
     if(total === 0) return showToast('La carga está vacía', 'error');
 
     enviar({ 
         modo: 'SALIDA', tipoViaje: typeof modoActual !== 'undefined' ? modoActual : 'REPARTO', 
-        chofer: c, vehiculo: vehiculo, kmSalida: kmSalida,
-        totalSalida: total, L10: val('SL10'), V10: val('SV10'), L15: val('SL15'), V15: val('SV15'), L45: val('SL45'), V45: val('SV45') 
+        chofer: c, totalSalida: total, L10: val('SL10'), V10: val('SV10'), L15: val('SL15'), V15: val('SV15'), L45: val('SL45'), V45: val('SV45') 
     });
 };
 
@@ -707,19 +736,7 @@ document.getElementById('btnFinalizar').onclick = () => {
     const isCompra = viajeSeleccionado.tipoViaje === 'COMPRA';
     const motivo = document.getElementById('txtMotivo').value.trim();
     const remito = document.getElementById('txtRemitoCompra').value.trim();
-    const kmLlegada = parseInt(document.getElementById('txtKmLlegada').value) || 0;
     
-    if(!kmLlegada) return showToast("⚠️ Debes registrar los KM del tablero a la llegada", "error");
-    
-    // BLOQUEO EN FRÍO: No lo deja ni mandar la petición al backend si está mal tipeado
-    const kmSalidaOculto = viajeSeleccionado ? (parseInt(viajeSeleccionado.kmSalida) || 0) : 0;
-    if (kmSalidaOculto > 0 && kmLlegada <= kmSalidaOculto) {
-        return showToast(`❌ ERROR: El KM de llegada debe ser MAYOR a ${kmSalidaOculto}.`, "error");
-    }
-    if (kmSalidaOculto > 0 && (kmLlegada - kmSalidaOculto) > 400) {
-        return showToast(`⚠️ ALERTA: Diferencia irreal de +400km. Revisá los ceros.`, "error");
-    }
-
     if (isCompra && !remito) return showToast("⚠️ Debes ingresar el Nº de Remito que entregó la Planta", "error");
     if (hayDiferenciaLlegada && !motivo) return showToast("⚠️ Faltan explicar las diferencias detectadas", "error");
     
@@ -732,8 +749,11 @@ document.getElementById('btnFinalizar').onclick = () => {
         totalLlegada: totalLleg, 
         motivo: motivo, 
         remitoPlanta: remito, 
-        kmLlegada: kmLlegada, 
-        L10: val('LL10'), V10: val('LV10'), L15: val('LL15'), V15: val('LV15'), L45: val('LL45'), V45: val('LV45') 
+        L10: val('LL10'), V10: val('LV10'), L15: val('LL15'), V15: val('LV15'), L45: val('LL45'), V45: val('LV45'),
+        compraEnv10: isCompra ? val('compraEnv10') : 0,
+        compraEnv15: isCompra ? val('compraEnv15') : 0,
+        compraEnv45: isCompra ? val('compraEnv45') : 0,
+        montoCompraEnv: isCompra ? (Number(document.getElementById('montoCompraEnvases').value) || 0) : 0
     });
 };
 
@@ -759,43 +779,27 @@ document.getElementById('btnRegistrarRetro').onclick = () => {
     });
 };
 
-init();
-</script>
-<div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
-  <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
-  <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
-  <p style="max-width:400px; color:var(--dim); font-family:'Inter', sans-serif; margin-top:10px;">
-    Estamos procesando los cierres y auditorías del día. <br>
-    El sistema volverá a estar operativo a las <b>00:06 AM</b>.
-  </p>
-  <div style="margin-top:30px; padding:10px 20px; border:1px solid var(--border); border-radius:4px; font-size:12px; color:var(--warn);">
-    AGUARDE UN MOMENTO...
-  </div>
-</div>
-
-<script>
-  function controlPatovica() {
+function controlPatovica() {
     const ahora = new Date();
     const hora = ahora.getHours();
     const min = ahora.getMinutes();
     const capa = document.getElementById('capaMantenimiento');
 
-    // Ventana de bloqueo: 23:45 hasta las 00:05
     const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
 
     if (estaEnBloqueo) {
       capa.style.display = 'flex';
-      // Deshabilitamos cualquier interacción del teclado
       document.onkeydown = function (e) { return false; };
     } else {
       capa.style.display = 'none';
       document.onkeydown = null;
     }
-  }
+}
 
-  // Correr el control apenas carga y después cada 30 segundos
-  controlPatovica();
-  setInterval(controlPatovica, 30000);
+controlPatovica();
+setInterval(controlPatovica, 300000);
+
+init();
 </script>
 </body>
 </html>

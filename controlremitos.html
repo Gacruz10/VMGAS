@@ -3,109 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Remitos y Pagos a Planta</title>
+  <title>Control de Remitos Lote</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
       --glass: rgba(0, 0, 0, 0.6); --glass-border: rgba(255, 255, 255, 0.1);
       --accent: #FFD700; --ok: #2dd4bf; --error: #ff4444; --compra: #a855f7;
       --text-primary: #ffffff; --text-muted: rgba(255, 255, 255, 0.5); --card-bg: rgba(255, 255, 255, 0.05);
+      --input-bg: rgba(0,0,0,0.4); --panel-bg: rgba(10, 10, 15, 0.95);
     }
+    
+    body.light-mode {
+      --glass: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(0, 0, 0, 0.15);
+      --accent: #d97706;
+      --text-primary: #1a1a1a;
+      --text-muted: rgba(0, 0, 0, 0.6);
+      --card-bg: rgba(0, 0, 0, 0.03);
+      --input-bg: rgba(255, 255, 255, 0.5);
+      --panel-bg: rgba(248, 250, 252, 0.95);
+      background: #f8fafc !important;
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
       background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%), radial-gradient(at 100% 0%, #310d5e 0%, transparent 50%), radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%), radial-gradient(at 0% 100%, #214d7a 0%, transparent 50%);
-      background-color: #0d031a; background-attachment: fixed; min-height: 100vh; padding: 20px;
+      background-color: #0d031a; background-attachment: fixed; min-height: 100vh; padding: 15px 15px 350px 15px; 
+      opacity: 0; transition: opacity 0.5s ease, color 0.3s ease, background 0.3s ease;
     }
-    .header { text-align: center; margin-bottom: 25px; position: relative; }
-    .header h3 { color: var(--compra); font-weight: 800; margin: 0; font-size: 20px; text-transform: uppercase; }
-    .btn-volver { background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; position: absolute; left: 0; top: 0; font-weight: bold; }
     
-    .container { max-width: 650px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 20px; border-radius: 24px; border: 1px solid var(--glass-border); }
+    .theme-toggle {
+      position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--glass); border: 1px solid var(--glass-border); color: var(--text-primary);
+      display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer;
+      backdrop-filter: blur(10px); transition: all 0.3s ease; z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--compra); }
+
+    .header { text-align: center; margin-bottom: 15px; position: relative; margin-top: 10px;}
+    .header h3 { color: var(--compra); font-weight: 800; margin: 0; font-size: 18px; text-transform: uppercase; }
+    .btn-volver { background: rgba(128,128,128,0.1); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; position: absolute; left: 0; top: 0; font-weight: bold; font-size: 0.8rem; transition: 0.2s;}
+    .btn-volver:hover { background: rgba(128,128,128,0.2); }
     
-    .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
-    .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; }
+    .container { max-width: 800px; margin: 0 auto; background: var(--glass); backdrop-filter: blur(10px); padding: 15px; border-radius: 16px; border: 1px solid var(--glass-border); }
+    
+    .tabs { display: flex; gap: 8px; margin-bottom: 15px; background: rgba(128,128,128,0.1); padding: 5px; border-radius: 10px; }
+    .tab { flex: 1; padding: 8px; text-align: center; border-radius: 8px; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
     .tab.active { background: var(--compra); color: white; box-shadow: 0 4px 12px rgba(168,85,247,0.3); }
 
-    .trip-list { display: grid; gap: 12px; }
-    .trip-card { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; overflow: hidden; transition: all 0.2s; }
-    .trip-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border-left: 4px solid var(--compra);}
-    .trip-header:hover { background: rgba(168,85,247,0.1); }
-    .trip-title h4 { margin: 0 0 4px 0; font-size: 16px; color: white; }
-    .badge-remito { font-size: 11px; background: rgba(168,85,247,0.2); color: #fff; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--compra); font-weight: bold; display: inline-block;}
-    .trip-date { font-size: 11px; color: #aaa; margin-top: 5px;}
-    .icon-expand { transition: transform 0.3s ease; font-size: 20px; color: var(--compra);}
-    .expanded .icon-expand { transform: rotate(180deg); }
-
-    .trip-body { display: none; padding: 16px; border-top: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); animation: slideDown 0.3s ease;}
-    .expanded .trip-body { display: block; }
-    @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
-
-    /* FILTROS DE FECHA PARA HISTORIAL */
-    .filters-box { display: flex; gap: 10px; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--glass-border); align-items: center;}
-    .filters-box input[type="date"] { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: white; outline: none; font-family: 'Inter'; font-size: 12px; color-scheme: dark;}
-    .btn-search { background: var(--compra); border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-    .btn-search:hover { filter: brightness(1.2); }
-    .mes-separador { background: rgba(168,85,247,0.2); color: var(--compra); text-align: center; padding: 8px; border-radius: 8px; font-weight: 800; font-size: 12px; letter-spacing: 1px; margin-top: 10px; text-transform: uppercase; border: 1px dashed var(--compra); }
-
-    /* CAJA MATEMÁTICA EN DOS COLUMNAS */
-    .resumen-gas-container { display: flex; gap: 12px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
-    .gas-col { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-    .gas-divider { width: 1px; background: rgba(255,255,255,0.1); margin: 0 5px; }
-    .gas-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #ccc; }
+    .filters-box { display: flex; gap: 10px; background: rgba(128,128,128,0.1); padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--glass-border); align-items: center;}
+    .filters-box input[type="date"] { flex: 1; padding: 8px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary); outline: none; font-size: 12px; color-scheme: dark;}
+    body.light-mode .filters-box input[type="date"] { color-scheme: light; }
     
-    /* INPUTS DE CANTIDAD */
-    .inp-unidad { width: 45px; padding: 2px 5px; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); border-radius: 4px; color: white; text-align: center; font-weight: bold; font-size: 11px; outline: none; transition: 0.3s;}
-    .inp-unidad:focus { border-color: var(--compra); background: rgba(168,85,247,0.15); }
+    .btn-search { background: var(--compra); border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: 0.3s; color: white;}
+    
+    .mes-separador { background: rgba(168,85,247,0.1); color: var(--compra); text-align: center; padding: 6px; border-radius: 6px; font-weight: 800; font-size: 11px; letter-spacing: 1px; margin-top: 15px; margin-bottom: 10px; text-transform: uppercase; border: 1px dashed var(--compra); }
 
-    .kg-rojo { background: rgba(255,68,68,0.15); color: #ff4444; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(255,68,68,0.3); font-weight: 800; font-size: 11px;}
-    .kg-verde { background: rgba(45,212,191,0.15); color: #2dd4bf; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(45,212,191,0.3); font-weight: 800; font-size: 11px;}
+    .trip-list { display: grid; gap: 10px; }
+    .trip-card { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 10px; overflow: hidden; transition: 0.2s; }
+    .trip-header { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: rgba(128,128,128,0.05); border-left: 4px solid var(--compra);}
+    .trip-title { display: flex; flex-direction: column; gap: 4px;}
+    .trip-title h4 { margin: 0; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 10px;}
+    .badge-remito { font-size: 10px; background: rgba(168,85,247,0.2); color: var(--text-primary); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--compra); font-weight: bold;}
+    
+    .custom-checkbox { width: 18px; height: 18px; accent-color: var(--compra); cursor: pointer; margin: 0; }
+    .header-right { display: flex; align-items: center; gap: 15px; }
 
-    /* ESTRUCTURA COMPACTA DE INPUTS */
-    .compact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-    .input-group { margin-bottom: 0; position: relative;}
-    .input-group label { display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
-    input[type="text"], input[type="number"] { width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
-    input[type="text"]:focus, input[type="number"]:focus { border-color: var(--compra); background: rgba(168,85,247,0.05); }
+    .trip-body { display: none; padding: 12px 15px; border-top: 1px solid var(--glass-border); background: rgba(128,128,128,0.05); }
+    .expanded .trip-body { display: block; }
 
-    .precios-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;}
+    .resumen-gas-container { display: flex; gap: 10px; background: rgba(128,128,128,0.1); padding: 10px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--glass-border); }
+    .gas-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .gas-divider { width: 1px; background: rgba(128,128,128,0.2); margin: 0 5px; }
+    .gas-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); }
+    .inp-unidad { width: 45px; padding: 4px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 4px; color: var(--text-primary); text-align: center; font-weight: bold; font-size: 11px; outline: none; transition: 0.3s;}
+    .inp-unidad:focus { border-color: var(--compra); }
+
+    .compact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .input-group { margin-bottom: 0; }
+    .input-group label { display: block; font-size: 9px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+    input[type="text"], input[type="number"] { width: 100%; padding: 8px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-primary); font-weight: 600; font-size: 12px; outline: none; }
+    input:focus { border-color: var(--compra); }
+    
+    .precios-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;}
     .lbl-costo-final { display: block; font-size: 9px; color: var(--ok); text-align: center; margin-top: 4px; font-weight: bold; }
     
-    /* CAJAS DE PAGO */
-    .pay-box { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;}
-    .pay-box h5 { margin: 0; font-size: 11px; color: var(--compra); text-transform: uppercase; grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;}
+    .card-total-box { text-align: right; margin-top: 10px; border-top: 1px dashed rgba(128,128,128,0.2); padding-top: 10px;}
+    .card-total-box span { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;}
+    .card-total-box h3 { margin: 0; color: var(--compra); font-size: 18px; }
+
+    /* PANEL LOTE FLOTANTE */
+    .lote-panel {
+      position: fixed; bottom: 0; left: 0; width: 100%; 
+      background: var(--panel-bg); backdrop-filter: blur(15px); border-top: 1px solid var(--glass-border);
+      padding: 15px 20px; z-index: 1000; display: none; box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s; color: var(--text-primary);
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     
-    /* BLOQUE FINAL (BOTON + TOTAL) */
-    .action-row { display: flex; gap: 10px; align-items: stretch; margin-top: 15px; }
-    .total-box { flex: 1; text-align: center; padding: 10px; background: rgba(45,212,191,0.1); border: 1px dashed var(--ok); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; }
-    .total-box span { display: block; font-size: 10px; color: var(--ok); font-weight: 800; }
-    .total-box h2 { margin: 2px 0 0 0; color: white; font-size: 20px; }
-    .btn-main { flex: 1; padding: 0; border: none; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.2s; background: var(--ok); color: #000; text-transform: uppercase;}
-    .btn-main:hover { box-shadow: 0 0 15px rgba(45,212,191,0.4); }
-    .btn-update { background: #3b82f6; color: white; }
-    .btn-update:hover { box-shadow: 0 0 15px rgba(59,130,246,0.4); }
+    .lote-content { max-width: 900px; margin: 0 auto; display: flex; gap: 20px; align-items: stretch; flex-wrap: wrap;}
+    
+    .pagos-seccion { flex: 2; display: flex; flex-direction: column; gap: 15px; min-width: 300px; max-height: 250px; overflow-y: auto; padding-right: 10px;}
+    
+    .pago-block { background: rgba(128,128,128,0.05); border: 1px solid rgba(128,128,128,0.1); padding: 10px; border-radius: 8px; }
+    .pago-block h5 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;}
+    .btn-add-pago { background: rgba(168,85,247,0.15); color: var(--compra); border: 1px dashed var(--compra); padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; transition: 0.2s;}
+    .btn-add-pago:hover { background: rgba(168,85,247,0.3); }
+    
+    .pago-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center;}
+    .pago-row input { flex: 1; padding: 6px; font-size: 11px; }
+    .btn-remove-pago { background: transparent; border: none; color: var(--error); cursor: pointer; font-size: 14px; padding: 0 5px;}
 
-    /* AUDITORÍA TAGS */
-    .audit-box { display: flex; flex-direction: column; gap: 4px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
-    .audit-tag { font-size: 10px; color: #888; display: flex; align-items: center; gap: 5px; }
-    .audit-tag b { color: #bbb; }
+    .resumen-seccion { flex: 1; min-width: 280px; background: rgba(128,128,128,0.1); border-radius: 10px; padding: 15px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; justify-content: space-between;}
+    
+    .r-line { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;}
+    .r-line.muted { color: var(--text-muted); font-weight: 400; }
+    .r-line.highlight { color: var(--accent); font-weight: 800; border-top: 1px solid rgba(128,128,128,0.2); padding-top: 8px;}
+    
+    .neon-alert { color: var(--error); border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05); padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; font-size: 10px; box-shadow: 0 0 10px rgba(255, 68, 68, 0.2); margin-top: 10px; animation: pulseRed 1.5s infinite; display: none;}
+    @keyframes pulseRed { 0% { box-shadow: 0 0 5px rgba(255,68,68,0.2); } 50% { box-shadow: 0 0 15px rgba(255,68,68,0.5); } 100% { box-shadow: 0 0 5px rgba(255,68,68,0.2); } }
+    
+    .neon-ok { color: var(--ok); border: 1px solid var(--ok); background: rgba(45, 212, 191, 0.05); padding: 8px; border-radius: 6px; text-align: center; font-weight: 800; font-size: 10px; box-shadow: 0 0 10px rgba(45, 212, 191, 0.2); margin-top: 10px; display: none;}
 
-    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-    .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px;}
+    .btn-lote { width: 100%; padding: 12px; background: var(--ok); color: #000; border: none; border-radius: 8px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.3s; margin-top: 10px;}
+    body.light-mode .btn-lote { color: white; }
+    .btn-lote:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 12px 16px; border-radius: 8px; color: #fff; font-weight: 600; background: #1F2937; border: 1px solid #374151; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); opacity: 0; transform: translateY(-10px); transition: 0.3s;}
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast.error { background: rgba(255, 68, 68, 0.9); }
     .toast.success { background: rgba(45, 212, 191, 0.9); }
 
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; backdrop-filter: blur(10px); }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--glass); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(5px);}
     .loading-overlay.active { opacity: 1; visibility: visible; }
-    .spinner { width: 50px; height: 50px; border: 4px solid rgba(168,85,247, 0.1); border-left-color: var(--compra); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid rgba(168,85,247, 0.1); border-left-color: var(--compra); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
+  <script>
+    if(localStorage.getItem('vm_theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
+
   <div id="toast-container"></div>
-  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div style="color:var(--compra); font-weight:800; letter-spacing:2px; font-size:12px;" id="loaderText">CARGANDO REMITOS...</div></div>
+  <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div style="color:var(--compra); font-weight:800; font-size:12px;" id="loaderText">CARGANDO...</div></div>
 
   <div class="header">
     <button class="btn-volver" id="btnBack">⬅ VOLVER</button>
@@ -114,8 +161,8 @@
 
   <div class="container">
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('pendientes')" id="tabPendientes">PENDIENTES</div>
-        <div class="tab" onclick="switchTab('historial')" id="tabHistorial">HISTORIAL</div>
+        <div class="tab active" onclick="window.switchTab('pendientes')" id="tabPendientes">LOTE PENDIENTES</div>
+        <div class="tab" onclick="window.switchTab('historial')" id="tabHistorial">HISTORIAL</div>
     </div>
 
     <div id="listaPendientes" class="trip-list"></div>
@@ -124,330 +171,470 @@
         <div class="filters-box">
             <input type="date" id="dateStart">
             <input type="date" id="dateEnd">
-            <button class="btn-search" onclick="buscarHistorial()">🔍</button>
+            <button class="btn-search" onclick="window.buscarHistorial()">🔍</button>
         </div>
         <div id="listaHistorial" class="trip-list"></div>
     </div>
-
   </div>
 
-<script>
-const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+  <!-- PANEL MULTIPAGO FLOTANTE -->
+  <div class="lote-panel" id="lotePanel">
+      <div class="lote-content">
+          <div class="pagos-seccion">
+              <div class="pago-block" id="blockDepositos">
+                  <h5>💰 DEPÓSITOS <button class="btn-add-pago" onclick="window.addPagoRow('depo')">+ AGREGAR OTRO</button></h5>
+                  <div id="containerDepositos">
+                     <!-- Filas de depósito inyectadas por JS -->
+                  </div>
+              </div>
+              <div class="pago-block" id="blockTransf">
+                  <h5>📲 TRANSFERENCIAS <button class="btn-add-pago" onclick="window.addPagoRow('trans')">+ AGREGAR OTRA</button></h5>
+                  <div id="containerTransf">
+                     <!-- Filas de transf inyectadas por JS -->
+                  </div>
+              </div>
+          </div>
 
-// ==========================================
-// 1. VALIDACIÓN PRELIMINAR Y SEGURIDAD
-// ==========================================
+          <div class="resumen-seccion">
+              <div>
+                  <div class="r-line muted">Remitos Seleccionados <span id="lblCountLote">0</span></div>
+                  <div class="r-line">Total Facturas <span id="lblLoteFacturas">$0.00</span></div>
+                  <div class="r-line" style="color: var(--ok);">Saldo a Favor Anterior <span id="lblLoteSaldoAnt">+$0.00</span></div>
+                  <div class="r-line" style="color: var(--compra);">Pagos Ingresados <span id="lblLotePagos">+$0.00</span></div>
+                  
+                  <div class="r-line" style="margin-top:10px; border-top:1px dashed var(--glass-border); padding-top:10px; align-items:center;">
+                      <span style="font-size:10px; color:var(--text-muted);">RETENCIÓN LEY ($)</span>
+                      <input type="number" id="inpRetencion" style="width:70px; padding:4px; font-size:12px; text-align:right; border-radius:4px; border:1px solid var(--glass-border); background:var(--input-bg); color:var(--text-primary); outline:none;" oninput="window.calcularLote()">
+                  </div>
+
+                  <div class="r-line highlight">NUEVO SALDO <span id="lblLoteDiferencia">$0.00</span></div>
+              </div>
+              
+              <div id="alertaDeuda" class="neon-alert">⚠️ PAGO INCOMPLETO. Generará deuda pendiente.</div>
+              <div id="alertaFavor" class="neon-ok">✅ SALDO A FAVOR. Se guardará para mañana.</div>
+              
+              <button class="btn-lote" id="btnConfirmarLote" onclick="window.confirmarLote()" disabled>REGISTRAR LOTE</button>
+          </div>
+      </div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec"; 
+const API_KEY = "VM_Seguridad_2026";
+
+window.toggleTheme = function() {
+    const isLight = document.body.classList.toggle('light-mode');
+    const btn = document.getElementById('btnTheme');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btn.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btn.textContent = '🌙';
+    }
+};
+document.getElementById('btnTheme').textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+
 const params = new URLSearchParams(window.location.search);
 let k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
 
-function expulsar() {
-    sessionStorage.clear();
-    window.location.replace('index.html');
-}
+function expulsar() { sessionStorage.clear(); window.location.replace('inicio.html'); }
+document.getElementById('btnBack').onclick = () => window.location.replace(`inicio.html?k=${k}`);
 
 if (!k) {
-    expulsar();
-} else {
-    sessionStorage.setItem('k', k);
-    if (window.history.replaceState) { window.history.replaceState({}, document.title, window.location.pathname); }
+    expulsar(); 
+} else { 
+    sessionStorage.setItem('k', k); 
+    if(window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname); 
+    validarSesion();
 }
 
-document.getElementById('btnBack').onclick = () => window.location.replace(`arqueo.html?k=${k}`);
+async function validarSesion() {
+    try {
+        document.body.style.opacity = 1;
+        toggleLoader(true, "VERIFICANDO SESIÓN...");
+        
+        const docRef = doc(db, "tokens", k);
+        const docSnap = await getDoc(docRef);
+        
+        if (!docSnap.exists()) throw new Error("Sesión inválida en base de datos.");
+        
+        const tokenData = docSnap.data();
+        if (tokenData.expira && Date.now() > tokenData.expira) throw new Error("La sesión ha expirado.");
+        
+        sessionStorage.setItem('usuarioActivo', tokenData.usuario || 'SISTEMA');
+        
+        window.setFechasDefault();
+        window.fetchRemitos(document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
+    } catch (e) { 
+        console.error(e);
+        expulsar(); 
+    }
+}
 
-const TIMEOUT_SESION = 180000; 
 let tIdle;
-function resetTimer() {
-    clearTimeout(tIdle);
-    tIdle = setTimeout(() => {
-        showToast('⏱️ Inactividad detectada. Sesión cerrada.', 'error');
-        setTimeout(expulsar, 1500);
-    }, TIMEOUT_SESION);
-}
+function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => { showToast('Sesión cerrada por inactividad.', 'error'); setTimeout(expulsar, 1500); }, 1200000); }
 ['click','mousemove','keydown','touchstart','scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
 resetTimer(); 
 
-// ==========================================
-// 2. CONFIGURACIÓN DE FECHAS
-// ==========================================
-function setFechasDefault() {
+window.setFechasDefault = function() {
     const hoy = new Date();
     const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     document.getElementById('dateStart').value = primerDia.toISOString().split('T')[0];
     document.getElementById('dateEnd').value = hoy.toISOString().split('T')[0];
-}
-setFechasDefault();
+};
 
-// ==========================================
-// 3. LÓGICA DE LA PÁGINA
-// ==========================================
 let datosCompras = { pendientes: [], historial: [] };
+let saldoAnterior = 0;
+let retencionActual = 0;
 
 function showToast(msg, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div'); toast.className = `toast ${type}`; toast.textContent = msg;
-    container.appendChild(toast); setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+    c.appendChild(t); setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
 }
 
 function toggleLoader(show, text = 'CARGANDO...') {
     document.getElementById('loaderText').textContent = text;
-    if (show) document.getElementById('loadingOverlay').classList.add('active'); else document.getElementById('loadingOverlay').classList.remove('active');
+    const overlay = document.getElementById('loadingOverlay');
+    if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-function switchTab(tab) {
+window.switchTab = function(tab) {
     document.getElementById('tabPendientes').classList.remove('active');
     document.getElementById('tabHistorial').classList.remove('active');
     document.getElementById('listaPendientes').style.display = 'none';
     document.getElementById('wrapperHistorial').style.display = 'none';
+    document.getElementById('lotePanel').style.display = 'none'; 
 
     if(tab === 'pendientes') {
         document.getElementById('tabPendientes').classList.add('active');
         document.getElementById('listaPendientes').style.display = 'grid';
+        window.calcularLote(); 
     } else {
         document.getElementById('tabHistorial').classList.add('active');
         document.getElementById('wrapperHistorial').style.display = 'block';
     }
-}
+};
 
-async function fetchRemitos(start = '', end = '') {
-    toggleLoader(true, "BUSCANDO REMITOS...");
+window.fetchRemitos = async function(start = '', end = '') {
+    toggleLoader(true, "BUSCANDO DATOS...");
     try {
-        const r = await fetch(`${API}?action=getcomprasauditar&k=${k}&start=${start}&end=${end}`);
+        const r = await fetch(`${API}?action=getcomprasauditar&k=${k}&start=${start}&end=${end}&t=${new Date().getTime()}&api_key=${API_KEY}`);
         const d = await r.json();
-        if(d.status === 'success') {
-            datosCompras = d.compras;
+        
+        if(d.status === 'success' || d.pendientes || (d.data && d.data.pendientes) || (d.compras && d.compras.pendientes)) {
+            const payload = d.pendientes ? d : (d.compras && d.compras.pendientes ? d.compras : (d.data && d.data.pendientes ? d.data : { pendientes: [], historial: [] }));
+            
+            datosCompras = {
+                pendientes: payload.pendientes || [],
+                historial: payload.historial || []
+            };
+            
+            saldoAnterior = Number(d.saldoProveedor) || Number(payload.saldoProveedor) || 0;
+            retencionActual = Number(d.retencionLey) || Number(payload.retencionLey) || 0;
+            
+            document.getElementById('inpRetencion').value = retencionActual;
+            
             renderPendientes();
             renderHistorial();
-        } else {
-            showToast(d.message, 'error');
+            
+            document.getElementById('containerDepositos').innerHTML = '';
+            document.getElementById('containerTransf').innerHTML = '';
+            window.addPagoRow('depo'); 
+            window.addPagoRow('trans'); 
+        } else { 
+            showToast(d.message || "Error al cargar los datos.", 'error'); 
         }
     } catch(e) { 
-        showToast('Error de conexión o lectura', 'error'); 
         console.error(e);
+        showToast('Error de conexión', 'error'); 
     }
     toggleLoader(false);
-}
+};
 
-fetchRemitos(document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
+window.buscarHistorial = function() {
+    window.fetchRemitos(document.getElementById('dateStart').value, document.getElementById('dateEnd').value);
+};
 
-function buscarHistorial() {
-    const s = document.getElementById('dateStart').value;
-    const e = document.getElementById('dateEnd').value;
-    fetchRemitos(s, e);
-}
+window.toggleCard = function(id, event) {
+    if(event && event.target.tagName === 'INPUT') return;
+    document.getElementById(`card-${id}`).classList.toggle('expanded');
+};
 
-function toggleCard(id) {
-    const card = document.getElementById(`card-${id}`);
-    card.classList.toggle('expanded');
-}
-
-// CÁLCULO MÁGICO EN TIEMPO REAL
-function calcularTotal(idViaje) {
-    // 1. Leer Unidades
+window.calcularTotalTarjeta = function(idViaje) {
     const ll10 = Number(document.getElementById(`u10-${idViaje}`).value) || 0;
     const ll15 = Number(document.getElementById(`u15-${idViaje}`).value) || 0;
     const ll45 = Number(document.getElementById(`u45-${idViaje}`).value) || 0;
 
-    // Actualizar visual de kilos
-    document.getElementById(`kg10-${idViaje}`).textContent = `${ll10 * 10} kg`;
-    document.getElementById(`kg15-${idViaje}`).textContent = `${ll15 * 15} kg`;
-    document.getElementById(`kg45-${idViaje}`).textContent = `${ll45 * 45} kg`;
-    document.getElementById(`kgButano-${idViaje}`).textContent = `${(ll10 * 10) + (ll15 * 15)} kg`;
-    document.getElementById(`kgPropano-${idViaje}`).textContent = `${ll45 * 45} kg`;
-
-    // 2. Leer Precios e Impuestos (%)
     const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
     const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
     const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
     const ivaPorc = Number(document.getElementById(`iva-${idViaje}`).value) || 0;
     const percPorc = Number(document.getElementById(`perc-${idViaje}`).value) || 0;
 
-    // 3. Cálculos
     const subtotal = (p10 * ll10) + (p15 * ll15) + (p45 * ll45);
     const ivaMonto = subtotal * (ivaPorc / 100);
     const percMonto = subtotal * (percPorc / 100);
     const total = subtotal + ivaMonto + percMonto;
     
-    // 4. Mostrar Costos Finales
-    const factorImp = subtotal > 0 ? 1 + ((ivaMonto + percMonto) / subtotal) : 1;
-    document.getElementById(`lblCost10-${idViaje}`).textContent = `Final: $${(p10 * factorImp).toFixed(2)}`;
-    document.getElementById(`lblCost15-${idViaje}`).textContent = `Final: $${(p15 * factorImp).toFixed(2)}`;
-    document.getElementById(`lblCost45-${idViaje}`).textContent = `Final: $${(p45 * factorImp).toFixed(2)}`;
+    const card = document.getElementById(`card-${idViaje}`);
+    card.dataset.totalFactura = total;
 
     document.getElementById(`lblTotal-${idViaje}`).textContent = `$ ${total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`;
+    window.calcularLote();
+};
+
+let payIndex = 0;
+window.addPagoRow = function(tipo) {
+    payIndex++;
+    const container = document.getElementById(tipo === 'depo' ? 'containerDepositos' : 'containerTransf');
+    const div = document.createElement('div');
+    div.className = 'pago-row';
+    div.id = `payRow-${payIndex}`;
+    div.innerHTML = `
+        <input type="number" class="inp-pago-${tipo} inp-pago-monto" placeholder="Monto ($)" oninput="window.calcularLote()">
+        <input type="text" class="inp-pago-ref" placeholder="N° de Operación">
+        <button class="btn-remove-pago" onclick="window.removePagoRow(${payIndex})">✖</button>
+    `;
+    container.appendChild(div);
+};
+
+window.removePagoRow = function(id) {
+    document.getElementById(`payRow-${id}`).remove();
+    window.calcularLote();
+};
+
+window.checkLote = function() { window.calcularLote(); };
+
+window.calcularLote = function() {
+    const marcados = document.querySelectorAll('.cbx-lote:checked');
+    const panel = document.getElementById('lotePanel');
     
-    // 5. Autocompletar Transferencia (si se ingresa Deposito)
-    const depoInput = document.getElementById(`depo-${idViaje}`);
-    const transInput = document.getElementById(`trans-${idViaje}`);
+    if (marcados.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
     
-    // Si el usuario escribe en Depósito, ajustamos Transferencia
-    if (document.activeElement === depoInput) {
-        const valDepo = Number(depoInput.value) || 0;
-        let resto = total - valDepo;
-        if (resto < 0) resto = 0;
-        transInput.value = resto > 0 ? resto.toFixed(2) : '';
-    } else if (document.activeElement === transInput) {
-        // O viceversa
-        const valTrans = Number(transInput.value) || 0;
-        let resto = total - valTrans;
-        if (resto < 0) resto = 0;
-        depoInput.value = resto > 0 ? resto.toFixed(2) : '';
+    panel.style.display = 'block';
+    
+    let totalFacturas = 0;
+    let todosTienenFactura = true;
+    
+    marcados.forEach(cbx => {
+        const idV = cbx.value;
+        const totalCard = Number(document.getElementById(`card-${idV}`).dataset.totalFactura) || 0;
+        const numFac = document.getElementById(`fac-${idV}`).value.trim();
+        if(!numFac) todosTienenFactura = false;
+        totalFacturas += totalCard;
+    });
+
+    let totalPagos = 0;
+    document.querySelectorAll('.inp-pago-monto').forEach(inp => {
+        totalPagos += (Number(inp.value) || 0);
+    });
+
+    const diferencia = (totalPagos + saldoAnterior) - totalFacturas;
+
+    document.getElementById('lblCountLote').textContent = marcados.length;
+    document.getElementById('lblLoteFacturas').textContent = `$ ${totalFacturas.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    document.getElementById('lblLoteSaldoAnt').textContent = `${saldoAnterior >= 0 ? '+' : ''}$ ${saldoAnterior.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    document.getElementById('lblLotePagos').textContent = `+ $ ${totalPagos.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    
+    const lblDif = document.getElementById('lblLoteDiferencia');
+    const alertDeuda = document.getElementById('alertaDeuda');
+    const alertFavor = document.getElementById('alertaFavor');
+    const btnConfirmar = document.getElementById('btnConfirmarLote');
+
+    lblDif.textContent = `$ ${diferencia.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    
+    alertDeuda.style.display = 'none';
+    alertFavor.style.display = 'none';
+
+    if (totalFacturas === 0) {
+        lblDif.style.color = 'var(--text-muted)';
+        btnConfirmar.disabled = true;
+        btnConfirmar.textContent = "COMPLETÁ LOS DATOS";
     } else {
-        // Si no está tocando los inputs de pago, forzamos que Transferencia asuma el total
-        // solo si ambos están vacíos
-        if(!depoInput.value && !transInput.value && total > 0) {
-            transInput.value = total.toFixed(2);
+        if (!todosTienenFactura) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.textContent = "FALTA N° FACTURA EN SELECCIÓN";
+        } else {
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = "REGISTRAR LOTE";
+            
+            if (diferencia < -0.05) {
+                lblDif.style.color = 'var(--error)';
+                alertDeuda.style.display = 'block';
+                alertDeuda.textContent = `⚠️ PAGO INCOMPLETO. Diferencia: -$ ${Math.abs(diferencia).toLocaleString('es-AR', {minimumFractionDigits:2})} (Generará deuda)`;
+            } else if (diferencia > 0.05) {
+                lblDif.style.color = 'var(--ok)';
+                alertFavor.style.display = 'block';
+                alertFavor.textContent = `✅ SALDO A FAVOR: +$ ${diferencia.toLocaleString('es-AR', {minimumFractionDigits:2})}. Se guardará para mañana.`;
+            } else {
+                lblDif.style.color = 'var(--text-primary)';
+            }
         }
     }
-}
+};
 
-async function procesarPago(idViaje, actionName) {
-    const fac = document.getElementById(`fac-${idViaje}`).value.trim();
-    
-    const ll10 = Number(document.getElementById(`u10-${idViaje}`).value) || 0;
-    const ll15 = Number(document.getElementById(`u15-${idViaje}`).value) || 0;
-    const ll45 = Number(document.getElementById(`u45-${idViaje}`).value) || 0;
-    
-    const p10 = Number(document.getElementById(`p10-${idViaje}`).value) || 0;
-    const p15 = Number(document.getElementById(`p15-${idViaje}`).value) || 0;
-    const p45 = Number(document.getElementById(`p45-${idViaje}`).value) || 0;
-    
-    const ivaPorc = Number(document.getElementById(`iva-${idViaje}`).value) || 0;
-    const percPorc = Number(document.getElementById(`perc-${idViaje}`).value) || 0;
-    
-    const pagoDepo = Number(document.getElementById(`depo-${idViaje}`).value) || 0;
-    const opDepo = document.getElementById(`opDepo-${idViaje}`).value.trim();
-    const pagoTrans = Number(document.getElementById(`trans-${idViaje}`).value) || 0;
-    const opTrans = document.getElementById(`opTrans-${idViaje}`).value.trim();
+window.confirmarLote = async function() {
+    const marcados = document.querySelectorAll('.cbx-lote:checked');
+    if (marcados.length === 0) return;
 
-    if(!fac) return showToast('⚠️ Falta ingresar el N° de Factura', 'error');
-    if(p10 === 0 && p15 === 0 && p45 === 0) return showToast('⚠️ Ingrese precio de costo base', 'error');
-    if(pagoDepo === 0 && pagoTrans === 0) return showToast('⚠️ Debe declarar cómo se pagó la factura', 'error');
+    if(!confirm(`¿Registrar lote de ${marcados.length} remito(s)? Revisa bien la diferencia final antes de aceptar.`)) return;
 
-    // EL PATOVICA FINANCIERO
-    const subtotal = (p10 * ll10) + (p15 * ll15) + (p45 * ll45);
-    const totalFactura = subtotal + (subtotal * (ivaPorc/100)) + (subtotal * (percPorc/100));
-    const totalPagado = pagoDepo + pagoTrans;
+    toggleLoader(true, "PROCESANDO LOTE...");
+
+    const remitosData = [];
+    marcados.forEach(cbx => {
+        const id = cbx.value;
+        remitosData.push({
+            idViaje: id,
+            factura: document.getElementById(`fac-${id}`).value.trim(),
+            ll10: Number(document.getElementById(`u10-${id}`).value) || 0,
+            ll15: Number(document.getElementById(`u15-${id}`).value) || 0,
+            ll45: Number(document.getElementById(`u45-${id}`).value) || 0,
+            p10: Number(document.getElementById(`p10-${id}`).value) || 0,
+            p15: Number(document.getElementById(`p15-${id}`).value) || 0,
+            p45: Number(document.getElementById(`p45-${id}`).value) || 0,
+            iva: Number(document.getElementById(`iva-${id}`).value) || 0,
+            perc: Number(document.getElementById(`perc-${id}`).value) || 0,
+            totalFactura: Number(document.getElementById(`card-${id}`).dataset.totalFactura) || 0
+        });
+    });
+
+    const pagosData = { depositos: [], transferencias: [] };
     
-    // Comparamos con tolerancia de 1 centavo por los redondeos
-    if (Math.abs(totalFactura - totalPagado) > 0.05) {
-        return showToast(`⛔ DESCUADRE: La factura es de $${totalFactura.toFixed(2)} pero pagaste $${totalPagado.toFixed(2)}`, 'error');
-    }
+    document.getElementById('containerDepositos').querySelectorAll('.pago-row').forEach(row => {
+        const monto = Number(row.querySelector('.inp-pago-monto').value) || 0;
+        const ref = row.querySelector('.inp-pago-ref').value.trim() || 'S/N';
+        if (monto > 0) pagosData.depositos.push({ monto, ref });
+    });
+    
+    document.getElementById('containerTransf').querySelectorAll('.pago-row').forEach(row => {
+        const monto = Number(row.querySelector('.inp-pago-monto').value) || 0;
+        const ref = row.querySelector('.inp-pago-ref').value.trim() || 'S/N';
+        if (monto > 0) pagosData.transferencias.push({ monto, ref });
+    });
 
-    if(!confirm('¿Confirmar esta operación? Asegurate que los montos cuadren.')) return;
+    const retencionFinal = Number(document.getElementById('inpRetencion').value) || 0;
+    
+    let totalFac = 0; remitosData.forEach(r => totalFac += r.totalFactura);
+    let totalPag = 0; pagosData.depositos.forEach(p => totalPag += p.monto); pagosData.transferencias.forEach(p => totalPag += p.monto);
+    const nuevoSaldo = (totalPag + saldoAnterior) - totalFac;
 
-    toggleLoader(true, "GUARDANDO...");
     const fd = new FormData();
-    fd.append('action', actionName);
+    fd.append('action', 'conciliarLoteCompras');
     fd.append('k', k);
-    fd.append('idViaje', idViaje);
-    fd.append('factura', fac);
-    
-    // Unidades
-    fd.append('ll10', ll10); fd.append('ll15', ll15); fd.append('ll45', ll45);
-    // Precios
-    fd.append('precio10', p10); fd.append('precio15', p15); fd.append('precio45', p45);
-    // Impuestos %
-    fd.append('ivaPorc', ivaPorc); fd.append('percPorc', percPorc);
-    // Pagos
-    fd.append('pagoDepo', pagoDepo); fd.append('opDepo', opDepo);
-    fd.append('pagoTransf', pagoTrans); fd.append('opTransf', opTrans);
-    
-    // Compatibilidad vieja (comprobante) por si acaso
-    fd.append('comprobante', (opDepo ? 'Dep:'+opDepo : '') + ' ' + (opTrans ? 'Tr:'+opTrans : ''));
+    fd.append('remitos', JSON.stringify(remitosData));
+    fd.append('pagos', JSON.stringify(pagosData));
+    fd.append('retencionLey', retencionFinal);
+    fd.append('nuevoSaldo', nuevoSaldo);
+    fd.append('api_key', API_KEY);
+    fd.append('usuario', sessionStorage.getItem('usuarioActivo') || 'SISTEMA');
 
     try {
-        const r = await fetch(API, {method:'POST', body:fd}); const j = await r.json();
+        const r = await fetch(API, {method:'POST', body:fd}); 
+        const j = await r.json();
         if(j.status === 'success') { 
-            showToast("¡Guardado correctamente!", "success");
-            buscarHistorial();
+            showToast("¡Lote registrado correctamente!", "success");
+            setTimeout(() => { window.location.reload(); }, 1200);
         } else { throw new Error(j.message); }
     } catch(e) { toggleLoader(false); showToast('Error: ' + e.message, 'error'); }
-}
+};
 
 function renderPendientes() {
     const list = document.getElementById('listaPendientes');
     list.innerHTML = '';
-    if(datosCompras.pendientes.length === 0) return list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa;">No hay remitos pendientes. ¡Todo al día! 🎉</div>`;
+    if(datosCompras.pendientes.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">No hay remitos pendientes. ¡Todo al día! 🎉</div>`;
+        return;
+    }
 
-    // Rescatamos el ÚLTIMO precio para autocompletar
     let lastP10 = '', lastP15 = '', lastP45 = '', lastIva = '', lastPerc = '';
     if (datosCompras.historial.length > 0) {
         const tempSort = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
-        lastP10 = tempSort[0].p10 || '';
-        lastP15 = tempSort[0].p15 || '';
-        lastP45 = tempSort[0].p45 || '';
-        lastIva = tempSort[0].ivaPorc || '';
-        lastPerc = tempSort[0].percPorc || '';
+        lastP10 = tempSort[0].p10 || ''; lastP15 = tempSort[0].p15 || ''; lastP45 = tempSort[0].p45 || '';
+        lastIva = tempSort[0].ivaPorc || ''; lastPerc = tempSort[0].percPorc || '';
     }
 
+    const grupos = {};
     datosCompras.pendientes.forEach(c => {
-        const card = document.createElement('div'); 
-        card.className = 'trip-card'; card.id = `card-${c.idViaje}`;
-        card.innerHTML = `
-            <div class="trip-header" onclick="toggleCard('${c.idViaje}')">
-                <div class="trip-title">
-                    <h4>${c.chofer}</h4>
-                    <div class="badge-remito">Remito: ${c.remito || 'S/N'}</div>
-                    <div class="trip-date">${c.fecha} - ${c.horaLlegada}</div>
-                </div>
-                <div class="icon-expand">▼</div>
-            </div>
-            <div class="trip-body">
-                <div class="resumen-gas-container">
-                    <div class="gas-col">
-                        <div class="gas-row"><span>10kg (U):</span> <input type="number" class="inp-unidad" id="u10-${c.idViaje}" value="${c.ll10}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg10-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>15kg (U):</span> <input type="number" class="inp-unidad" id="u15-${c.idViaje}" value="${c.ll15}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg15-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>45kg (U):</span> <input type="number" class="inp-unidad" id="u45-${c.idViaje}" value="${c.ll45}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg45-${c.idViaje}">0 kg</span></div>
-                    </div>
-                    <div class="gas-divider"></div>
-                    <div class="gas-col" style="justify-content: center;">
-                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde" id="kgButano-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde" id="kgPropano-${c.idViaje}">0 kg</span></div>
-                    </div>
-                </div>
-
-                <div class="input-group" style="margin-bottom:12px;"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" placeholder="0001-12345678"></div>
-
-                <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario (Sugerido Últ. Compra)</label>
-                <div class="precios-row">
-                    <div>
-                        <input type="number" id="p10-${c.idViaje}" placeholder="Base 10Kg" value="${lastP10}" oninput="calcularTotal('${c.idViaje}')">
-                        <span class="lbl-costo-final" id="lblCost10-${c.idViaje}">Final: $0.00</span>
-                    </div>
-                    <div>
-                        <input type="number" id="p15-${c.idViaje}" placeholder="Base 15Kg" value="${lastP15}" oninput="calcularTotal('${c.idViaje}')">
-                        <span class="lbl-costo-final" id="lblCost15-${c.idViaje}">Final: $0.00</span>
-                    </div>
-                    <div>
-                        <input type="number" id="p45-${c.idViaje}" placeholder="Base 45Kg" value="${lastP45}" oninput="calcularTotal('${c.idViaje}')">
-                        <span class="lbl-costo-final" id="lblCost45-${c.idViaje}">Final: $0.00</span>
-                    </div>
-                </div>
-                
-                <div class="compact-row">
-                    <div class="input-group"><label>IVA Inscripto (%)</label><input type="number" id="iva-${c.idViaje}" placeholder="21" value="${lastIva}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>Percepción IVA (%)</label><input type="number" id="perc-${c.idViaje}" placeholder="1.75" value="${lastPerc}" oninput="calcularTotal('${c.idViaje}')"></div>
-                </div>
-
-                <div class="pay-box">
-                    <h5>💰 Medios de Pago</h5>
-                    <div class="input-group"><label>Depósito ($)</label><input type="number" id="depo-${c.idViaje}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>N° Op. Depósito</label><input type="text" id="opDepo-${c.idViaje}" placeholder="Comas si son varios"></div>
-                    <div class="input-group"><label>Transferencia ($)</label><input type="number" id="trans-${c.idViaje}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>N° Op. Transf</label><input type="text" id="opTrans-${c.idViaje}" placeholder="ID Transf"></div>
-                </div>
-
-                <div class="action-row">
-                    <div class="total-box"><span>TOTAL A PAGAR</span><h2 id="lblTotal-${c.idViaje}">$ 0.00</h2></div>
-                    <button class="btn-main" onclick="procesarPago('${c.idViaje}', 'conciliarcompra')">✅ CONCILIAR</button>
-                </div>
-            </div>
-        `;
-        list.appendChild(card);
-        // Disparar cálculo inicial
-        setTimeout(() => calcularTotal(c.idViaje), 50);
+        if(!grupos[c.fecha]) grupos[c.fecha] = [];
+        grupos[c.fecha].push(c);
     });
+
+    for (const [fecha, remitos] of Object.entries(grupos)) {
+        const sep = document.createElement('div');
+        sep.className = 'mes-separador';
+        sep.textContent = fecha;
+        list.appendChild(sep);
+
+        remitos.forEach(c => {
+            const card = document.createElement('div'); 
+            card.className = 'trip-card'; card.id = `card-${c.idViaje}`; card.dataset.totalFactura = 0;
+            card.innerHTML = `
+                <div class="trip-header" onclick="window.toggleCard('${c.idViaje}', event)">
+                    <div class="trip-title">
+                        <h4>👤 ${c.chofer} <span class="badge-remito">R: ${c.remito || 'S/N'}</span></h4>
+                    </div>
+                    <div class="header-right">
+                        <span style="font-size:11px; color:var(--text-muted);">${c.horaLlegada} hs</span>
+                        <input type="checkbox" class="custom-checkbox cbx-lote cbx-remito" value="${c.idViaje}" onchange="window.checkLote()">
+                    </div>
+                </div>
+                <div class="trip-body">
+                    <div class="resumen-gas-container">
+                        <div class="gas-col">
+                            <div class="gas-row"><span>10kg:</span> <input type="number" class="inp-unidad" id="u10-${c.idViaje}" value="${c.ll10}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"></div>
+                            <div class="gas-row"><span>15kg:</span> <input type="number" class="inp-unidad" id="u15-${c.idViaje}" value="${c.ll15}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"></div>
+                            <div class="gas-row"><span>45kg:</span> <input type="number" class="inp-unidad" id="u45-${c.idViaje}" value="${c.ll45}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"></div>
+                        </div>
+                        <div class="gas-divider"></div>
+                        <div class="gas-col">
+                            <div class="input-group"><label>Factura Original</label><input type="text" id="fac-${c.idViaje}" placeholder="0001-12345678" oninput="window.calcularLote()"></div>
+                        </div>
+                    </div>
+
+                    <label style="display: block; font-size: 9px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costos Base Unitarios ($)</label>
+                    <div class="precios-row">
+                        <div><input type="number" id="p10-${c.idViaje}" placeholder="10Kg" value="${lastP10}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost10-${c.idViaje}"></span></div>
+                        <div><input type="number" id="p15-${c.idViaje}" placeholder="15Kg" value="${lastP15}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost15-${c.idViaje}"></span></div>
+                        <div><input type="number" id="p45-${c.idViaje}" placeholder="45Kg" value="${lastP45}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost45-${c.idViaje}"></span></div>
+                    </div>
+                    
+                    <div class="compact-row">
+                        <div class="input-group"><label>IVA Inscripto (%)</label><input type="number" id="iva-${c.idViaje}" placeholder="21" value="${lastIva}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"></div>
+                        <div class="input-group"><label>Percepción IVA (%)</label><input type="number" id="perc-${c.idViaje}" placeholder="1.75" value="${lastPerc}" oninput="window.calcularTotalTarjeta('${c.idViaje}')"></div>
+                    </div>
+
+                    <div class="card-total-box">
+                        <span>Subtotal Factura</span>
+                        <h3 id="lblTotal-${c.idViaje}">$ 0.00</h3>
+                    </div>
+                </div>
+            `;
+            list.appendChild(card);
+            setTimeout(() => window.calcularTotalTarjeta(c.idViaje), 50);
+        });
+    }
 }
 
 function renderHistorial() {
@@ -455,126 +642,53 @@ function renderHistorial() {
     list.innerHTML = '';
     
     if(datosCompras.historial.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:30px; color:#aaa;">No se encontraron remitos en este rango de fechas.</div>`;
+        list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">No se encontraron registros.</div>`;
         return;
     }
 
     const sorted = [...datosCompras.historial].sort((a,b) => b.tsLlegada - a.tsLlegada);
-    const mesesNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     let mesActualRenderizado = '';
+    const mesesNombres = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 
     sorted.forEach(c => {
         const d = new Date(c.tsLlegada);
         const mesTag = `${mesesNombres[d.getMonth()]} ${d.getFullYear()}`;
         
         if (mesTag !== mesActualRenderizado) {
-            const separador = document.createElement('div');
-            separador.className = 'mes-separador';
-            separador.textContent = mesTag;
-            list.appendChild(separador);
+            const sep = document.createElement('div'); sep.className = 'mes-separador'; sep.textContent = mesTag;
+            list.appendChild(sep);
             mesActualRenderizado = mesTag;
         }
 
-        let tagsHTML = `<div class="audit-box">
-            <div class="audit-tag">🚚 <b>Viaje Planta:</b> ${c.fecha} - ${c.horaLlegada}</div>
-            <div class="audit-tag">✅ <b>Conciliado:</b> ${c.fConc || 'S/D'} por ${c.uConc || 'S/D'}</div>`;
-        if (c.fMod) tagsHTML += `<div class="audit-tag">✏️ <b>Modificado:</b> ${c.fMod} por ${c.uMod}</div>`;
-        tagsHTML += `</div>`;
-
         const card = document.createElement('div'); 
-        card.className = 'trip-card'; card.id = `card-${c.idViaje}`;
+        card.className = 'trip-card';
+        card.id = `card-${c.idViaje}H`; 
         card.innerHTML = `
-            <div class="trip-header" onclick="toggleCard('${c.idViaje}')">
+            <div class="trip-header" onclick="window.toggleCard('${c.idViaje}H', event)">
                 <div class="trip-title">
-                    <h4>${c.chofer}</h4>
-                    <div style="font-size:11px; color:#ccc;">Remito: ${c.remito || 'S/N'} | Factura: ${c.factura}</div>
-                    <div class="badge-ok" style="margin-top: 5px;">Depósito: $${c.pagoDepo||0} | Transf: $${c.pagoTransf||0}</div>
+                    <h4>👤 ${c.chofer}</h4>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Remito: ${c.remito || 'S/N'} | Fac: ${c.factura}</div>
                 </div>
-                <div class="icon-expand">▼</div>
+                <div class="header-right">
+                    <span style="font-size:10px; color:var(--ok); font-weight:bold;">✅ CONCILIADO</span>
+                    <div class="icon-expand" style="font-size: 16px; color: var(--compra); margin-left: 10px; transition: transform 0.3s ease;">▼</div>
+                </div>
             </div>
             <div class="trip-body">
-                <div class="resumen-gas-container">
-                    <div class="gas-col">
-                        <div class="gas-row"><span>10kg (U):</span> <input type="number" class="inp-unidad" id="u10-${c.idViaje}" value="${c.ll10}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg10-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>15kg (U):</span> <input type="number" class="inp-unidad" id="u15-${c.idViaje}" value="${c.ll15}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg15-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>45kg (U):</span> <input type="number" class="inp-unidad" id="u45-${c.idViaje}" value="${c.ll45}" oninput="calcularTotal('${c.idViaje}')"> <span class="kg-rojo" id="kg45-${c.idViaje}">0 kg</span></div>
-                    </div>
-                    <div class="gas-divider"></div>
-                    <div class="gas-col" style="justify-content: center;">
-                        <div class="gas-row"><span>🔥 BUTANO:</span><span class="kg-verde" id="kgButano-${c.idViaje}">0 kg</span></div>
-                        <div class="gas-row"><span>⚡ PROPANO:</span><span class="kg-verde" id="kgPropano-${c.idViaje}">0 kg</span></div>
-                    </div>
-                </div>
-
-                <div class="input-group" style="margin-bottom:12px;"><label>Nº Factura Original</label><input type="text" id="fac-${c.idViaje}" value="${c.factura}"></div>
-
-                <label style="display: block; font-size: 10px; color: var(--text-muted); font-weight: 800; margin-bottom: 4px; text-transform: uppercase;">Costo Unitario ($)</label>
-                <div class="precios-row">
-                    <div><input type="number" id="p10-${c.idViaje}" value="${c.p10}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost10-${c.idViaje}"></span></div>
-                    <div><input type="number" id="p15-${c.idViaje}" value="${c.p15}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost15-${c.idViaje}"></span></div>
-                    <div><input type="number" id="p45-${c.idViaje}" value="${c.p45}" oninput="calcularTotal('${c.idViaje}')"><span class="lbl-costo-final" id="lblCost45-${c.idViaje}"></span></div>
-                </div>
-
-                <div class="compact-row">
-                    <div class="input-group"><label>IVA Inscripto (%)</label><input type="number" id="iva-${c.idViaje}" value="${c.ivaPorc || ''}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>Percepción IVA (%)</label><input type="number" id="perc-${c.idViaje}" value="${c.percPorc || ''}" oninput="calcularTotal('${c.idViaje}')"></div>
-                </div>
-
-                <div class="pay-box">
-                    <h5>💰 Medios de Pago</h5>
-                    <div class="input-group"><label>Depósito ($)</label><input type="number" id="depo-${c.idViaje}" value="${c.pagoDepo||''}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>N° Op. Depósito</label><input type="text" id="opDepo-${c.idViaje}" value="${c.opDepo||''}"></div>
-                    <div class="input-group"><label>Transferencia ($)</label><input type="number" id="trans-${c.idViaje}" value="${c.pagoTransf||''}" oninput="calcularTotal('${c.idViaje}')"></div>
-                    <div class="input-group"><label>N° Op. Transf</label><input type="text" id="opTrans-${c.idViaje}" value="${c.opTransf||''}"></div>
-                </div>
-
-                <div class="action-row">
-                    <div class="total-box" style="background: rgba(59,130,246,0.1); border-color: #3b82f6;">
-                        <span style="color: #3b82f6;">TOTAL CALCULADO</span>
-                        <h2 id="lblTotal-${c.idViaje}">$ 0.00</h2>
-                    </div>
-                    <button class="btn-main btn-update" onclick="procesarPago('${c.idViaje}', 'modificarcompra')">✏️ ACTUALIZAR DATOS</button>
-                </div>
-                
-                ${tagsHTML}
+               <div style="font-size:11px; color:var(--text-muted); line-height: 1.6;">
+                  <b>Fecha de Ingreso:</b> ${c.fecha}<br>
+                  <b>Cantidades:</b> 10kg (${c.ll10}) - 15kg (${c.ll15}) - 45kg (${c.ll45})<br>
+                  <b>Costos Base:</b> 10kg ($${c.p10}) - 15kg ($${c.p15}) - 45kg ($${c.p45})<br>
+                  <b>Impuestos:</b> IVA ${c.ivaPorc}% - Perc ${c.percPorc}%<br>
+                  <b>Pagos:</b> Depósito $${c.pagoDepo} | Transf. $${c.pagoTransf}<br>
+                  <hr style="border-color:rgba(128,128,128,0.2); margin: 8px 0;">
+                  <div style="color:var(--ok); font-weight:bold; font-size:10px;">Auditado por: ${c.uConc} el ${c.fConc}</div>
+               </div>
             </div>
         `;
         list.appendChild(card);
-        setTimeout(() => calcularTotal(c.idViaje), 50);
     });
 }
-</script>
-<div id="capaMantenimiento" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(6,10,16,0.98); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:#fff; font-family:'Syne', sans-serif;">
-  <div style="font-size:40px; margin-bottom:20px;">🛠️</div>
-  <h2 style="color:var(--accent); letter-spacing:2px;">VENTANA DE MANTENIMIENTO</h2>
-  <p style="max-width:400px; color:var(--dim); font-family:'Inter', sans-serif; margin-top:10px;">
-    Estamos procesando los cierres y auditorías del día. <br>
-    El sistema volverá a estar operativo a las <b>00:06 AM</b>.
-  </p>
-  <div style="margin-top:30px; padding:10px 20px; border:1px solid var(--border); border-radius:4px; font-size:12px; color:var(--warn);">
-    AGUARDE UN MOMENTO...
-  </div>
-</div>
-
-<script>
-  function controlPatovica() {
-    const ahora = new Date();
-    const hora = ahora.getHours();
-    const min = ahora.getMinutes();
-    const capa = document.getElementById('capaMantenimiento');
-
-    const estaEnBloqueo = (hora === 23 && min >= 45) || (hora === 0 && min <= 5);
-
-    if (estaEnBloqueo) {
-      capa.style.display = 'flex';
-      document.onkeydown = function (e) { return false; };
-    } else {
-      capa.style.display = 'none';
-      document.onkeydown = null;
-    }
-  }
-  controlPatovica();
-  setInterval(controlPatovica, 30000);
 </script>
 </body>
 </html>

@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
+    /* Dark Mode (Default) */
     --glass: rgba(0, 0, 0, 0.6);
     --glass-border: rgba(255, 255, 255, 0.15);
     --accent: #FFD700; 
@@ -18,37 +19,83 @@
     --text-muted: #aaaaaa;
     --success: #2dd4bf;
     --bg-color: #0d031a;
+    --bg-grad-1: #1e053a;
+    --bg-grad-2: #0d031a;
+    --bg-solid: #020617;
+    --input-bg: rgba(0,0,0,0.6);
+    --modal-bg: #1a0b2e;
+    --action-bar-bg: rgba(13, 3, 26, 0.85);
+    --btn-color: white;
   }
+
+  body.light-mode {
+    /* Light Mode */
+    --glass: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.15);
+    --accent: #d97706;
+    --text-primary: #1a1a1a;
+    --text-muted: #4b5563;
+    --bg-color: #f8fafc;
+    --bg-grad-1: #e9d5ff;
+    --bg-grad-2: #bae6fd;
+    --bg-solid: #f8fafc;
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --modal-bg: #ffffff;
+    --action-bar-bg: rgba(255, 255, 255, 0.85);
+    --btn-color: #1a1a1a;
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0; font-family: 'Inter', sans-serif; color: var(--text-primary);
-    background: radial-gradient(at 0% 0%, #1e053a 0%, transparent 50%),
-                radial-gradient(at 100% 100%, #0d031a 0%, transparent 50%), #020617;
+    background: radial-gradient(at 0% 0%, var(--bg-grad-1) 0%, transparent 50%),
+                radial-gradient(at 100% 100%, var(--bg-grad-2) 0%, transparent 50%), var(--bg-solid);
     background-attachment: fixed; min-height: 100vh; padding: 20px;
     opacity: 0; 
-    transition: opacity 0.5s ease;
+    transition: opacity 0.5s ease, background 0.5s ease, color 0.5s ease;
   }
   
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-  h1 { font-size: 1.5rem; color: var(--accent); margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+  .header { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; position: relative; }
+  h1 { font-size: 1.5rem; color: var(--accent); margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
   
+  /* Botón flotante para cambiar tema */
+  .theme-toggle {
+    position: absolute;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  .theme-toggle:hover { transform: scale(1.1); border-color: var(--accent); }
+
   /* BARRA DE ACCIONES STICKY */
   .action-bar {
     position: sticky; top: 10px; z-index: 90;
-    background: rgba(13, 3, 26, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    background: var(--action-bar-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid var(--accent); border-radius: 16px; padding: 12px 15px;
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.6); gap: 10px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15); gap: 10px;
   }
 
   .btn {
     border: 1px solid var(--glass-border); padding: 10px 14px; border-radius: 12px;
-    background: rgba(255,255,255,0.05); color: white; cursor: pointer; font-weight: 700;
+    background: rgba(128,128,128,0.1); color: var(--btn-color); cursor: pointer; font-weight: 700;
     transition: 0.3s; font-size: 13px; text-transform: uppercase;
   }
-  .btn:hover { background: rgba(255,255,255,0.1); }
+  .btn:hover { background: rgba(128,128,128,0.2); }
   .btn-add { background: transparent; color: var(--accent); border-color: var(--accent); }
-  .btn-save { background: var(--accent); color: #000; border: none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); font-weight: 800; }
+  .btn-save { background: var(--accent); color: #000 !important; border: none; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); font-weight: 800; }
 
   /* CARDS CONDENSADAS */
   .grid-cards {
@@ -59,6 +106,7 @@
     background: var(--glass); border: 1px solid var(--glass-border);
     border-radius: 20px; padding: 20px; position: relative;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
   }
   
   .category-title {
@@ -71,7 +119,7 @@
   .block-carga { background: rgba(45, 212, 191, 0.05); border-color: rgba(45, 212, 191, 0.3); }
   .block-envase { background: rgba(255, 215, 0, 0.05); border-color: rgba(255, 215, 0, 0.3); }
   .block-comision { background: rgba(255, 94, 94, 0.05); border-color: rgba(255, 94, 94, 0.3); }
-  .block-otros { background: rgba(255, 255, 255, 0.05); }
+  .block-otros { background: rgba(128, 128, 128, 0.05); }
 
   .sub-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; color: var(--text-primary); text-align: center; opacity: 0.8;}
 
@@ -82,8 +130,8 @@
   .item-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
 
   .price-input {
-    width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-border);
-    border-radius: 8px; color: white; font-size: 14px; font-weight: 700;
+    width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border);
+    border-radius: 8px; color: var(--text-primary); font-size: 14px; font-weight: 700;
     padding: 8px 5px; outline: none; transition: all 0.3s; text-align: center;
   }
   .price-input:focus { border-color: var(--accent); }
@@ -96,43 +144,44 @@
     z-index: 100; display: none; justify-content: center; align-items: center;
   }
   .modal-box {
-    background: #1a0b2e; border: 1px solid var(--accent); width: 90%; max-width: 400px;
-    padding: 25px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    background: var(--modal-bg); border: 1px solid var(--accent); width: 90%; max-width: 400px;
+    padding: 25px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
   .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: var(--accent); text-align: center; text-transform: uppercase;}
   
   .form-group { margin-bottom: 15px; }
   .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; font-weight: bold;}
   .modal-input {
-    width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-    border-radius: 12px; color: white; font-size: 15px; outline: none; font-weight: 600;
+    width: 100%; padding: 14px; background: var(--input-bg); border: 1px solid var(--glass-border);
+    border-radius: 12px; color: var(--text-primary); font-size: 15px; outline: none; font-weight: 600;
   }
   .modal-input:focus { border-color: var(--accent); }
   .btn-full { width: 100%; padding: 15px; font-size: 15px; margin-top: 10px; }
   .btn-close { background: transparent; color: #ff5e5e; border: 1px solid #ff5e5e; margin-top: 10px; }
 
-  /* SISTEMA DE TOASTS Y LOADER MANTENIDOS INTACTOS */
+  /* SISTEMA DE TOASTS Y LOADER */
   #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px;}
+  .toast { padding: 15px 20px; border-radius: 12px; color: #fff; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; font-size: 14px;}
   .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.error { background: rgba(255, 94, 94, 0.9); }
-  .toast.success { background: rgba(0, 200, 81, 0.9); }
-  .toast.info { background: rgba(255, 215, 0, 0.9); color: #000; }
+  .toast.error { background: rgba(255, 94, 94, 0.95); }
+  .toast.success { background: rgba(45, 212, 191, 0.95); }
+  .toast.info { background: rgba(255, 215, 0, 0.95); color: #000; }
 
   .loading-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 3, 26, 0.9);
     z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; 
     opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; backdrop-filter: blur(10px);
   }
+  body.light-mode .loading-overlay { background: rgba(255,255,255,0.9); }
   .loading-overlay.active { opacity: 1; visibility: visible; }
   .spinner {
-    width: 60px; height: 60px; border: 4px solid rgba(255, 215, 0, 0.1);
+    width: 60px; height: 60px; border: 4px solid rgba(128, 128, 128, 0.2);
     border-left-color: var(--accent); border-radius: 50%;
     animation: spin 1s linear infinite, pulseGlow 2s ease-in-out infinite; margin-bottom: 20px;
   }
   .spinner.success-mode { border-left-color: var(--success); }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255,215,0,0.1); } 50% { box-shadow: 0 0 25px rgba(255,215,0,0.4); } 100% { box-shadow: 0 0 10px rgba(255,215,0,0.1); } }
+  @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } 50% { box-shadow: 0 0 25px rgba(0,0,0,0.2); } 100% { box-shadow: 0 0 10px rgba(0,0,0,0.1); } }
   .loading-text { color: var(--accent); font-size: 15px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
   .loading-text.success-mode { color: var(--success); }
 
@@ -147,6 +196,7 @@
   </div>
 
   <div class="header">
+    <button class="theme-toggle" id="btnTheme">🌙</button>
     <h1>Precios & Envases</h1>
   </div>
 
@@ -182,12 +232,60 @@
     </div>
   </div>
 
+<script type="module">
+// ================= IMPORTACIONES FIREBASE =================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+    authDomain: "vmgaslr.firebaseapp.com",
+    projectId: "vmgaslr",
+    storageBucket: "vmgaslr.firebasestorage.app",
+    messagingSenderId: "75859850089",
+    appId: "1:75859850089:web:fc551c770bbf4ae25803f8",
+    measurementId: "G-RJCWWBMBFF"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
-const TIMEOUT_SESION = 18000;
+const TIMEOUT_SESION = 1800000; // Inactividad original del usuario
 
-function showToast(msg, type = 'info') {
+// ================= SEGURIDAD DE ARRANQUE Y URL =================
+const params = new URLSearchParams(window.location.search);
+window.k = params.get('k') || sessionStorage.getItem('vm_token');
+
+if (!window.k) window.location.replace('inicio.html');
+
+// Limpiamos la URL al instante
+if (window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+// ================= FUNCIONES DEL TEMA GLOBAL =================
+const btnTheme = document.getElementById('btnTheme');
+btnTheme.onclick = () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    if (isLight) {
+        localStorage.setItem('vm_theme', 'light');
+        btnTheme.textContent = '☀️';
+    } else {
+        localStorage.setItem('vm_theme', 'dark');
+        btnTheme.textContent = '🌙';
+    }
+};
+
+if(localStorage.getItem('vm_theme') !== 'dark') {
+    document.body.classList.add('light-mode');
+    btnTheme.textContent = '☀️';
+} else {
+    btnTheme.textContent = '🌙';
+}
+
+// ================= UTILIDADES VISUALES =================
+window.showToast = function(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`; toast.textContent = msg;
@@ -196,7 +294,7 @@ function showToast(msg, type = 'info') {
     setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
 }
 
-function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
+window.toggleLoader = function(show, text = 'CARGANDO...', isSuccess = false) {
     const overlay = document.getElementById('loadingOverlay');
     const loaderText = document.getElementById('loaderText');
     const spinner = document.getElementById('loaderSpinner');
@@ -206,46 +304,84 @@ function toggleLoader(show, text = 'CARGANDO...', isSuccess = false) {
     if (show) overlay.classList.add('active'); else overlay.classList.remove('active');
 }
 
-const params = new URLSearchParams(window.location.search);
-let k = params.get('k') || params.get('token');
+window.expulsar = function() {
+    sessionStorage.clear();
+    window.location.replace('index.html');
+};
 
-if (k && window.history.replaceState) window.history.replaceState({}, document.title, window.location.pathname);
-if (!k) window.location.replace('index.html'); else init();
+// ================= CONTROL DE INACTIVIDAD REAL (A prueba de móviles) =================
+const TIEMPO_MAXIMO_INACTIVIDAD = 900000; // 15 Minutos en milisegundos (15 * 60 * 1000)
+let ultimaActividad = Date.now();
 
-let tIdle;
-function resetTimer() { clearTimeout(tIdle); tIdle = setTimeout(() => { window.location.replace('index.html'); }, TIMEOUT_SESION); }
-['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => document.addEventListener(evt, resetTimer));
-resetTimer();
+function registrarActividad() { 
+    ultimaActividad = Date.now(); 
+}
+['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => 
+    document.addEventListener(evt, registrarActividad, { passive: true })
+);
 
+// Un vigilante que pasa cada 10 segundos mirando la hora real, no se traba si minimizás la app
+setInterval(() => {
+    if (Date.now() - ultimaActividad > TIEMPO_MAXIMO_INACTIVIDAD) {
+        window.expulsar();
+    }
+}, 10000);
+// ================= VARIABLES GLOBALES DE PRECIOS =================
 let preciosData = [];
-let categoriasList = [];
-let productosList = [];
 let preciosOriginales = {};   
 let preciosModificados = {};  
 
+// ================= ARRANQUE Y VALIDACIÓN FIREBASE =================
 async function init() {
     try {
+        // EL PATOVICA: Verifica permiso local primero
+        const permsLocales = JSON.parse(sessionStorage.getItem('vm_perms') || '{}');
+        if (permsLocales.precios !== true && permsLocales.PRECIOS !== true && permsLocales.precios !== "true") {
+            alert("⛔ Acceso denegado. No tienes permisos para gestionar Precios.");
+            window.location.replace(`inicio.html?k=${window.k}`);
+            return;
+        }
+
         document.body.style.opacity = 1;
         
         // --- INICIO LÓGICA OFFLINE ---
         if (!navigator.onLine) {
-            toggleLoader(true, "ARMANDO TARJETAS (OFFLINE)...");
+            window.toggleLoader(true, "ARMANDO TARJETAS (OFFLINE)...");
             await cargarOpciones();
             await cargarPrecios();
             return;
         }
-        // --- FIN LÓGICA OFFLINE ---
 
-        toggleLoader(true, "VERIFICANDO SESIÓN...");
-        const fd = new FormData(); fd.append('action', 'verificarsesion'); fd.append('k', k);
-        const r = await fetch(API, { method:'POST', body:fd });
-        const d = await r.json();
-        if(d.status !== 'success') throw new Error("Sesión inválida");
+        window.toggleLoader(true, "VERIFICANDO SESIÓN...");
+        
+        // Validación directa con Firebase (Reemplaza la llamada de Apps Script)
+        const tokenRef = doc(db, "tokens", window.k);
+        const tokenSnap = await getDoc(tokenRef);
+        
+        if (!tokenSnap.exists()) throw new Error("Sesión inválida");
+        
+        const tokenData = tokenSnap.data();
+        const ahora = Date.now();
 
-        toggleLoader(true, "ARMANDO TARJETAS...");
+        if (tokenData.expira && ahora > tokenData.expira) {
+            alert("⏱️ Sesión expirada.");
+            return window.expulsar();
+        }
+
+        if (tokenData.expira) {
+            setTimeout(() => {
+                alert("⏳ Tu tiempo de sesión ha terminado.");
+                window.expulsar();
+            }, Math.max(0, tokenData.expira - ahora));
+        }
+
+        window.usuarioLogueado = tokenData.usuario; // Lo guardamos para enviar a Google luego
+        
+        window.toggleLoader(true, "ARMANDO TARJETAS...");
         await cargarOpciones();
         await cargarPrecios();
-    } catch(e) { window.location.replace('index.html'); }
+
+    } catch(e) { window.expulsar(); }
 }
 
 async function cargarOpciones() {
@@ -254,7 +390,6 @@ async function cargarOpciones() {
         const r = await fetch(`${API}?action=getoptions`);
         const d = await r.json();
         
-        // Guardamos las opciones en caché por si perdemos señal
         localStorage.setItem('vm_precios_opciones', JSON.stringify(d));
         
         const dlCat = document.getElementById('listaCategorias');
@@ -262,7 +397,6 @@ async function cargarOpciones() {
         dlCat.innerHTML = ''; d.categorias.forEach(c => dlCat.innerHTML += `<option value="${c}">`);
         dlProd.innerHTML = ''; d.productos.forEach(p => dlProd.innerHTML += `<option value="${p}">`);
     } catch(e) { 
-        // Fallback a caché local
         const cache = localStorage.getItem('vm_precios_opciones');
         if (cache) {
             const d = JSON.parse(cache);
@@ -276,15 +410,14 @@ async function cargarOpciones() {
 
 async function cargarPrecios() {
     try {
-        // --- INICIO LÓGICA OFFLINE-FIRST ---
         if (!navigator.onLine) {
             const cache = localStorage.getItem('vm_precios_data');
             if (cache) { 
                 preciosData = JSON.parse(cache); 
                 preciosOriginales = {}; preciosModificados = {};
                 renderCards(); 
-                toggleLoader(false);
-                showToast('Trabajando sin conexión (Caché)', 'info'); 
+                window.toggleLoader(false);
+                window.showToast('Trabajando sin conexión (Caché)', 'info'); 
                 return; 
             }
         } else {
@@ -299,7 +432,7 @@ async function cargarPrecios() {
                     preciosData = JSON.parse(cache); 
                     preciosOriginales = {}; preciosModificados = {};
                     renderCards(); 
-                    toggleLoader(false);
+                    window.toggleLoader(false);
                     return; 
                 }
             }
@@ -313,31 +446,28 @@ async function cargarPrecios() {
             
             preciosOriginales = {}; preciosModificados = {};
             renderCards();
-            toggleLoader(false);
-            return;
+            window.toggleLoader(false);
         }
-        // --- FIN LÓGICA OFFLINE-FIRST ---
     } catch(e) { 
         const cache = localStorage.getItem('vm_precios_data');
         if (cache) { 
             preciosData = JSON.parse(cache); 
             preciosOriginales = {}; preciosModificados = {};
             renderCards(); 
-            toggleLoader(false);
-            showToast('Error de red. Usando caché local.', 'warning'); 
+            window.toggleLoader(false);
+            window.showToast('Error de red. Usando caché local.', 'warning'); 
         } else {
-            toggleLoader(false); 
-            showToast("Error de conexión", "error"); 
+            window.toggleLoader(false); 
+            window.showToast("Error de conexión", "error"); 
         }
     }
 }
 
-// ORDENADOR LÓGICO DE TAMAÑOS (Para que siempre salga 10 - 15 - 45 en ese orden)
 const obtenerPesoOrden = (tipo) => {
     if(tipo.includes('10')) return 10;
     if(tipo.includes('15')) return 15;
     if(tipo.includes('45')) return 45;
-    return 99; // Otros al final
+    return 99;
 };
 
 function renderCards() {
@@ -348,7 +478,6 @@ function renderCards() {
     preciosData.forEach(p => {
         if(!mapaCategorias[p.categoria]) mapaCategorias[p.categoria] = { carga: [], envase: [], comision: [], otros: [] };
         
-        // Clasificador Inteligente
         if(['10','15','45'].includes(p.tipo)) mapaCategorias[p.categoria].carga.push(p);
         else if(['ENV10','ENV15','ENV45'].includes(p.tipo)) mapaCategorias[p.categoria].envase.push(p);
         else if(p.tipo.toUpperCase().includes('COM')) mapaCategorias[p.categoria].comision.push(p);
@@ -362,11 +491,9 @@ function renderCards() {
         
         let htmlCard = `<div class="category-title">${cat}</div>`;
 
-        // Función generadora de bloques HTML
         const generarBloque = (items, titulo, claseColor) => {
             if(items.length === 0) return '';
             
-            // Ordenar por tamaño (10, 15, 45)
             items.sort((a,b) => obtenerPesoOrden(a.tipo) - obtenerPesoOrden(b.tipo));
 
             let inputsHtml = '';
@@ -374,10 +501,9 @@ function renderCards() {
                 const idUnico = `${item.categoria}_|_${item.tipo}`;
                 preciosOriginales[idUnico] = item.precio;
                 
-                // Formatear etiqueta (ej: ENV15 -> 15KG)
                 let label = item.tipo.replace('ENV', '').replace('COM', '').replace('ISION', '');
                 if(label === '10' || label === '15' || label === '45') label += 'KG';
-                if(label === '') label = 'Gral'; // Por si es una comisión única
+                if(label === '') label = 'Gral';
 
                 inputsHtml += `
                     <div class="item-col">
@@ -425,29 +551,30 @@ function manejarCambioPrecio(e) {
 
 document.getElementById('btnGuardarLote').onclick = async () => {
     const actualizaciones = Object.values(preciosModificados);
-    if(actualizaciones.length === 0) return showToast("No hay precios modificados.", "info");
+    if(actualizaciones.length === 0) return window.showToast("No hay precios modificados.", "info");
 
-    toggleLoader(true, `GUARDANDO ${actualizaciones.length} CAMBIOS...`);
+    window.toggleLoader(true, `GUARDANDO ${actualizaciones.length} CAMBIOS...`);
     try {
         const promesas = actualizaciones.map(u => {
             const fd = new FormData();
-            fd.append('action', 'saveprice_single'); fd.append('k', k);
-            fd.append('categoria', u.categoria); fd.append('tipo', u.tipo); fd.append('precio', u.precio);
+            fd.append('action', 'saveprice_single'); 
+            fd.append('k', window.k);
+            fd.append('usuario', window.usuarioLogueado); // Enviamos el user validado
+            fd.append('categoria', u.categoria); 
+            fd.append('tipo', u.tipo); 
+            fd.append('precio', u.precio);
             return fetch(API, { method:'POST', body:fd }).then(r => r.json());
         });
         await Promise.all(promesas);
         
-        // --- INICIO TOQUE DE CAMPANA PARA SINCRONIZAR ---
         await fetch(`${API}?action=marcarupdate&clave=TS_PRECIOS`, { method: 'POST' });
         localStorage.setItem('TS_PRECIOS', new Date().getTime().toString());
-        // --- FIN TOQUE DE CAMPANA ---
 
-        toggleLoader(true, "¡TODO ACTUALIZADO!", true);
+        window.toggleLoader(true, "¡TODO ACTUALIZADO!", true);
         preciosModificados = {}; 
         
-        // Forzamos una recarga limpia para actualizar la caché de paso
         setTimeout(() => cargarPrecios(), 1200);
-    } catch(e) { toggleLoader(false); showToast("Error al guardar.", "error"); }
+    } catch(e) { window.toggleLoader(false); window.showToast("Error al guardar.", "error"); }
 };
 
 const modal = document.getElementById('modal');
@@ -462,27 +589,33 @@ document.getElementById('btnGuardarNuevo').onclick = async () => {
     const tip = document.getElementById('inpProducto').value.trim().toUpperCase();
     const pre = document.getElementById('inpPrecio').value;
 
-    if(!cat || !tip || pre === '') return showToast("Complete todos los campos", "error");
-    modal.style.display = 'none'; toggleLoader(true, "REGISTRANDO NUEVO...");
+    if(!cat || !tip || pre === '') return window.showToast("Complete todos los campos", "error");
+    modal.style.display = 'none'; window.toggleLoader(true, "REGISTRANDO NUEVO...");
 
     const fd = new FormData();
-    fd.append('action', 'saveprice_single'); fd.append('k', k); fd.append('categoria', cat); fd.append('tipo', tip); fd.append('precio', pre);
+    fd.append('action', 'saveprice_single'); 
+    fd.append('k', window.k); 
+    fd.append('usuario', window.usuarioLogueado);
+    fd.append('categoria', cat); 
+    fd.append('tipo', tip); 
+    fd.append('precio', pre);
+    
     try {
         const r = await fetch(API, { method:'POST', body:fd }); const d = await r.json();
         if(d.status === 'success') {
-            
-            // --- INICIO TOQUE DE CAMPANA PARA SINCRONIZAR ---
             await fetch(`${API}?action=marcarupdate&clave=TS_PRECIOS`, { method: 'POST' });
             localStorage.setItem('TS_PRECIOS', new Date().getTime().toString());
-            // --- FIN TOQUE DE CAMPANA ---
             
-            toggleLoader(true, "¡REGISTRADO!", true);
+            window.toggleLoader(true, "¡REGISTRADO!", true);
             setTimeout(() => { cargarOpciones(); cargarPrecios(); }, 1000);
-        } else { toggleLoader(false); showToast("Error: " + d.message, "error"); }
-    } catch(e) { toggleLoader(false); showToast("Error de conexión", "error"); }
+        } else { window.toggleLoader(false); window.showToast("Error: " + d.message, "error"); }
+    } catch(e) { window.toggleLoader(false); window.showToast("Error de conexión", "error"); }
 };
 
-document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${k}`);
+document.getElementById('btnVolver').onclick = () => window.location.replace(`inicio.html?k=${window.k}`);
+
+// Disparo inicial
+init();
 </script>
 </body>
 </html>

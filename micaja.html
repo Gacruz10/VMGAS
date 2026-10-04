@@ -3,52 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <title>Mi Caja - Rendición</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
   
   <style>
     :root { 
+      /* Dark Glass (Por defecto) */
       --bg: #030508; --surface: #0b1018; --panel: #121a24; 
       --border: rgba(255,255,255,0.1); 
       --text: #c5d4e0; --dim: #546a7b; 
       --accent: #FFD700; --pos: #2dd4bf; --neg: #ff4757; 
       --glass: rgba(18, 26, 36, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+
+    body.light-mode {
+      /* Light Glass Unificado */
+      --bg: #f8fafc; --surface: #ffffff; --panel: #f1f5f9;
+      --border: rgba(0,0,0,0.1);
+      --text: #1a1a1a; --dim: #64748b;
+      --accent: #d97706; --pos: #0d9488; --neg: #e11d48;
+      --glass: rgba(255, 255, 255, 0.65);
+      --glass-border: rgba(0, 0, 0, 0.15);
     }
     
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 16px; display: flex; justify-content: center; min-height: 100vh; }
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      font-family: 'Inter', sans-serif; 
+      padding: 16px; 
+      display: flex; 
+      justify-content: center; 
+      min-height: 100vh;
+      opacity: 0;
+      transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+    }
     
+    /* Botón flotante para cambiar tema */
+    .theme-toggle {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    .theme-toggle:hover { transform: scale(1.1); border-color: var(--accent); }
+
     .container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 20px; }
     
     /* Header Básico */
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .header h1 { font-family: 'Syne', sans-serif; font-size: 22px; color: #fff; }
-    .btn-back { background: var(--panel); border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
-    
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-left: 50px; }
+    .header h1 { font-family: 'Syne', sans-serif; font-size: 22px; color: var(--text); }
+    .btn-back { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
     /* Tarjeta Efectivo Principal */
-    .wallet-card { background: linear-gradient(135deg, #0d1b18 0%, #06110f 100%); border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(45, 212, 191, 0.1); position: relative; overflow: hidden; }
-    .wallet-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(45, 212, 191, 0.05) 0%, transparent 60%); pointer-events: none; }
+    .wallet-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
     .wallet-lbl { font-size: 12px; font-weight: 800; color: var(--pos); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: block; }
-    .wallet-amount { font-family: 'Inter', sans-serif; font-size: 48px; font-weight: 900; color: #fff; letter-spacing: -1px; text-shadow: 0 0 20px rgba(45, 212, 191, 0.4); }
+    .wallet-amount { font-family: 'Inter', sans-serif; font-size: 44px; font-weight: 900; color: var(--text); letter-spacing: -1px; }
     
     /* Secciones de Transferencias */
     .section-title { font-size: 11px; font-weight: 800; color: var(--dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; margin-top: 10px; padding-left: 5px; display: flex; justify-content: space-between; align-items: flex-end;}
-    .section-count { background: var(--panel); padding: 2px 8px; border-radius: 10px; color: #fff; font-size: 10px; }
+    .section-count { background: var(--panel); padding: 2px 8px; border-radius: 10px; color: var(--text); font-size: 10px; font-weight: 700; border: 1px solid var(--border); }
     
     .tx-list { display: flex; flex-direction: column; gap: 10px; }
     
-    .tx-card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .tx-card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
     .tx-info { display: flex; flex-direction: column; gap: 4px; }
-    .tx-cli { font-weight: 700; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 6px;}
+    .tx-cli { font-weight: 700; color: var(--text); font-size: 14px; display: flex; align-items: center; gap: 6px;}
     .tx-meta { font-size: 11px; color: var(--dim); display: flex; gap: 8px; font-weight: 600; }
     .tx-amount { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 18px; color: var(--accent); }
     
     /* Variación Urgente (Atrasadas) */
     .urgent-block .section-title { color: var(--neg); }
-    .urgent-block .section-count { background: rgba(255, 71, 87, 0.2); color: var(--neg); border: 1px solid rgba(255, 71, 87, 0.4); }
-    .tx-card.urgent { border-left: 4px solid var(--neg); background: rgba(255, 71, 87, 0.05); border-color: rgba(255, 71, 87, 0.3); }
-    .tx-card.urgent .tx-amount { color: #fff; }
+    .urgent-block .section-count { background: rgba(255, 71, 87, 0.15); color: var(--neg); border: 1px solid var(--neg); }
+    .tx-card.urgent { border-left: 4px solid var(--neg); }
+    
     .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
     .dot-warn { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
     .dot-urgent { background: var(--neg); box-shadow: 0 0 8px var(--neg); animation: blink 1.5s infinite; }
@@ -56,15 +104,24 @@
     @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
     /* Empty State */
-    .empty-state { text-align: center; padding: 30px; border: 1px dashed var(--border); border-radius: 12px; color: var(--dim); font-size: 13px; font-weight: 600; }
+    .empty-state { text-align: center; padding: 30px; border: 1px dashed var(--border); border-radius: 12px; color: var(--dim); font-size: 13px; font-weight: 600; background: var(--glass); }
 
     /* Loader */
     #loader { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; color: var(--accent); font-weight: 800; letter-spacing: 2px; }
-    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255, 215, 0, 0.1); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(128, 128, 128, 0.2); border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+
+  <!-- Anti-parpadeo del tema -->
+  <script>
+    if(localStorage.getItem('vm_theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+  </script>
+
+  <button class="theme-toggle" onclick="window.toggleTheme()" id="btnTheme">🌙</button>
 
   <div class="container">
     
@@ -106,29 +163,117 @@
     </div>
   </div>
 
-  <script>
-    // ================= CONFIGURACIÓN =================
+  <script type="module">
+    // ================= IMPORTACIONES FIREBASE =================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+        authDomain: "vmgaslr.firebaseapp.com",
+        projectId: "vmgaslr",
+        storageBucket: "vmgaslr.firebasestorage.app",
+        messagingSenderId: "75859850089",
+        appId: "1:75859850089:web:fc551c770bbf4ae25803f8",
+        measurementId: "G-RJCWWBMBFF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const API = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
     
+    // ================= SEGURIDAD DE ARRANQUE Y LIMPIEZA DE URL =================
     const params = new URLSearchParams(window.location.search);
-    const k = params.get('k') || params.get('token');
+    window.k = params.get('k') || params.get('token') || sessionStorage.getItem('k');
 
-    if (!k) window.location.replace('index.html');
-    document.getElementById('btnVolver').href = `inicio.html?k=${k}`;
+    if (!window.k || window.k === "null") {
+        window.location.replace('index.html');
+    } else {
+        sessionStorage.setItem('k', window.k);
+    }
+    
+    if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
-    async function cargarCaja() {
+    document.getElementById('btnVolver').href = `inicio.html?k=${window.k}`;
+
+    // ================= FUNCIONES DEL TEMA GLOBAL =================
+    window.toggleTheme = function() {
+        const isLight = document.body.classList.toggle('light-mode');
+        const btn = document.getElementById('btnTheme');
+        if (isLight) {
+            localStorage.setItem('vm_theme', 'light');
+            btn.textContent = '☀️';
+        } else {
+            localStorage.setItem('vm_theme', 'dark');
+            btn.textContent = '🌙';
+        }
+    };
+    
+    document.getElementById('btnTheme').textContent = document.body.classList.contains('light-mode') ? '☀️' : '🌙';
+
+    window.expulsar = function() {
+        sessionStorage.removeItem('k');
+        sessionStorage.removeItem('usuarioActivo');
+        window.location.replace('index.html');
+    };
+
+    // ================= VALIDACIÓN EXPRESA DEL TOKEN =================
+    async function validarSesionYCc() {
       try {
-        const url = `${API}?action=getmicaja&k=${k}`;
+        document.body.style.opacity = 1;
+        
+        const tokenRef = doc(db, "tokens", window.k);
+        const tokenSnap = await getDoc(tokenRef);
+        
+        if (!tokenSnap.exists()) throw new Error("Token inexistente en Firebase");
+        
+        const tokenData = tokenSnap.data();
+        const ahora = Date.now();
+
+        if (tokenData.expira && ahora > tokenData.expira) {
+            alert("⏱️ Sesión expirada.");
+            return window.expulsar();
+        }
+
+        if (tokenData.expira) {
+            setTimeout(() => {
+                alert("⏳ Tu tiempo de sesión ha terminado.");
+                window.expulsar();
+            }, Math.max(0, tokenData.expira - ahora));
+        }
+        
+        sessionStorage.setItem('usuarioActivo', tokenData.usuario || 'SISTEMA');
+        cargarCaja(tokenData.usuario);
+
+      } catch (e) { 
+        console.error("Firebase Auth Error:", e);
+        window.expulsar(); 
+      }
+    }
+
+    // ================= CARGA INTELIGENTE Y FILTRADA =================
+    async function cargarCaja(usuario) {
+      try {
+        const url = `${API}?action=getmicaja&k=${window.k}&usuario=${encodeURIComponent(usuario)}&_=${Date.now()}`;
         const res = await fetch(url);
         const json = await res.json();
 
         if (json.status === 'success') {
           renderizar(json.data);
         } else {
-          alert("Error: " + json.message);
+          // Si el token es viejo en el backend pero válido en Firebase, avisamos
+          if(json.message && (json.message.toLowerCase().includes('sesión') || json.message.toLowerCase().includes('token'))) {
+             alert("⚠️ El backend de Google bloqueó el acceso. Puede que tu token no esté sincronizado en el script GAS.");
+             window.expulsar();
+          } else {
+             alert("Error en base de datos: " + json.message);
+          }
         }
       } catch (e) {
-        alert("Error de conexión al cargar la caja.");
+        alert("Error de red al conectar con la caja.");
       }
     }
 
@@ -136,10 +281,8 @@
       document.getElementById('loader').style.display = 'none';
       document.getElementById('content').style.display = 'block';
 
-      // Efectivo
-      document.getElementById('efectivoTotal').textContent = `$${Number(data.efectivo).toLocaleString('es-AR')}`;
+      document.getElementById('efectivoTotal').textContent = `$${Number(data.efectivo || 0).toLocaleString('es-AR')}`;
 
-      // Atrasadas
       const cAtrasadas = document.getElementById('countAtrasadas');
       const lAtrasadas = document.getElementById('listaAtrasadas');
       const bAtrasadas = document.getElementById('bloqueAtrasadas');
@@ -148,9 +291,10 @@
         bAtrasadas.style.display = 'block';
         cAtrasadas.textContent = data.atrasadas.length;
         lAtrasadas.innerHTML = data.atrasadas.map(tx => buildTxCard(tx, true)).join('');
+      } else {
+        bAtrasadas.style.display = 'none';
       }
 
-      // Hoy
       const cHoy = document.getElementById('countHoy');
       const lHoy = document.getElementById('listaHoy');
       
@@ -158,6 +302,7 @@
         cHoy.textContent = data.hoy.length;
         lHoy.innerHTML = data.hoy.map(tx => buildTxCard(tx, false)).join('');
       } else {
+        cHoy.textContent = "0";
         lHoy.innerHTML = `<div class="empty-state">No hay transferencias pendientes en este turno.</div>`;
       }
     }
@@ -165,14 +310,14 @@
     function buildTxCard(tx, isUrgent) {
       const urgentClass = isUrgent ? 'urgent' : '';
       const dotClass = isUrgent ? 'dot-urgent' : 'dot-warn';
-      const montoFmt = `$${Number(tx.monto).toLocaleString('es-AR')}`;
+      const montoFmt = `$${Number(tx.monto || 0).toLocaleString('es-AR')}`;
       
       return `
         <div class="tx-card ${urgentClass}">
           <div class="tx-info">
-            <div class="tx-cli"><span class="status-dot ${dotClass}"></span> ${tx.cliente}</div>
+            <div class="tx-cli"><span class="status-dot ${dotClass}"></span> ${tx.cliente || 'CLIENTE'}</div>
             <div class="tx-meta">
-              <span>📅 ${tx.fecha}</span> | <span>🏷️ ${tx.tipo}</span>
+              <span>📅 ${tx.fecha || ''}</span> | <span>🏷️ ${tx.tipo || 'TRANSFERENCIA'}</span>
             </div>
           </div>
           <div class="tx-amount">${montoFmt}</div>
@@ -180,7 +325,39 @@
       `;
     }
 
-    window.onload = cargarCaja;
+    validarSesionYCc();
+  </script>
+
+  <script>
+    (async function autoSyncGlobal() {
+        if (!navigator.onLine) return;
+        let cola = JSON.parse(localStorage.getItem('cola_ventas') || '[]');
+        if (cola.length === 0) return;
+
+        const SYNC_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+        let nuevaCola = [];
+        let procesados = 0;
+        
+        for (let item of cola) {
+            try {
+                const paramsEncoded = new URLSearchParams();
+                for (const key in item) {
+                    if (key !== '_offline_ts') paramsEncoded.append(key, item[key]);
+                }
+                const response = await fetch(SYNC_URL, { 
+                    method: "POST", 
+                    body: paramsEncoded, 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+                });
+                const json = await response.json();
+                if (json.status === 'success') { procesados++; } else { nuevaCola.push(item); }
+            } catch (e) { nuevaCola.push(item); }
+        }
+        localStorage.setItem('cola_ventas', JSON.stringify(nuevaCola));
+        if (procesados > 0) {
+            console.log(`Sincronización fantasma de Mi Caja: ${procesados} subidos.`);
+        }
+    })();
   </script>
 </body>
 </html>
