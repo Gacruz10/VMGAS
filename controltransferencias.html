@@ -438,63 +438,62 @@ window.toggleGroup = function(fechaId) {
     if(group) group.classList.toggle('collapsed');
 };
 
-window.aplicarFiltroLocal = function(texto) {
-    const query = texto.toLowerCase().trim();
-    
-    const isNumericSearch = /^[0-9$.,\s]+$/.test(query);
-    const queryNumerico = isNumericSearch ? query.replace(/[^0-9]/g, '') : null;
-    
+window.aplicarFiltroLocal = function () {
+    const norm = v => String(v == null ? '' : v)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().trim();
+
+    const input = document.getElementById('buscadorTransferencias');
+    const query = norm(input ? input.value : '');
+    const tokens = query ? query.split(/\s+/) : [];
+
+    // Un token con solo números/$/./, se considera monto y se compara por dígitos
+    const tokensNum = tokens.map(tk =>
+        (/\d/.test(tk) && /^[\d$.,]+$/.test(tk)) ? tk.replace(/\D/g, '') : null
+    );
+
     let totalVisible = 0;
 
-    document.querySelectorAll('.date-group').forEach(group => {
-        let cardsVisible = 0;
+    document.querySelectorAll('#listaContainer .date-group').forEach(group => {
+        let visiblesEnGrupo = 0;
+
         group.querySelectorAll('.t-card').forEach(card => {
-            const rowId = parseInt(card.id.split('-')[1]);
-            const t = datosGlobales.find(d => d.row === rowId);
-            
-            if (!t) return;
+            let ok = true;
+            try {
+                if (tokens.length) {
+                    const elNombre = card.querySelector('.t-chofer');
+                    const elMonto = card.querySelector('.t-monto');
+                    const texto = norm(elNombre ? elNombre.textContent : '');
+                    const monto = (elMonto ? elMonto.textContent : '').replace(/\D/g, '');
 
-            const chofer = (t.chofer || '').toLowerCase();
-            const cliente = (t.cliente || '').toLowerCase();
-            const viaje = (t.viaje || '').toLowerCase();
-            const montoCadena = (t.montoT || '').toString();
-
-            const match = !query || 
-                          chofer.includes(query) || 
-                          cliente.includes(query) || 
-                          viaje.includes(query) ||
-                          (queryNumerico && montoCadena.includes(queryNumerico));
-            
-            if (match) {
-                card.style.display = 'block';
-                cardsVisible++;
-                totalVisible++;
-            } else {
-                card.style.display = 'none';
+                    ok = tokens.every((tk, i) =>
+                        texto.includes(tk) || (tokensNum[i] && monto.includes(tokensNum[i]))
+                    );
+                }
+            } catch (e) {
+                console.error('Buscador: error en una tarjeta', e);
+                ok = true; // ante la duda, que se vea
             }
+
+            card.style.display = ok ? '' : 'none';
+            if (ok) { visiblesEnGrupo++; totalVisible++; }
         });
 
-        // Ocultar la fecha si no tiene tarjetas visibles adentro
-        group.style.display = (cardsVisible > 0) ? 'block' : 'none';
-        
-        // Si hay búsqueda activa forzamos la apertura del grupo
-        if(query !== '') {
-            group.classList.remove('collapsed');
-        }
+        group.style.display = visiblesEnGrupo > 0 ? '' : 'none';
+        if (tokens.length && visiblesEnGrupo > 0) group.classList.remove('collapsed');
     });
 
-    // Controlar cartel de sin resultados
+    // Cartel de sin resultados
     let msgEl = document.getElementById('msgNoResultados');
     if (!msgEl) {
         msgEl = document.createElement('div');
         msgEl.id = 'msgNoResultados';
-        msgEl.style = "text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem;";
-        msgEl.innerHTML = "No hay coincidencias con tu búsqueda.";
+        msgEl.style.cssText = 'text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem;';
+        msgEl.textContent = 'No hay coincidencias con tu búsqueda.';
         document.getElementById('listaContainer').appendChild(msgEl);
     }
-    msgEl.style.display = (totalVisible === 0 && datosGlobales.length > 0) ? 'block' : 'none';
+    msgEl.style.display = (totalVisible === 0 && document.querySelector('#listaContainer .t-card')) ? 'block' : 'none';
 };
-
 function renderizar(data) {
     const container = document.getElementById('listaContainer');
     if (data.length === 0) {
