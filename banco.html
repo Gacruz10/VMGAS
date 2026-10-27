@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VMGAS - Lector de Banco (Radar Activo)</title>
+    
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --panel-bg: #ffffff;
+            --primary: #0056b3;
+            --primary-hover: #004494;
+            --text-main: #333333;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --unknown-bg: #ffebee;
+            --glass-border: rgba(0, 0, 0, 0.15);
+        }
+
+        * { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            overflow-x: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .header h2 { margin: 0; font-size: 1.5rem; }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background-color: var(--warning);
+            color: #000;
+            white-space: nowrap;
+        }
+
+        /* --- BARRA STICKY --- */
+        .toolbar {
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            flex-grow: 1;
+            position: relative;
+        }
+        .search-field { position: relative; }
+
+        .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .chip {
+            border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-main);
+            border-radius: 16px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+            user-select: none; white-space: nowrap; flex: 0 0 auto;
+        }
+        .chip:hover { border-color: var(--primary); }
+        .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .search-summary { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.4; }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 35px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            background: var(--panel-bg);
+        }
+        
+        .search-input:focus { border-color: var(--primary); }
+        .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 14px;}
+        
+        .clear-icon {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            opacity: 0.5; cursor: pointer; font-size: 14px; display: none;
+            padding: 5px; border-radius: 50%;
+        }
+        .clear-icon:hover { opacity: 1; background: #f0f0f0; }
+
+        .drop-zone {
+            background-color: var(--panel-bg);
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .drop-zone.dragover { background-color: #e9ecef; border-color: var(--primary-hover); }
+        .drop-zone p { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 10px; }
+        input[type="file"] { display: none; }
+        .btn { background-color: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 600; white-space: nowrap;}
+        .btn:hover { background-color: var(--primary-hover); }
+
+        /* --- CONTENEDOR DE TABLA (ESCRITORIO) --- */
+        .table-container {
+            width: 100%;
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        table { 
+            width: 100%; 
+            min-width: 900px; 
+            border-collapse: collapse; 
+            font-size: 14px; 
+            table-layout: fixed; 
+        }
+        
+        th, td { 
+            padding: 12px 15px; 
+            text-align: left; 
+            border-bottom: 1px solid var(--border-color);
+            word-wrap: break-word;
+        }
+        
+        th { background-color: #f8f9fa; font-weight: 600; }
+
+        th:nth-child(1) { width: 35%; }
+        th:nth-child(2) { width: 20%; }
+        th:nth-child(3) { width: 30%; }
+        th:nth-child(4) { width: 15%; text-align: right; }
+        td:nth-child(4) { text-align: right; } 
+
+        .date-header { cursor: pointer; font-weight: bold; color: var(--primary); user-select: none; background-color: #e9ecef; }
+        .date-header:hover { background-color: #dee2e6; }
+        .date-header td { padding: 10px 15px; border-bottom: 2px solid var(--border-color); }
+        
+        .date-group-content.collapsed { display: none !important; }
+
+        tr.data-row { transition: background-color 0.2s; }
+        tr.data-row:hover { filter: brightness(0.97); }
+        tr.match { border-left: 4px solid var(--success); background-color: #f0fff4; }
+        tr.unknown { background-color: var(--unknown-bg); border-left: 4px solid var(--danger); }
+        tr.egreso { background-color: #f1f3f5; border-left: 4px solid #adb5bd; }
+        .badge-egreso { background-color: #868e96; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; white-space: nowrap; }
+
+        .badge-tercero { display:inline-block; background-color:#fff3cd; color:#7a5b00; border:1px solid #ffe08a; padding:2px 6px; border-radius:4px; font-size:0.72rem; margin-top:3px; }
+        .badge-desconocido { background-color: var(--danger); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; white-space: nowrap;}
+        
+        .cuit-container { display: flex; align-items: center; gap: 8px; font-family: monospace; white-space: nowrap;}
+        .btn-copy { background: none; border: none; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; font-size: 16px; padding: 0; }
+        .btn-copy:hover { opacity: 1; transform: scale(1.2); }
+        
+        #errorLog { background-color: var(--danger); color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; display: none; font-family: monospace; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 20px; border-radius: 8px; color: #fff; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid var(--glass-border); opacity: 0; transform: translateY(20px); transition: 0.3s; font-size: 13px; background: rgba(0, 0, 0, 0.85);}
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: rgba(40, 167, 69, 0.95); }
+        
+        /* --- MEDIA QUERIES (CELULARES) - TRANSFORMACIÓN A TARJETAS --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            /* CAUSA DEL SCROLL LATERAL: el min-width:900px de la tabla seguía activo en celular */
+            .table-container { overflow-x: visible; background: transparent; box-shadow: none; }
+            table { min-width: 0 !important; table-layout: auto; }
+            td, th { word-break: break-word; overflow-wrap: anywhere; }
+            .cuit-container { flex-wrap: wrap; white-space: normal; }
+            .search-input { font-size: 16px; } /* evita el zoom automático en Android/iOS */
+            #toast-container { left: 10px; right: 10px; bottom: 10px; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px; }
+            .chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+            .btn { width: 100%; }
+
+            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+            thead tr { display: none; }
+            
+            th:nth-child(1), th:nth-child(2), th:nth-child(3), th:nth-child(4),
+            td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4) {
+                width: auto !important;
+            }
+            
+            .date-header td { padding: 10px; font-size: 13px; }
+
+            tr.data-row {
+                display: grid !important;
+                grid-template-columns: 1fr max-content;
+                grid-template-areas: 
+                    "cliente monto"
+                    "cuit cuit"
+                    "concepto concepto";
+                gap: 4px 10px;
+                padding: 12px 10px;
+                border-bottom: 5px solid var(--bg-color);
+            }
+
+            tr.data-row td { 
+                border: none; 
+                padding: 0; 
+                text-align: left; 
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            tr.data-row td:nth-child(1) { grid-area: concepto; font-size: 11px; line-height: 1.2; color: var(--text-muted); margin-top: 4px;} 
+            tr.data-row td:nth-child(2) { grid-area: cuit; font-size: 12px; } 
+            tr.data-row td:nth-child(3) { grid-area: cliente; font-size: 14px; } 
+            tr.data-row td:nth-child(4) { grid-area: monto; font-size: 16px; text-align: right; align-items: flex-end;} 
+
+            .cuit-container { justify-content: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="container">
+    <div class="header">
+        <h2>VMGAS - Lector de Banco (Estructurado)</h2>
+        <div id="statusDB" class="status-badge">Inicializando BD...</div>
+    </div>
+    
+    <div id="errorLog"></div>
+
+    <div class="toolbar" id="toolbar" style="display: none;">
+        <div class="search-box">
+            <div class="search-field">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" class="search-input"
+                       placeholder="Monto, nombre, CUIT o fecha (20/10)..."
+                       title="Ejemplos: 25000 · 25.000,50 · 25000 30000 (cualquiera de los dos) · 20000-30000 · >100000 · juan perez · 20/10 · ref:638553"
+                       oninput="window.filtrarTabla()" autocomplete="off">
+                <span class="clear-icon" id="clearSearch" onclick="window.limpiarFiltro()" title="Borrar búsqueda (Esc)">✖</span>
+            </div>
+            <div class="chips" id="chips">
+                <span class="chip active" data-f="todos" onclick="window.setChip('todos')">Todos</span>
+                <span class="chip" data-f="ingresos" onclick="window.setChip('ingresos')">Ingresos</span>
+                <span class="chip" data-f="desconocidos" onclick="window.setChip('desconocidos')">Desconocidos</span>
+                <span class="chip" data-f="terceros" onclick="window.setChip('terceros')">Terceros</span>
+                <span class="chip" data-f="egresos" onclick="window.setChip('egresos')">Egresos</span>
+            </div>
+            <div class="search-summary" id="searchSummary"></div>
+        </div>
+        <button class="btn" onclick="document.getElementById('fileInput').click()">Cargar otro archivo</button>
+    </div>
+
+    <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        <p>Arrastrá y soltá el archivo CSV o TXT del banco acá</p>
+        <button class="btn">O seleccioná un archivo</button>
+        <input type="file" id="fileInput" accept=".csv, .txt">
+    </div>
+
+    <div class="table-container" id="tableWrapper" style="display: none;">
+        <table id="tablaResultados">
+            <thead>
+                <tr>
+                    <th>Concepto / Detalle Banco</th>
+                    <th>CUIT Extraído</th>
+                    <th>Cliente VMGAS</th>
+                    <th>Monto Operación</th>
+                </tr>
+            </thead>
+            <!-- Los TBODY se generan dinámicamente agrupados por fecha -->
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCesmFFsn7LvgmcFMWFfi6F5_Zvco79ucM",
+        authDomain: "vmgaslr.firebaseapp.com",
+        projectId: "vmgaslr",
+        storageBucket: "vmgaslr.firebasestorage.app",
+        messagingSenderId: "75859850089",
+        appId: "1:75859850089:web:fc551c770bbf4ae25803f8",
+        measurementId: "G-RJCWWBMBFF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzi1x000HsPSQsWgz65jYWDWZI3cNQoKhoU5XCKagYcqs4en-d1YzO2sbnmzWlLIa9Vvw/exec";
+    const API_KEY = "VM_Seguridad_2026";
+    
+    let clientesBD = [];
+    let savedScrollPosition = 0; 
+
+    window.showToast = function(msg, type = 'success') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`; 
+        t.textContent = msg;
+        c.appendChild(t);
+        setTimeout(() => t.classList.add('show'), 10);
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2500);
+    }
+
+    async function inicializarBaseClientes() {
+        const statusEl = document.getElementById('statusDB');
+        const errorLog = document.getElementById('errorLog');
+        
+        try {
+            statusEl.innerText = "Verificando Firebase...";
+            const docRef = doc(db, 'seguridad', 'pin');
+            const docSnap = await getDoc(docRef);
+            
+            if (!docSnap.exists()) throw new Error("FIREBASE ERROR: El documento 'seguridad/pin' no existe.");
+            
+            const versionFirebase = docSnap.data().version_datos;
+            if (versionFirebase === undefined) throw new Error("FIREBASE ERROR: El documento no tiene el campo 'version_datos'.");
+
+            const versionLocal = localStorage.getItem('vmgas_clientes_version');
+            
+            let cacheValido = false;
+            try {
+                const cache = JSON.parse(localStorage.getItem('vmgas_clientes_data') || 'null');
+                cacheValido = Array.isArray(cache) && cache.length > 0 && ('cuil_pago' in cache[0]);
+            } catch (e) { cacheValido = false; }
+
+            if (versionLocal === versionFirebase.toString() && cacheValido) {
+                statusEl.innerText = "BD Sincronizada (Caché)";
+                statusEl.style.backgroundColor = "var(--success)";
+                statusEl.style.color = "white";
+                clientesBD = JSON.parse(localStorage.getItem('vmgas_clientes_data'));
+            } else {
+                statusEl.innerText = "Descargando desde GAS...";
+                statusEl.style.backgroundColor = "var(--warning)";
+                
+                const urlCompleta = `${GAS_WEB_APP_URL}?action=listclientes&api_key=${API_KEY}`;
+                const response = await fetch(urlCompleta);
+                if(!response.ok) throw new Error(`GAS ERROR: HTTP ${response.status}`);
+                
+                const data = await response.json(); 
+                if(!data.clientes) throw new Error("GAS ERROR: Estructura 'clientes' no encontrada en JSON.");
+                
+                clientesBD = data.clientes;
+                localStorage.setItem('vmgas_clientes_data', JSON.stringify(clientesBD));
+                localStorage.setItem('vmgas_clientes_version', versionFirebase.toString());
+                
+                statusEl.innerText = "BD Sincronizada";
+                statusEl.style.backgroundColor = "var(--success)";
+                statusEl.style.color = "white";
+            }
+        } catch (error) {
+            console.error(error);
+            statusEl.innerText = "Error BD (Offline)";
+            statusEl.style.backgroundColor = "var(--danger)";
+            statusEl.style.color = "white";
+            errorLog.innerText = error.message;
+            errorLog.style.display = 'block';
+            if (localStorage.getItem('vmgas_clientes_data')) {
+                clientesBD = JSON.parse(localStorage.getItem('vmgas_clientes_data'));
+                errorLog.innerText += " -> (Usando datos viejos)";
+            }
+        }
+    }
+
+    // ---- ÍNDICE DE CONCILIACIÓN ----
+    let indiceCuit = new Map();   // CUIT/CUIL completo (11 dígitos) -> { cliente, tipo }
+    let indiceDni  = new Map();   // DNI (8 dígitos) -> { cliente, tipo }
+
+    function obtenerCuilPago(cliente) {
+        if (cliente.cuil_pago !== undefined) return cliente.cuil_pago;
+        for (const key in cliente) {
+            const k = key.toLowerCase().replace(/[^a-z]/g, '');
+            if (k.includes('cuil') && k.includes('pago')) return cliente[key];
+        }
+        return '';
+    }
+
+    function construirIndice() {
+        indiceCuit = new Map();
+        indiceDni = new Map();
+
+        // 1ra pasada: titulares (tienen prioridad sobre los terceros)
+        clientesBD.forEach(cliente => {
+            const principal = limpiarCUIT(cliente.cuit_dni || cliente.CUIT_DNI);
+            if (principal.length === 11) {
+                if (!indiceCuit.has(principal)) indiceCuit.set(principal, { cliente, tipo: 'titular' });
+            } else if (principal.length >= 7 && principal.length <= 8) {
+                const dni = principal.padStart(8, '0');
+                if (!indiceDni.has(dni)) indiceDni.set(dni, { cliente, tipo: 'titular' });
+            }
+        });
+
+        // 2da pasada: pagadores terceros (separados por ; , | / o saltos de línea)
+        clientesBD.forEach(cliente => {
+            const campo = obtenerCuilPago(cliente);
+            if (!campo) return;
+            campo.toString().split(/[;,|\/\n]+/).forEach(parte => {
+                const c = limpiarCUIT(parte); // limpia guiones y puntos: 20-11983785-6 -> 20119837856
+                if (c.length === 11) {
+                    if (!indiceCuit.has(c)) indiceCuit.set(c, { cliente, tipo: 'tercero', cuil: c });
+                } else if (c.length >= 7 && c.length <= 8) {
+                    const dni = c.padStart(8, '0');
+                    if (!indiceDni.has(dni)) indiceDni.set(dni, { cliente, tipo: 'tercero', cuil: c });
+                }
+            });
+        });
+    }
+
+    function buscarCliente(detalleBanco) {
+        const candidatos = (detalleBanco.match(/(?<!\d)\d{11}(?!\d)/g) || []);
+        for (const cand of candidatos) {
+            if (indiceCuit.has(cand)) return { ...indiceCuit.get(cand), cuilBanco: cand };
+        }
+        // Clientes cargados solo con DNI: el DNI va en el medio del CUIT (posiciones 3 a 10)
+        for (const cand of candidatos) {
+            const dni = cand.substring(2, 10);
+            if (indiceDni.has(dni)) return { ...indiceDni.get(dni), cuilBanco: cand };
+        }
+        return null;
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
+    });
+    ['dragenter', 'dragover'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover')));
+    ['dragleave', 'drop'].forEach(eventName => dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover')));
+    dropZone.addEventListener('drop', e => procesarArchivo(e.dataTransfer.files[0]));
+    fileInput.addEventListener('change', e => { procesarArchivo(e.target.files[0]); e.target.value = ''; });
+
+    function procesarArchivo(file) {
+        if (!file) return;
+        if (clientesBD.length === 0) { alert("No hay clientes en memoria. Esperá a que la BD termine de sincronizar."); return; }
+        document.getElementById('dropZone').style.display = 'none';
+        document.getElementById('toolbar').style.display = 'flex';
+        const reader = new FileReader();
+        reader.onload = e => {
+            const buf = e.target.result;
+            let texto;
+            // El banco a veces exporta en Windows-1252 (tildes/Ñ): si no es UTF-8 válido, se reintenta
+            try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); }
+            catch (_) { texto = new TextDecoder('windows-1252').decode(buf); }
+            cruzarYRenderizar(texto);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function extraerCuitDelTexto(texto) {
+        const matches = texto.match(/(?<!\d)\d{11}(?!\d)/);
+        return matches ? matches[0] : null;
+    }
+
+    function parsearLineaBanco(linea) {
+        let limpia = linea.trim();
+        if (limpia.startsWith('"') && limpia.endsWith('"')) {
+            limpia = limpia.substring(1, limpia.length - 1);
+            return limpia.split('","');
+        }
+        return limpia.split(';');
+    }
+    
+    function parseDateToSort(d) {
+        if(!d || !d.includes('/')) return 0;
+        let p = d.split('/');
+        return parseInt(p[2] + p[1] + p[0]); 
+    }
+
+    window.copiarCuit = function(cuit, event) {
+        event.stopPropagation();
+        navigator.clipboard.writeText(cuit).then(() => {
+            window.showToast(`¡CUIT ${cuit} copiado al portapapeles!`);
+        });
+    }
+
+    window.toggleDateGroup = function(fechaId) {
+        const tbody = document.getElementById(`grupo-${fechaId}`);
+        const icon = document.getElementById(`icon-${fechaId}`);
+        
+        if(tbody.classList.contains('collapsed')) {
+            tbody.classList.remove('collapsed');
+            icon.textContent = '▼';
+        } else {
+            tbody.classList.add('collapsed');
+            icon.textContent = '▶';
+        }
+    }
+
+    // ---- BÚSQUEDA: estado ----
+    let operaciones = [];      // todas las operaciones con sus datos ya calculados y su <tr>
+    let opsPorGrupo = {};      // id del tbody -> [operaciones]
+    let filtroChip = 'todos';
+    let estadoGrupos = null;   // qué fechas estaban abiertas antes de empezar a buscar
+    let debounceTimer = null;
+
+    // ---- BÚSQUEDA: utilidades ----
+    const fmtARS = n => n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // minúsculas y sin tildes: "García" == "garcia"
+    function normalizar(s) {
+        return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    // "-4.882.112,35" -> -4882112.35 | "25.000" -> 25000 | "25000" -> 25000 | "25,5" -> 25.5
+    function parseMonto(s) {
+        if (s === null || s === undefined) return NaN;
+        let t = String(s).trim().replace(/\s/g, '').replace(/\$/g, '');
+        const neg = t.startsWith('-');
+        t = t.replace(/^[-+]/, '');
+        if (!/^[\d.,]+$/.test(t)) return NaN;
+        let n;
+        if (t.includes(',')) n = parseFloat(t.replace(/\./g, '').replace(',', '.'));
+        else if (/^\d{1,3}(\.\d{3})+$/.test(t)) n = parseFloat(t.replace(/\./g, ''));
+        else n = parseFloat(t);
+        return neg ? -n : n;
+    }
+
+    // Convierte lo que se escribe en criterios. Cada "palabra" se interpreta según su forma:
+    //   monto  -> 25000 | 25.000 | 25.000,50   (IGUALDAD EXACTA, ya no "contiene")
+    //   rango  -> 20000-30000 | >100000 | <5000
+    //   CUIT   -> 11 dígitos (o 9-10 sin puntos) -> contiene en los CUIT de la fila
+    //   fecha  -> 20/10 | 20/10/2026
+    //   ref    -> ref:638553
+    //   texto  -> el resto (nombre/concepto), sin tildes, todas las palabras deben estar
+    function parsearBusqueda(raw) {
+        const q = String(raw || '').trim();
+        if (!q) return null;
+        const res = { rango: null, montos: [], cuits: [], fechas: [], refs: [], textos: [], desc: [] };
+
+        let m = q.match(/^\$?\s*([\d.,]+)\s*-\s*\$?\s*([\d.,]+)$/);
+        if (m) {
+            const x = parseMonto(m[1]), y = parseMonto(m[2]);
+            if (isFinite(x) && isFinite(y)) {
+                res.rango = { min: Math.min(x, y), max: Math.max(x, y) };
+                res.desc.push(`monto entre $${fmtARS(res.rango.min)} y $${fmtARS(res.rango.max)}`);
+                return res;
+            }
+        }
+        m = q.match(/^(>=|<=|>|<)\s*\$?\s*([\d.,]+)$/);
+        if (m) {
+            const v = parseMonto(m[2]);
+            if (isFinite(v)) {
+                res.rango = m[1][0] === '>' ? { min: v, max: Infinity } : { min: 0, max: v };
+                res.desc.push(`monto ${m[1][0] === '>' ? 'desde' : 'hasta'} $${fmtARS(v)}`);
+                return res;
+            }
+        }
+
+        q.split(/\s+/).forEach(tok0 => {
+            const tok = tok0.replace(/^\$/, '');
+            if (!tok) return;
+            let mm;
+
+            if ((mm = tok.match(/^ref:(\d+)$/i))) { res.refs.push(mm[1]); res.desc.push(`referencia ${mm[1]}`); return; }
+
+            if (/^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(tok)) {
+                const [d, mo, y] = tok.split('/');
+                let f = d.padStart(2, '0') + '/' + mo.padStart(2, '0');
+                if (y) f += '/' + (y.length === 2 ? '20' + y : y);
+                res.fechas.push(f); res.desc.push(`fecha ${f}`); return;
+            }
+
+            const soloDig = tok.replace(/[-.]/g, '');
+            if (/^[\d-]+$/.test(tok) && /^\d{11}$/.test(soloDig)) { res.cuits.push(soloDig); res.desc.push(`CUIT ${soloDig}`); return; }
+
+            const neg = /^-\d/.test(tok);
+            const num = neg ? tok.slice(1) : tok;
+            if (/^[\d.,]+$/.test(num)) {
+                const digits = num.replace(/\D/g, '');
+                const conSep = /[.,]/.test(num);
+                if (!conSep && digits.length >= 9) { res.cuits.push(digits); res.desc.push(`CUIT/doc ${digits}`); return; }
+                // Miles a medio escribir: "120." "120.0" "1.200.0" -> todos los montos que empiezan así (120.000 a 120.099)
+                if (!neg && /^\d{1,3}(\.\d{3})*\.\d{0,2}$/.test(num)) {
+                    const partes = num.split('.');
+                    const cola = partes.pop();
+                    const lo = parseInt(partes.join('') + cola.padEnd(3, '0'), 10);
+                    const hi = lo + Math.pow(10, 3 - cola.length) - 1 + 0.99;
+                    res.montos.push({ rango: { min: lo, max: hi } });
+                    res.desc.push(`monto entre $${fmtARS(lo)} y $${fmtARS(hi)}`);
+                    return;
+                }
+                const monto = parseMonto(num);
+                if (isFinite(monto)) {
+                    // 7-8 dígitos sin separadores puede ser un monto o un DNI: se prueban ambos
+                    res.montos.push({ monto, neg, doc: (!conSep && digits.length >= 7) ? digits : null });
+                    res.desc.push(`monto $${fmtARS(monto)}`);
+                    return;
+                }
+            }
+            res.textos.push(normalizar(tok));
+            res.desc.push(`texto «${tok}»`);
+        });
+        return res;
+    }
+
+    function pasaChip(op) {
+        switch (filtroChip) {
+            case 'ingresos': return op.importe > 0;
+            case 'egresos': return op.importe < 0;
+            case 'desconocidos': return op.importe > 0 && !op.cliente;
+            case 'terceros': return op.tipo === 'tercero';
+            default: return true;
+        }
+    }
+
+    function coincide(op, q, aprox = false) {
+        const abs = Math.abs(op.importe);
+        if (q.rango && (abs < q.rango.min - 0.005 || abs > q.rango.max + 0.005)) return false;
+        // varios montos separados por espacio = cualquiera de ellos
+        if (q.montos.length && !q.montos.some(t => {
+            if (t.rango) return abs >= t.rango.min - 0.005 && abs <= t.rango.max + 0.005;
+            if (t.neg && op.importe >= 0) return false;
+            const exacto = Math.abs(abs - Math.abs(t.monto)) < 0.005;
+            // aproximado: la parte entera del monto EMPIEZA con lo escrito (120 -> 120.000, 120.500, 1.200.000)
+            const empieza = aprox && String(Math.floor(abs)).startsWith(String(Math.floor(Math.abs(t.monto))));
+            return exacto || empieza || (t.doc && op.cuitsTxt.includes(t.doc));
+        })) return false;
+        if (q.cuits.length && !q.cuits.every(c => op.cuitsTxt.includes(c))) return false;
+        if (q.refs.length && !q.refs.some(r => op.ref === r)) return false;
+        if (q.fechas.length && !q.fechas.some(f => op.fecha.startsWith(f))) return false;
+        if (q.textos.length && !q.textos.every(t => op.texto.includes(t))) return false;
+        return true;
+    }
+
+    // ---- BÚSQUEDA: aplicar filtros ----
+    function actualizarChips() {
+        document.querySelectorAll('#chips .chip').forEach(c => c.classList.toggle('active', c.dataset.f === filtroChip));
+    }
+
+    function aplicarFiltros() {
+        const input = document.getElementById('searchInput');
+        const q = parsearBusqueda(input.value);
+        const hayFiltro = !!q || filtroChip !== 'todos';
+        // Montos: si hay coincidencias exactas se muestran solo esas; si no hay ninguna, se pasa a "empieza con"
+        const aprox = !!(q && q.montos.length) && !operaciones.some(op => pasaChip(op) && coincide(op, q, false));
+        document.getElementById('clearSearch').style.display = input.value ? 'block' : 'none';
+
+        // al empezar a buscar se recuerda qué fechas estaban abiertas y el scroll, para restaurarlos al limpiar
+        if (hayFiltro && !estadoGrupos) {
+            estadoGrupos = {};
+            document.querySelectorAll('tbody.date-group-content').forEach(tb => { estadoGrupos[tb.id] = !tb.classList.contains('collapsed'); });
+            savedScrollPosition = window.scrollY;
+        }
+
+        let visibles = 0, ingresos = 0, egresos = 0;
+        document.querySelectorAll('tbody.date-group-content').forEach(tbody => {
+            const fid = tbody.dataset.fecha;
+            const ops = opsPorGrupo[tbody.id] || [];
+            let n = 0;
+            ops.forEach(op => {
+                const ok = pasaChip(op) && (!q || coincide(op, q, aprox));
+                op.tr.style.display = ok ? '' : 'none';
+                if (ok) {
+                    n++; visibles++;
+                    if (op.importe > 0) ingresos += op.importe; else if (op.importe < 0) egresos += op.importe;
+                }
+            });
+            const header = document.getElementById(`header-${tbody.id}`);
+            const icon = document.getElementById(`icon-${fid}`);
+            const count = document.getElementById(`count-${fid}`);
+            if (hayFiltro) {
+                count.textContent = `(${n} de ${ops.length})`;
+                if (n === 0) { header.style.display = 'none'; tbody.classList.add('collapsed'); }
+                else { header.style.display = ''; tbody.classList.remove('collapsed'); icon.textContent = '▼'; }
+            } else {
+                count.textContent = `(${ops.length} operaciones)`;
+                header.style.display = '';
+                if (estadoGrupos) {
+                    const abierto = estadoGrupos[tbody.id];
+                    tbody.classList.toggle('collapsed', !abierto);
+                    icon.textContent = abierto ? '▼' : '▶';
+                }
+            }
+        });
+        if (!hayFiltro) estadoGrupos = null;
+
+        // resumen: cantidad, totales y cómo se interpretó la búsqueda
+        let txt;
+        if (hayFiltro && visibles === 0) txt = 'Sin resultados';
+        else {
+            txt = hayFiltro ? `${visibles} de ${operaciones.length} movimientos` : `${operaciones.length} movimientos`;
+            const partes = [];
+            if (ingresos) partes.push(`Ingresos $${fmtARS(ingresos)}`);
+            if (egresos) partes.push(`Egresos -$${fmtARS(Math.abs(egresos))}`);
+            if (partes.length) txt += ' · ' + partes.join(' · ');
+        }
+        if (q && q.desc.length) txt += ' · Buscando: ' + q.desc.join(' + ') + (aprox ? ' (sin exactos: muestro los que empiezan con esos dígitos)' : '');
+        document.getElementById('searchSummary').textContent = txt;
+    }
+
+    window.filtrarTabla = function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(aplicarFiltros, 150);
+    }
+
+    window.setChip = function(f) {
+        filtroChip = f;
+        actualizarChips();
+        aplicarFiltros();
+    }
+
+    window.limpiarFiltro = function() {
+        document.getElementById('searchInput').value = '';
+        aplicarFiltros();
+        if (filtroChip === 'todos' && savedScrollPosition > 0) {
+            window.scrollTo({ top: savedScrollPosition, behavior: 'smooth' });
+            savedScrollPosition = 0;
+        }
+    }
+
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+        if (e.key === 'Escape') window.limpiarFiltro();
+    });
+
+    function cruzarYRenderizar(csvData) {
+        if(clientesBD.length === 0) { alert("No hay clientes en memoria."); return; }
+        construirIndice();
+
+        const lineas = csvData.split('\n').filter(linea => linea.trim() !== '');
+        
+        const tabla = document.getElementById('tablaResultados');
+        Array.from(tabla.querySelectorAll('tbody')).forEach(tb => tb.remove());
+
+        operaciones = [];
+        opsPorGrupo = {};
+        estadoGrupos = null;
+        filtroChip = 'todos';
+        actualizarChips();
+
+        const datosAgrupados = {};
+
+        for (let i = 0; i < lineas.length; i++) {
+            const lineaCruda = lineas[i];
+            const columnas = parsearLineaBanco(lineaCruda);
+            
+            if (columnas.length < 5) continue;
+
+            const fecha = columnas[0];
+            
+            if (fecha.toLowerCase() === 'fecha' || columnas[4].toLowerCase().includes('importe')) continue;
+
+            if (!datosAgrupados[fecha]) datosAgrupados[fecha] = [];
+            datosAgrupados[fecha].push({ lineaCruda, columnas });
+        }
+
+        const fechasOrdenadas = Object.keys(datosAgrupados).sort((a,b) => parseDateToSort(b) - parseDateToSort(a));
+
+        fechasOrdenadas.forEach((fecha, index) => {
+            const isExpanded = index < 3; 
+            const arrow = isExpanded ? '▼' : '▶';
+            const safeFechaId = fecha.replace(/\//g, ''); 
+
+            const tbodyHeader = document.createElement('tbody');
+            tbodyHeader.id = `header-grupo-${safeFechaId}`;
+            tbodyHeader.className = 'date-header';
+            tbodyHeader.innerHTML = `
+                <tr onclick="window.toggleDateGroup('${safeFechaId}')">
+                    <td colspan="4">
+                        <span id="icon-${safeFechaId}" style="display:inline-block; width:20px;">${arrow}</span> 
+                        📅 ${esc(fecha)} <span id="count-${safeFechaId}" style="color:var(--text-muted); font-size:12px; margin-left:10px;">(${datosAgrupados[fecha].length} operaciones)</span>
+                    </td>
+                </tr>
+            `;
+            tabla.appendChild(tbodyHeader);
+
+            const tbodyData = document.createElement('tbody');
+            tbodyData.id = `grupo-${safeFechaId}`;
+            tbodyData.dataset.fecha = safeFechaId;
+            tbodyData.className = 'date-group-content';
+            if (!isExpanded) tbodyData.classList.add('collapsed'); 
+            opsPorGrupo[tbodyData.id] = [];
+
+            datosAgrupados[fecha].forEach(item => {
+                const detalleBanco = item.columnas[3] || "-";
+                const monto = item.columnas[4] || "-";
+                const importe = parseMonto(monto);
+                const cuitExtraido = extraerCuitDelTexto(detalleBanco);
+
+                const resultado = buscarCliente(detalleBanco);
+                const clienteEncontrado = resultado ? resultado.cliente : null;
+                const nombreCliente = clienteEncontrado ? (clienteEncontrado.nombre || clienteEncontrado.NOMBRE || '') : '';
+                const esEgreso = importe < 0;
+
+                const tr = document.createElement('tr');
+                tr.className = `data-row ${clienteEncontrado ? 'match' : (esEgreso ? 'egreso' : 'unknown')}`;
+                
+                let cuitHtml = '-';
+                if (cuitExtraido) {
+                    cuitHtml = `
+                        <div class="cuit-container">
+                            ${cuitExtraido} 
+                            <button class="btn-copy" onclick="window.copiarCuit('${cuitExtraido}', event)" title="Copiar al portapapeles">📋</button>
+                        </div>
+                    `;
+                }
+
+                const montoHtml = monto.startsWith('-') ? `-$${esc(monto.slice(1))}` : `$${esc(monto)}`;
+
+                if (clienteEncontrado) {
+                    tr.innerHTML = `
+                        <td style="opacity:0.8; font-size:12px;">${esc(detalleBanco)}</td>
+                        <td>${cuitHtml}</td>
+                        <td><strong>${esc(nombreCliente)}</strong><br>${resultado.tipo === 'tercero'
+                            ? `<span class="badge-tercero">Pagador tercero</span>`
+                            : `<small style="color:var(--success);">CUIT Localizado</small>`}</td>
+                        <td><strong>${montoHtml}</strong></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td style="opacity:0.8; font-size:12px;">${esc(detalleBanco)}</td>
+                        <td>${cuitHtml}</td>
+                        <td>${esEgreso ? `<span class="badge-egreso">Egreso / gasto</span>` : `<span class="badge-desconocido">Desconocido</span>`}</td>
+                        <td><strong>${montoHtml}</strong></td>
+                    `;
+                }
+                tbodyData.appendChild(tr);
+
+                // datos ya calculados para buscar sin tocar el DOM
+                const cuits = new Set(detalleBanco.match(/(?<!\d)\d{11}(?!\d)/g) || []);
+                if (clienteEncontrado) {
+                    const titular = limpiarCUIT(clienteEncontrado.cuit_dni || clienteEncontrado.CUIT_DNI);
+                    if (titular) cuits.add(titular);
+                }
+                const op = {
+                    fecha,
+                    ref: String(item.columnas[1] || '').trim(),
+                    importe: isFinite(importe) ? importe : 0,
+                    cliente: clienteEncontrado,
+                    tipo: resultado ? resultado.tipo : null,
+                    cuitsTxt: Array.from(cuits).join(' '),
+                    texto: normalizar(`${detalleBanco} ${nombreCliente}`),
+                    tr
+                };
+                operaciones.push(op);
+                opsPorGrupo[tbodyData.id].push(op);
+            });
+            tabla.appendChild(tbodyData);
+        });
+
+        document.getElementById('tableWrapper').style.display = 'block';
+        document.getElementById('searchInput').value = '';
+        savedScrollPosition = 0;
+        aplicarFiltros();
+    }
+
+    function limpiarCUIT(valor) {
+        if (!valor) return "";
+        return valor.toString().replace(/[^0-9]/g, '');
+    }
+
+    window.onload = inicializarBaseClientes;
+</script>
+</body>
+</html>
